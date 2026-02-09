@@ -4,9 +4,81 @@
 
 body {
   margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
+  font-family: 'Source Sans 3', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  @apply text-gray-800;
+}
+
+/* Mount Sinai – ensure custom colors are available (safelist fallback) */
+.bg-sinai-cerulean { background-color: #06ABEB; }
+.hover\:bg-sinai-cerulean-dark:hover { background-color: #0596c7; }
+.bg-sinai-navy { background-color: #212070; }
+.hover\:bg-sinai-navy-dark:hover { background-color: #1a1a5e; }
+.text-sinai-cerulean { color: #06ABEB; }
+.text-sinai-navy { color: #212070; }
+.text-sinai-cetacean { color: #00002D; }
+.border-sinai-cerulean { border-color: #06ABEB; }
+.ring-sinai-cerulean\/5 { --tw-ring-color: rgb(6 171 235 / 0.05); }
+.ring-sinai-cerulean\/10 { --tw-ring-color: rgb(6 171 235 / 0.1); }
+.bg-sinai-cerulean\/5 { background-color: rgb(6 171 235 / 0.05); }
+.bg-sinai-cerulean\/10 { background-color: rgb(6 171 235 / 0.1); }
+.border-sinai-cerulean\/20 { border-color: rgb(6 171 235 / 0.2); }
+.border-sinai-cerulean\/30 { border-color: rgb(6 171 235 / 0.3); }
+.bg-sinai-magenta-light\/50 { background-color: rgb(245 224 237 / 0.5); }
+.border-sinai-magenta\/20 { border-color: rgb(220 41 141 / 0.2); }
+.hover\:border-sinai-cerulean:hover { border-color: #06ABEB; }
+.hover\:bg-sinai-cerulean\/5:hover { background-color: rgb(6 171 235 / 0.05); }
+.hover\:bg-sinai-cerulean\/10:hover { background-color: rgb(6 171 235 / 0.1); }
+.hover\:border-sinai-cerulean\/30:hover { border-color: rgb(6 171 235 / 0.3); }
+
+/* Form & interaction polish */
+input[type="text"]:focus,
+input[type="password"]:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgb(6 171 235 / 0.2);
+}
+input::placeholder {
+  color: #94a3b8;
+}
+/* Primary button: subtle press and hover lift */
+.btn-primary {
+  transition: transform 0.15s ease, box-shadow 0.2s ease;
+}
+.btn-primary:hover:not(:disabled) {
+  transform: translateY(-1px);
+}
+.btn-primary:active:not(:disabled) {
+  transform: translateY(0);
+}
+/* Option cards: clear hover and active feedback */
+.option-card {
+  transition: border-color 0.2s ease, background-color 0.2s ease, box-shadow 0.2s ease, transform 0.15s ease;
+}
+.option-card:hover {
+  box-shadow: 0 4px 12px rgba(6, 171, 235, 0.12);
+}
+.option-card:active {
+  transform: scale(0.995);
+}
+.option-card-selected {
+  box-shadow: 0 0 0 2px #06ABEB, 0 4px 12px rgba(6, 171, 235, 0.15);
+}
+/* Login card subtle entrance feel */
+.form-card {
+  animation: formCardIn 0.4s ease-out;
+}
+@keyframes formCardIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media print {
+  body { background: #fff; }
 }

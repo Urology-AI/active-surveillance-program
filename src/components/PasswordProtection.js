@@ -7,8 +7,7 @@ export default function PasswordProtection({ onAuthenticated }) {
   const [error, setError] = useState('')
   const [isLoading, setIsLoading] = useState(false)
 
-  // Default password - change this to your desired password
-  const CORRECT_PASSWORD = 'urology2026'
+  const CORRECT_PASSWORD = import.meta.env.VITE_APP_PASSWORD || 'urology2026'
 
   const handleSubmit = (e) => {
     e.preventDefault()
@@ -30,24 +29,27 @@ export default function PasswordProtection({ onAuthenticated }) {
   }
 
   return React.createElement('div', {
-    className: 'min-h-screen bg-gradient-to-br from-blue-50 to-purple-50 flex items-center justify-center px-4'
+    className: 'min-h-screen bg-sinai-page flex items-center justify-center px-4 py-8'
   },
     React.createElement('div', {
-      className: 'bg-white rounded-2xl shadow-2xl p-8 md:p-12 w-full max-w-md'
+      className: 'form-card bg-white rounded-2xl shadow-sinai-lg border border-slate-100 p-8 md:p-12 w-full max-w-md'
     },
       React.createElement('div', { className: 'text-center mb-8' },
         React.createElement('div', {
-          className: 'inline-flex items-center justify-center w-16 h-16 bg-primary-blue/10 rounded-full mb-4'
+          className: 'inline-flex items-center justify-center w-16 h-16 bg-sinai-cerulean/10 rounded-full mb-4 ring-4 ring-sinai-cerulean/5'
         },
-          React.createElement(Lock, { className: 'w-8 h-8 text-primary-blue' })
+          React.createElement(Lock, { className: 'w-8 h-8 text-sinai-cerulean' })
+        ),
+        React.createElement('p', { className: 'text-xs font-semibold uppercase tracking-wider text-sinai-navy mb-1' },
+          'Mount Sinai'
         ),
         React.createElement('h1', {
-          className: 'text-2xl md:text-3xl font-bold text-gray-900 mb-2'
+          className: 'text-xl md:text-2xl font-bold text-sinai-cetacean mb-2'
         },
           'Prostate Cancer Clinical Pathway'
         ),
         React.createElement('p', {
-          className: 'text-gray-600'
+          className: 'text-slate-600 text-sm'
         },
           'Please enter the password to access'
         )
@@ -56,7 +58,7 @@ export default function PasswordProtection({ onAuthenticated }) {
         React.createElement('div', { className: 'mb-6' },
           React.createElement('label', {
             htmlFor: 'password',
-            className: 'block text-sm font-medium text-gray-700 mb-2'
+            className: 'block text-sm font-semibold text-sinai-navy mb-2'
           },
             'Password'
           ),
@@ -69,8 +71,8 @@ export default function PasswordProtection({ onAuthenticated }) {
                 setPassword(e.target.value)
                 setError('')
               },
-              className: `w-full px-4 py-3 pr-12 border-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-blue transition-all ${
-                error ? 'border-red-500' : 'border-gray-300'
+              className: `w-full px-4 py-3.5 pr-12 rounded-xl border-2 transition-all duration-200 ${
+                error ? 'border-red-400 bg-red-50/50' : 'border-slate-200 bg-slate-50/50 hover:border-slate-300'
               }`,
               placeholder: 'Enter password',
               autoFocus: true,
@@ -79,8 +81,9 @@ export default function PasswordProtection({ onAuthenticated }) {
             React.createElement('button', {
               type: 'button',
               onClick: () => setShowPassword(!showPassword),
-              className: 'absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700',
-              disabled: isLoading
+              className: 'absolute right-3 top-1/2 -translate-y-1/2 p-1.5 rounded-lg text-slate-500 hover:text-sinai-cerulean hover:bg-sinai-cerulean/10 transition-colors',
+              disabled: isLoading,
+              'aria-label': showPassword ? 'Hide password' : 'Show password'
             },
               showPassword
                 ? React.createElement(EyeOff, { className: 'w-5 h-5' })
@@ -88,7 +91,7 @@ export default function PasswordProtection({ onAuthenticated }) {
             )
           ),
           error && React.createElement('p', {
-            className: 'mt-2 text-sm text-red-600'
+            className: 'mt-2.5 text-sm text-red-600 font-medium flex items-center gap-1.5'
           },
             error
           )
@@ -96,17 +99,17 @@ export default function PasswordProtection({ onAuthenticated }) {
         React.createElement('button', {
           type: 'submit',
           disabled: isLoading || !password,
-          className: `w-full py-3 px-4 bg-primary-blue text-white font-semibold rounded-lg transition-all ${
+          className: `btn-primary w-full py-3.5 px-4 bg-sinai-cerulean text-white font-semibold rounded-xl ${
             isLoading || !password
               ? 'opacity-50 cursor-not-allowed'
-              : 'hover:bg-blue-600 hover:shadow-lg'
+              : 'hover:bg-sinai-cerulean-dark hover:shadow-sinai'
           }`
         },
           isLoading ? 'Verifying...' : 'Access Application'
         )
       ),
       React.createElement('div', {
-        className: 'mt-6 text-center text-xs text-gray-500'
+        className: 'mt-6 pt-6 border-t border-slate-100 text-center text-xs font-medium text-slate-500'
       },
         'Authorized personnel only'
       )

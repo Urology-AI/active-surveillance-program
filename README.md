@@ -35,6 +35,10 @@ A clinical decision support tool for determining next steps after a positive pro
 # Install dependencies
 npm install
 
+# Optional: set access password via env (defaults to dev password if unset)
+cp .env.example .env
+# Edit .env and set VITE_APP_PASSWORD
+
 # Run development server
 npm run dev
 

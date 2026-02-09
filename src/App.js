@@ -11,6 +11,8 @@ import ProgressBar from './components/ProgressBar.js'
 import FlowChartDebug from './components/FlowChartDebug.js'
 import PasswordProtection from './components/PasswordProtection.js'
 
+const STORAGE_KEY = 'sinai-pathway-progress'
+
 const STEPS = {
   START: 'start',
   STEP1: 'step1',
@@ -26,14 +28,44 @@ function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [currentStep, setCurrentStep] = useState(STEPS.START)
   const [stepHistory, setStepHistory] = useState([])
+  const [showResumePrompt, setShowResumePrompt] = useState(false)
 
   useEffect(() => {
-    // Check if user is already authenticated
     const authStatus = sessionStorage.getItem('authenticated')
     if (authStatus === 'true') {
       setIsAuthenticated(true)
     }
   }, [])
+
+  useEffect(() => {
+    if (!isAuthenticated) return
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY)
+      if (!raw) return
+      const { currentStep: s, stepHistory: h } = JSON.parse(raw)
+      if (s && s !== STEPS.START || (h && h.length > 0)) setShowResumePrompt(true)
+    } catch (_) {}
+  }, [isAuthenticated])
+
+  useEffect(() => {
+    if (!isAuthenticated || currentStep === STEPS.START) return
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ currentStep, stepHistory }))
+  }, [isAuthenticated, currentStep, stepHistory])
+
+  useEffect(() => {
+    const titles = {
+      [STEPS.START]: 'Prostate Cancer Clinical Pathway',
+      [STEPS.STEP1]: 'Step 1: Patient Intent',
+      [STEPS.STEP2]: 'Step 2: Gleason Score',
+      [STEPS.STEP3]: 'Step 3: Risk Stratification',
+      [STEPS.STEP4]: 'Step 4: Medical History',
+      [STEPS.END_ACTIVE_SURVEILLANCE]: 'Result: Active Surveillance',
+      [STEPS.END_DEFINITIVE_TREATMENT]: 'Result: Definitive Treatment',
+      [STEPS.END_REFUSE_DEFER]: 'Result: Refuse/Defer'
+    }
+    const t = titles[currentStep]
+    document.title = t ? `${t} · Mount Sinai` : 'Mount Sinai · Prostate Cancer Clinical Pathway'
+  }, [currentStep])
 
   const goToStep = (step) => {
     setStepHistory([...stepHistory, currentStep])
@@ -51,6 +83,24 @@ function App() {
   const reset = () => {
     setCurrentStep(STEPS.START)
     setStepHistory([])
+    try { localStorage.removeItem(STORAGE_KEY) } catch (_) {}
+  }
+
+  const resumeProgress = () => {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY)
+      if (raw) {
+        const { currentStep: s, stepHistory: h } = JSON.parse(raw)
+        if (s) setCurrentStep(s)
+        if (Array.isArray(h)) setStepHistory(h)
+      }
+    } catch (_) {}
+    setShowResumePrompt(false)
+  }
+
+  const startOver = () => {
+    try { localStorage.removeItem(STORAGE_KEY) } catch (_) {}
+    setShowResumePrompt(false)
   }
 
   const getProgress = () => {
@@ -69,6 +119,20 @@ function App() {
   const showProgressBar = currentStep !== STEPS.START && 
     !currentStep.startsWith('end_')
 
+  const STEP_LABELS = {
+    [STEPS.START]: 'Start',
+    [STEPS.STEP1]: 'Step 1: Patient Intent',
+    [STEPS.STEP2]: 'Step 2: Gleason Score',
+    [STEPS.STEP3]: 'Step 3: Risk Stratification',
+    [STEPS.STEP4]: 'Step 4: Medical History',
+    [STEPS.END_ACTIVE_SURVEILLANCE]: 'Active Surveillance',
+    [STEPS.END_DEFINITIVE_TREATMENT]: 'Definitive Treatment',
+    [STEPS.END_REFUSE_DEFER]: 'Refuse/Defer'
+  }
+  const pathTaken = [...stepHistory, currentStep]
+  const pathSummary = pathTaken.map(s => STEP_LABELS[s] || s).join(' → ')
+  const pathSummaryFull = `Mount Sinai · Prostate Cancer Clinical Pathway\nPath: ${pathSummary}\n${new Date().toLocaleString()}`
+
   // Show password protection if not authenticated
   if (!isAuthenticated) {
     return React.createElement(PasswordProtection, {
@@ -76,7 +140,28 @@ function App() {
     })
   }
 
-  return React.createElement('div', { className: 'min-h-screen bg-gray-50 py-8 px-4' },
+  return React.createElement('div', { className: 'min-h-screen bg-sinai-page py-8 px-4' },
+    showResumePrompt && React.createElement('div', {
+      className: 'fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40'
+    },
+      React.createElement('div', {
+        className: 'bg-white rounded-xl shadow-xl p-6 max-w-sm w-full border border-slate-200'
+      },
+        React.createElement('p', { className: 'text-sinai-cetacean font-semibold mb-4' },
+          'Resume where you left off?'
+        ),
+        React.createElement('div', { className: 'flex flex-col gap-2' },
+          React.createElement('button', {
+            onClick: resumeProgress,
+            className: 'w-full py-2.5 bg-sinai-cerulean text-white font-semibold rounded-xl hover:bg-sinai-cerulean-dark'
+          }, 'Resume'),
+          React.createElement('button', {
+            onClick: startOver,
+            className: 'w-full py-2.5 border-2 border-slate-200 rounded-xl font-medium text-slate-700 hover:bg-slate-50'
+          }, 'Start over')
+        )
+      )
+    ),
     React.createElement('div', { className: 'max-w-4xl mx-auto' },
       showProgressBar && React.createElement(ProgressBar, { progress: getProgress(), onBack: goBack }),
       React.createElement('div', { className: 'mt-8' },
@@ -98,9 +183,19 @@ function App() {
           onHighRisk: () => goToStep(STEPS.END_DEFINITIVE_TREATMENT),
           onLowRisk: () => goToStep(STEPS.END_ACTIVE_SURVEILLANCE)
         }),
-        currentStep === STEPS.END_ACTIVE_SURVEILLANCE && React.createElement(EndStateActiveSurveillance, { onReset: reset }),
-        currentStep === STEPS.END_DEFINITIVE_TREATMENT && React.createElement(EndStateDefinitiveTreatment, { onReset: reset }),
-        currentStep === STEPS.END_REFUSE_DEFER && React.createElement(EndStateRefuseDefer, { onReset: reset })
+        currentStep === STEPS.END_ACTIVE_SURVEILLANCE && React.createElement(EndStateActiveSurveillance, { onReset: reset, pathSummary: pathSummaryFull }),
+        currentStep === STEPS.END_DEFINITIVE_TREATMENT && React.createElement(EndStateDefinitiveTreatment, { onReset: reset, pathSummary: pathSummaryFull }),
+        currentStep === STEPS.END_REFUSE_DEFER && React.createElement(EndStateRefuseDefer, { onReset: reset, pathSummary: pathSummaryFull })
+      ),
+      React.createElement('footer', { className: 'mt-12 pt-6 border-t border-slate-200 text-center text-xs text-slate-500' },
+        React.createElement('p', { className: 'mb-1' }, 'Clinical decision support only; does not replace clinical judgment.'),
+        React.createElement('p', null,
+          'Refer to institutional protocol or ',
+          React.createElement('a', { href: 'https://www.auanet.org/guidelines/guidelines/prostate-cancer-clinically-localized-guideline', target: '_blank', rel: 'noopener noreferrer', className: 'text-sinai-cerulean hover:underline' }, 'AUA'),
+          ' / ',
+          React.createElement('a', { href: 'https://www.nccn.org/guidelines/guidelines-detail?category=1&id=1459', target: '_blank', rel: 'noopener noreferrer', className: 'text-sinai-cerulean hover:underline' }, 'NCCN'),
+          ' guidelines.'
+        )
       )
     ),
     React.createElement(FlowChartDebug, {

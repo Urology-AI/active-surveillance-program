@@ -27,26 +27,26 @@ export default function InteractiveFlowChart({ currentStep, stepHistory, onStepC
   ]
 
   const getStepColor = (step) => {
-    if (step === currentStep) return '#3b82f6' // Primary blue - current
-    if (stepHistory.includes(step)) return '#10b981' // Green - visited
-    return '#e5e7eb' // Gray - not visited
+    if (step === currentStep) return '#06ABEB' // Mount Sinai cerulean - current
+    if (stepHistory.includes(step)) return '#059669' // Emerald - visited
+    return '#e2e8f0' // Slate - not visited
   }
 
   const getStepTextColor = (step) => {
     if (step === currentStep || stepHistory.includes(step)) return '#ffffff'
-    return '#374151'
+    return '#334155'
   }
 
   const getStepBorderColor = (step) => {
-    if (step === currentStep) return '#1d4ed8'
-    if (stepHistory.includes(step)) return '#059669'
-    return '#9ca3af'
+    if (step === currentStep) return '#212070' // Sinai navy
+    if (stepHistory.includes(step)) return '#047857'
+    return '#94a3b8'
   }
 
   const getConnectionColor = (from, to) => {
     const currentPath = [...stepHistory, currentStep]
     const isActivePath = currentPath.includes(from) && (currentPath.includes(to) || to === currentStep)
-    return isActivePath ? '#3b82f6' : '#d1d5db'
+    return isActivePath ? '#06ABEB' : '#cbd5e1'
   }
 
   const getConnectionWidth = (from, to) => {
@@ -100,12 +100,12 @@ export default function InteractiveFlowChart({ currentStep, stepHistory, onStepC
     )
   }
 
-  return React.createElement('div', { className: 'w-full overflow-auto bg-gray-50 p-4 rounded-lg' },
+  return React.createElement('div', { className: 'w-full overflow-auto bg-slate-100 p-4 rounded-lg' },
     React.createElement('svg', {
       width: '500',
       height: '580',
       viewBox: '0 0 500 580',
-      className: 'bg-white border border-gray-300 rounded-lg shadow-sm'
+      className: 'bg-white border border-slate-200 rounded-lg shadow-sm'
     },
       React.createElement('defs', null,
         React.createElement('marker', {
@@ -115,7 +115,7 @@ export default function InteractiveFlowChart({ currentStep, stepHistory, onStepC
           refX: '9',
           refY: '3',
           orient: 'auto',
-          fill: '#9ca3af'
+          fill: '#94a3b8'
         },
           React.createElement('polygon', {
             points: '0 0, 10 3, 0 6'
@@ -162,7 +162,7 @@ export default function InteractiveFlowChart({ currentStep, stepHistory, onStepC
             cx: step.x + step.width - 12,
             cy: step.y + 12,
             r: 6,
-            fill: '#fbbf24',
+            fill: '#212070',
             className: 'animate-pulse pointer-events-none'
           })
         )
