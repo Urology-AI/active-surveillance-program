@@ -10,6 +10,7 @@ import EndStateRefuseDefer from './components/EndStateRefuseDefer.js'
 import ProgressBar from './components/ProgressBar.js'
 import FlowChartDebug from './components/FlowChartDebug.js'
 import PasswordProtection from './components/PasswordProtection.js'
+import ChartPrintView from './components/ChartPrintView.js'
 
 const STORAGE_KEY = 'sinai-pathway-progress'
 
@@ -28,7 +29,9 @@ function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [currentStep, setCurrentStep] = useState(STEPS.START)
   const [stepHistory, setStepHistory] = useState([])
+  const [forwardStack, setForwardStack] = useState([])
   const [showResumePrompt, setShowResumePrompt] = useState(false)
+  const [showChartForPrint, setShowChartForPrint] = useState(false)
 
   useEffect(() => {
     const authStatus = sessionStorage.getItem('authenticated')
@@ -70,19 +73,31 @@ function App() {
   const goToStep = (step) => {
     setStepHistory([...stepHistory, currentStep])
     setCurrentStep(step)
+    setForwardStack([])
   }
 
   const goBack = () => {
     if (stepHistory.length > 0) {
+      setForwardStack([currentStep, ...forwardStack])
       const previousStep = stepHistory[stepHistory.length - 1]
       setStepHistory(stepHistory.slice(0, -1))
       setCurrentStep(previousStep)
     }
   }
 
+  const goForward = () => {
+    if (forwardStack.length > 0) {
+      const nextStep = forwardStack[0]
+      setStepHistory([...stepHistory, currentStep])
+      setForwardStack(forwardStack.slice(1))
+      setCurrentStep(nextStep)
+    }
+  }
+
   const reset = () => {
     setCurrentStep(STEPS.START)
     setStepHistory([])
+    setForwardStack([])
     try { localStorage.removeItem(STORAGE_KEY) } catch (_) {}
   }
 
@@ -163,29 +178,69 @@ function App() {
       )
     ),
     React.createElement('div', { className: 'max-w-4xl mx-auto' },
-      showProgressBar && React.createElement(ProgressBar, { progress: getProgress(), onBack: goBack }),
+      showProgressBar && React.createElement(ProgressBar, {
+        progress: getProgress(),
+        onBack: goBack,
+        onForward: goForward,
+        canGoBack: stepHistory.length > 0,
+        canGoForward: forwardStack.length > 0
+      }),
       React.createElement('div', { className: 'mt-8' },
         currentStep === STEPS.START && React.createElement(StartScreen, { onStart: () => goToStep(STEPS.STEP1) }),
         currentStep === STEPS.STEP1 && React.createElement(Step1PatientIntent, {
           onRefuseDefer: () => goToStep(STEPS.END_REFUSE_DEFER),
-          onProceed: () => goToStep(STEPS.STEP2)
+          onProceed: () => goToStep(STEPS.STEP2),
+          onBack: goBack,
+          onForward: goForward,
+          canGoBack: stepHistory.length > 0,
+          canGoForward: forwardStack.length > 0
         }),
         currentStep === STEPS.STEP2 && React.createElement(Step2GleasonScore, {
           onGleason6: () => goToStep(STEPS.STEP4),
           onGleason7_3_4: () => goToStep(STEPS.STEP3),
-          onGleason7_4_3_Plus: () => goToStep(STEPS.END_DEFINITIVE_TREATMENT)
+          onGleason7_4_3_Plus: () => goToStep(STEPS.END_DEFINITIVE_TREATMENT),
+          onBack: goBack,
+          onForward: goForward,
+          canGoBack: stepHistory.length > 0,
+          canGoForward: forwardStack.length > 0
         }),
         currentStep === STEPS.STEP3 && React.createElement(Step3RiskStratification, {
           onFavorable: () => goToStep(STEPS.STEP4),
-          onUnfavorable: () => goToStep(STEPS.END_DEFINITIVE_TREATMENT)
+          onUnfavorable: () => goToStep(STEPS.END_DEFINITIVE_TREATMENT),
+          onBack: goBack,
+          onForward: goForward,
+          canGoBack: stepHistory.length > 0,
+          canGoForward: forwardStack.length > 0
         }),
         currentStep === STEPS.STEP4 && React.createElement(Step4MedicalHistory, {
           onHighRisk: () => goToStep(STEPS.END_DEFINITIVE_TREATMENT),
-          onLowRisk: () => goToStep(STEPS.END_ACTIVE_SURVEILLANCE)
+          onLowRisk: () => goToStep(STEPS.END_ACTIVE_SURVEILLANCE),
+          onBack: goBack,
+          onForward: goForward,
+          canGoBack: stepHistory.length > 0,
+          canGoForward: forwardStack.length > 0
         }),
-        currentStep === STEPS.END_ACTIVE_SURVEILLANCE && React.createElement(EndStateActiveSurveillance, { onReset: reset, pathSummary: pathSummaryFull }),
-        currentStep === STEPS.END_DEFINITIVE_TREATMENT && React.createElement(EndStateDefinitiveTreatment, { onReset: reset, pathSummary: pathSummaryFull }),
-        currentStep === STEPS.END_REFUSE_DEFER && React.createElement(EndStateRefuseDefer, { onReset: reset, pathSummary: pathSummaryFull })
+        currentStep === STEPS.END_ACTIVE_SURVEILLANCE && React.createElement(EndStateActiveSurveillance, {
+          onReset: reset,
+          pathSummary: pathSummaryFull,
+          onBack: goBack,
+          canGoBack: stepHistory.length > 0,
+          onPrintChart: () => setShowChartForPrint(true)
+        }),
+        currentStep === STEPS.END_DEFINITIVE_TREATMENT && React.createElement(EndStateDefinitiveTreatment, {
+          onReset: reset,
+          pathSummary: pathSummaryFull,
+          onBack: goBack,
+          canGoBack: stepHistory.length > 0,
+          onPrintChart: () => setShowChartForPrint(true)
+        }),
+        currentStep === STEPS.END_REFUSE_DEFER && React.createElement(EndStateRefuseDefer, {
+          onReset: reset,
+          pathSummary: pathSummaryFull,
+          onBack: goBack,
+          canGoBack: stepHistory.length > 0,
+          onPrintChart: () => setShowChartForPrint(true)
+        })
       ),
       React.createElement('footer', { className: 'mt-12 pt-6 border-t border-slate-200 text-center text-xs text-slate-500' },
         React.createElement('p', { className: 'mb-1' }, 'Clinical decision support only; does not replace clinical judgment.'),
@@ -202,11 +257,15 @@ function App() {
       currentStep: currentStep,
       stepHistory: stepHistory,
       onStepClick: (step) => {
-        // Allow navigation to start or end states, but not intermediate steps that require user input
         if (step === STEPS.START || step.startsWith('end_')) {
           goToStep(step)
         }
       }
+    }),
+    showChartForPrint && React.createElement(ChartPrintView, {
+      currentStep: currentStep,
+      stepHistory: stepHistory,
+      onClose: () => setShowChartForPrint(false)
     })
   )
 }

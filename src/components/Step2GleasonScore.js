@@ -1,9 +1,10 @@
 import React, { useState } from 'react'
 import { ClipboardList, ChevronRight, HelpCircle, ChevronDown, ChevronUp } from 'lucide-react'
+import StepNav from './StepNav.js'
 
 const optionClass = 'option-card w-full p-4 pl-5 text-left bg-slate-50/80 border-2 border-slate-200 rounded-xl hover:border-sinai-cerulean hover:bg-sinai-cerulean/5 flex items-center justify-between gap-3 group'
 
-export default function Step2GleasonScore({ onGleason6, onGleason7_3_4, onGleason7_4_3_Plus }) {
+export default function Step2GleasonScore({ onGleason6, onGleason7_3_4, onGleason7_4_3_Plus, onBack, onForward, canGoBack, canGoForward }) {
   const [showGleasonHelp, setShowGleasonHelp] = useState(false)
   return React.createElement('div', { className: 'bg-white rounded-xl shadow-sinai border border-slate-100 p-6 md:p-8' },
     React.createElement('div', { className: 'flex items-center gap-3 mb-6' },
@@ -43,6 +44,7 @@ export default function Step2GleasonScore({ onGleason6, onGleason7_3_4, onGleaso
         React.createElement('span', { className: 'font-semibold text-slate-800' }, 'Option C: Gleason 7 (4+3) or higher'),
         React.createElement(ChevronRight, { className: 'w-5 h-5 text-slate-400 group-hover:text-sinai-cerulean shrink-0' })
       )
-    )
+    ),
+    (onBack != null || onForward != null) && React.createElement(StepNav, { onBack: onBack || (() => {}), onForward: onForward || (() => {}), canGoBack: !!canGoBack, canGoForward: !!canGoForward })
   )
 }

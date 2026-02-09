@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
-import { Info, RotateCcw, Copy, Printer } from 'lucide-react'
+import { Info, RotateCcw, Copy, FileImage, FileText, ArrowLeft } from 'lucide-react'
 
-export default function EndStateRefuseDefer({ onReset, pathSummary }) {
+export default function EndStateRefuseDefer({ onReset, pathSummary, onBack, canGoBack, onPrintChart }) {
   const [copied, setCopied] = useState(false)
   const [showResetConfirm, setShowResetConfirm] = useState(false)
   const handleCopy = () => {
@@ -27,18 +27,32 @@ export default function EndStateRefuseDefer({ onReset, pathSummary }) {
       )
     ),
     React.createElement('div', { className: 'flex flex-wrap justify-center gap-3' },
+      canGoBack && onBack && React.createElement('button', {
+        onClick: onBack,
+        className: 'flex items-center gap-2 px-4 py-2.5 border-2 border-slate-200 rounded-xl text-slate-700 font-medium hover:border-sinai-cerulean hover:bg-sinai-cerulean/5 transition-colors'
+      },
+        React.createElement(ArrowLeft, { className: 'w-4 h-4' }),
+        'Back'
+      ),
       pathSummary && React.createElement('button', {
         onClick: handleCopy,
         className: 'flex items-center gap-2 px-4 py-2.5 border-2 border-slate-200 rounded-xl text-slate-700 font-medium hover:border-sinai-cerulean hover:bg-sinai-cerulean/5 transition-colors'
       },
         copied ? 'Copied!' : [React.createElement(Copy, { key: 'icon', className: 'w-4 h-4' }), 'Copy summary']
       ),
+      onPrintChart && React.createElement('button', {
+        onClick: onPrintChart,
+        className: 'flex items-center gap-2 px-4 py-2.5 border-2 border-slate-200 rounded-xl text-slate-700 font-medium hover:border-sinai-cerulean hover:bg-sinai-cerulean/5 transition-colors'
+      },
+        React.createElement(FileImage, { className: 'w-4 h-4' }),
+        'Export chart as PDF'
+      ),
       React.createElement('button', {
         onClick: () => window.print(),
         className: 'flex items-center gap-2 px-4 py-2.5 border-2 border-slate-200 rounded-xl text-slate-700 font-medium hover:border-sinai-cerulean hover:bg-sinai-cerulean/5 transition-colors'
       },
-        React.createElement(Printer, { className: 'w-4 h-4' }),
-        'Print'
+        React.createElement(FileText, { className: 'w-4 h-4' }),
+        'Export result as PDF'
       ),
       React.createElement('button', {
         onClick: () => setShowResetConfirm(true),

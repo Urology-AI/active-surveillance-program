@@ -81,4 +81,19 @@ input::placeholder {
 
 @media print {
   body { background: #fff; }
+  .no-print { display: none !important; }
+  /* When printing the chart only */
+  body.chart-print-mode * { visibility: hidden; }
+  body.chart-print-mode #chart-print-view,
+  body.chart-print-mode #chart-print-view * { visibility: visible; }
+  body.chart-print-mode #chart-print-view {
+    position: fixed;
+    left: 0;
+    top: 0;
+    width: 100%;
+    min-height: 100%;
+    background: #fff;
+    margin: 0;
+    padding: 1rem;
+  }
 }

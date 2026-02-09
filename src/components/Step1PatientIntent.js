@@ -1,7 +1,8 @@
 import React from 'react'
 import { FileQuestion, ChevronRight } from 'lucide-react'
+import StepNav from './StepNav.js'
 
-export default function Step1PatientIntent({ onRefuseDefer, onProceed }) {
+export default function Step1PatientIntent({ onRefuseDefer, onProceed, onBack, onForward, canGoBack, canGoForward }) {
   return React.createElement('div', { className: 'bg-white rounded-xl shadow-sinai border border-slate-100 p-6 md:p-8' },
     React.createElement('div', { className: 'flex items-center gap-3 mb-6' },
       React.createElement('div', { className: 'bg-sinai-cerulean/10 p-2 rounded-lg' },
@@ -29,6 +30,7 @@ export default function Step1PatientIntent({ onRefuseDefer, onProceed }) {
         React.createElement('span', { className: 'font-semibold text-slate-800' }, 'Option B: Proceed with Shared Decision Making'),
         React.createElement(ChevronRight, { className: 'w-5 h-5 text-sinai-cerulean shrink-0' })
       )
-    )
+    ),
+    (onBack != null || onForward != null) && React.createElement(StepNav, { onBack: onBack || (() => {}), onForward: onForward || (() => {}), canGoBack: !!canGoBack, canGoForward: !!canGoForward })
   )
 }
