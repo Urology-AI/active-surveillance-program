@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import StartScreen from './components/StartScreen.js'
 import Step1PatientIntent from './components/Step1PatientIntent.js'
 import Step2GleasonScore from './components/Step2GleasonScore.js'
@@ -9,6 +9,7 @@ import EndStateDefinitiveTreatment from './components/EndStateDefinitiveTreatmen
 import EndStateRefuseDefer from './components/EndStateRefuseDefer.js'
 import ProgressBar from './components/ProgressBar.js'
 import FlowChartDebug from './components/FlowChartDebug.js'
+import PasswordProtection from './components/PasswordProtection.js'
 
 const STEPS = {
   START: 'start',
@@ -22,8 +23,17 @@ const STEPS = {
 }
 
 function App() {
+  const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [currentStep, setCurrentStep] = useState(STEPS.START)
   const [stepHistory, setStepHistory] = useState([])
+
+  useEffect(() => {
+    // Check if user is already authenticated
+    const authStatus = sessionStorage.getItem('authenticated')
+    if (authStatus === 'true') {
+      setIsAuthenticated(true)
+    }
+  }, [])
 
   const goToStep = (step) => {
     setStepHistory([...stepHistory, currentStep])
@@ -58,6 +68,13 @@ function App() {
 
   const showProgressBar = currentStep !== STEPS.START && 
     !currentStep.startsWith('end_')
+
+  // Show password protection if not authenticated
+  if (!isAuthenticated) {
+    return React.createElement(PasswordProtection, {
+      onAuthenticated: () => setIsAuthenticated(true)
+    })
+  }
 
   return React.createElement('div', { className: 'min-h-screen bg-gray-50 py-8 px-4' },
     React.createElement('div', { className: 'max-w-4xl mx-auto' },
