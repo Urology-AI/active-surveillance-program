@@ -152,8 +152,10 @@ function App() {
     return ((currentIndex + 1) / allSteps.length) * 100
   }
 
-  const showProgressBar = currentStep !== STEPS.START && 
-    !currentStep.startsWith('end_') && currentStep !== STEPS.PEV_ENROLL_AS_PROTOCOL && currentStep !== STEPS.PEV_END_WATCHFUL_WAITING
+  const showProgressBar = currentStep !== STEPS.START &&
+    !currentStep.startsWith('end_') &&
+    currentStep !== STEPS.PEV_ENROLL_AS_PROTOCOL &&
+    currentStep !== STEPS.PEV_END_WATCHFUL_WAITING
 
   const STEP_LABELS = {
     [STEPS.START]: 'Start',
