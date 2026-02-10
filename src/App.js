@@ -14,6 +14,7 @@ import StepPEVConcerningFeatures from './components/StepPEVConcerningFeatures.js
 import StepPEVIntensifiedAS from './components/StepPEVIntensifiedAS.js'
 import EndStateWatchfulWaiting from './components/EndStateWatchfulWaiting.js'
 import EndStateEnrollAS from './components/EndStateEnrollAS.js'
+import EndStateHighIntensityAS from './components/EndStateHighIntensityAS.js'
 import ProgressBar from './components/ProgressBar.js'
 import FlowChartDebug from './components/FlowChartDebug.js'
 import PasswordProtection from './components/PasswordProtection.js'
@@ -36,7 +37,9 @@ const STEPS = {
   PEV_CONFIRMATORY_BX_RESULT: 'pev_confirmatory_bx_result',
   PEV_CONCERNING_FEATURES_CHECK: 'pev_concerning_features_check',
   PEV_INTENSIFIED_AS_DISCUSSION: 'pev_intensified_as_discussion',
+  PEV_POLY_ICLC_ENROLLMENT_DECISION: 'pev_polyiclc_enrollment_decision',
   PEV_ENROLL_AS_PROTOCOL: 'pev_enroll_as_protocol',
+  PEV_END_HIGH_INTENSITY_AS: 'pev_end_high_intensity_as',
   PEV_END_WATCHFUL_WAITING: 'pev_end_watchful_waiting',
 }
 
@@ -85,7 +88,9 @@ function App() {
       [STEPS.PEV_CONFIRMATORY_BX_RESULT]: 'Phase 2: Biopsy Result',
       [STEPS.PEV_CONCERNING_FEATURES_CHECK]: 'Phase 2: Concerning Features',
       [STEPS.PEV_INTENSIFIED_AS_DISCUSSION]: 'Phase 2: High-Intensity AS',
+      [STEPS.PEV_POLY_ICLC_ENROLLMENT_DECISION]: 'Phase 2: Enroll in Poly-ICLC?',
       [STEPS.PEV_ENROLL_AS_PROTOCOL]: 'Result: Enroll AS',
+      [STEPS.PEV_END_HIGH_INTENSITY_AS]: 'Result: High-Intensity AS',
       [STEPS.PEV_END_WATCHFUL_WAITING]: 'Result: Watchful Waiting'
     }
     const t = titles[currentStep]
@@ -142,7 +147,14 @@ function App() {
 
   const getProgress = () => {
     const phase1Steps = [STEPS.START, STEPS.STEP1, STEPS.STEP2, STEPS.STEP3, STEPS.STEP4]
-    const phase2Steps = [STEPS.PEV_LIFE_EXPECTANCY, STEPS.PEV_GENOMIC_AND_CONFIRMATORY_PLAN, STEPS.PEV_CONFIRMATORY_BX_RESULT, STEPS.PEV_CONCERNING_FEATURES_CHECK, STEPS.PEV_INTENSIFIED_AS_DISCUSSION]
+    const phase2Steps = [
+      STEPS.PEV_LIFE_EXPECTANCY,
+      STEPS.PEV_GENOMIC_AND_CONFIRMATORY_PLAN,
+      STEPS.PEV_CONFIRMATORY_BX_RESULT,
+      STEPS.PEV_CONCERNING_FEATURES_CHECK,
+      STEPS.PEV_INTENSIFIED_AS_DISCUSSION,
+      STEPS.PEV_POLY_ICLC_ENROLLMENT_DECISION
+    ]
     const allSteps = [...phase1Steps, ...phase2Steps]
     const currentIndex = allSteps.indexOf(currentStep)
     if (currentIndex === -1) {
@@ -171,7 +183,9 @@ function App() {
     [STEPS.PEV_CONFIRMATORY_BX_RESULT]: 'Phase 2: Biopsy Result',
     [STEPS.PEV_CONCERNING_FEATURES_CHECK]: 'Phase 2: Concerning Features',
     [STEPS.PEV_INTENSIFIED_AS_DISCUSSION]: 'Phase 2: High-Intensity AS',
+    [STEPS.PEV_POLY_ICLC_ENROLLMENT_DECISION]: 'Phase 2: Enroll in Poly-ICLC?',
     [STEPS.PEV_ENROLL_AS_PROTOCOL]: 'Enroll AS Protocol',
+    [STEPS.PEV_END_HIGH_INTENSITY_AS]: 'High-Intensity AS Protocol',
     [STEPS.PEV_END_WATCHFUL_WAITING]: 'Watchful Waiting'
   }
   const pathTaken = [...stepHistory, currentStep]
@@ -290,13 +304,29 @@ function App() {
           canGoForward: forwardStack.length > 0
         }),
         currentStep === STEPS.PEV_INTENSIFIED_AS_DISCUSSION && React.createElement(StepPEVIntensifiedAS, {
-          onProceed: () => goToStep(STEPS.PEV_ENROLL_AS_PROTOCOL),
+          onProceed: () => goToStep(STEPS.PEV_POLY_ICLC_ENROLLMENT_DECISION),
+          onBack: goBack,
+          onForward: goForward,
+          canGoBack: stepHistory.length > 0,
+          canGoForward: forwardStack.length > 0
+        }),
+        currentStep === STEPS.PEV_POLY_ICLC_ENROLLMENT_DECISION && React.createElement(StepPEVIntensifiedAS, {
+          isPolyICLCDecision: true,
+          onPolyICLCYes: () => goToStep(STEPS.PEV_END_HIGH_INTENSITY_AS),
+          onPolyICLCNo: () => goToStep(STEPS.PEV_END_HIGH_INTENSITY_AS),
           onBack: goBack,
           onForward: goForward,
           canGoBack: stepHistory.length > 0,
           canGoForward: forwardStack.length > 0
         }),
         currentStep === STEPS.PEV_ENROLL_AS_PROTOCOL && React.createElement(EndStateEnrollAS, {
+          onReset: reset,
+          pathSummary: pathSummaryFull,
+          onBack: goBack,
+          canGoBack: stepHistory.length > 0,
+          onPrintChart: () => setShowChartForPrint(true)
+        }),
+        currentStep === STEPS.PEV_END_HIGH_INTENSITY_AS && React.createElement(EndStateHighIntensityAS, {
           onReset: reset,
           pathSummary: pathSummaryFull,
           onBack: goBack,
