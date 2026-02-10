@@ -16,7 +16,9 @@ export default function InteractiveFlowChart({ currentStep, stepHistory, onStepC
     'pev_confirmatory_bx_result': { x: 500, y: 230, label: 'P2: Bx\nResult', width: 140, height: 60 },
     'pev_concerning_features_check': { x: 680, y: 230, label: 'P2: Concerning\nFeatures', width: 140, height: 60 },
     'pev_intensified_as_discussion': { x: 680, y: 120, label: 'P2: High-\nIntensity AS', width: 140, height: 60 },
-    'pev_enroll_as_protocol': { x: 680, y: 30, label: 'Enroll\nAS', width: 120, height: 50 },
+    'pev_polyiclc_enrollment_decision': { x: 680, y: 30, label: 'P2: Enroll\nPoly-ICLC?', width: 140, height: 60 },
+    'pev_enroll_as_protocol': { x: 840, y: 230, label: 'Enroll\nAS', width: 120, height: 50 },
+    'pev_end_high_intensity_as': { x: 840, y: 70, label: 'High-\nIntensity AS\nDocumented', width: 120, height: 70 },
     'pev_end_watchful_waiting': { x: 500, y: 580, label: 'Watchful\nWaiting', width: 120, height: 50 }
   }
 
@@ -42,7 +44,8 @@ export default function InteractiveFlowChart({ currentStep, stepHistory, onStepC
     { from: 'pev_confirmatory_bx_result', to: 'end_definitive_treatment', label: 'G7(3+4)', offset: -60 },
     { from: 'pev_concerning_features_check', to: 'pev_intensified_as_discussion', label: 'Yes', offset: 0 },
     { from: 'pev_concerning_features_check', to: 'pev_enroll_as_protocol', label: 'No', offset: 40 },
-    { from: 'pev_intensified_as_discussion', to: 'pev_enroll_as_protocol', label: '', offset: 0 }
+    { from: 'pev_intensified_as_discussion', to: 'pev_polyiclc_enrollment_decision', label: '', offset: 0 },
+    { from: 'pev_polyiclc_enrollment_decision', to: 'pev_end_high_intensity_as', label: 'Yes/No', offset: 20 }
   ]
 
   const getStepColor = (step) => {
@@ -121,9 +124,9 @@ export default function InteractiveFlowChart({ currentStep, stepHistory, onStepC
 
   return React.createElement('div', { className: 'w-full overflow-auto bg-slate-100 p-4 rounded-lg' },
     React.createElement('svg', {
-      width: '850',
+      width: '980',
       height: '680',
-      viewBox: '0 0 850 680',
+      viewBox: '0 0 980 680',
       className: 'bg-white border border-slate-200 rounded-lg shadow-sm'
     },
       React.createElement('defs', null,

@@ -26,7 +26,9 @@ export default function FlowChartDebug({ currentStep, stepHistory, onStepClick }
       'pev_confirmatory_bx_result': 'Phase 2: Biopsy Result',
       'pev_concerning_features_check': 'Phase 2: Concerning Features',
       'pev_intensified_as_discussion': 'Phase 2: High-Intensity AS',
+      'pev_polyiclc_enrollment_decision': 'Phase 2: Enroll in Poly-ICLC?',
       'pev_enroll_as_protocol': 'End: Enroll AS Protocol',
+      'pev_end_high_intensity_as': 'End: High-Intensity AS + Document',
       'pev_end_watchful_waiting': 'End: Watchful Waiting'
     }
     return labels[step] || step
