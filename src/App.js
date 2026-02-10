@@ -32,7 +32,6 @@ const STEPS = {
   END_DEFINITIVE_TREATMENT: 'end_definitive_treatment',
   END_REFUSE_DEFER: 'end_refuse_defer',
   // Phase 2: Pre-Enrollment Verification
-  PEV_START: 'pev_start',
   PEV_LIFE_EXPECTANCY: 'pev_life_expectancy',
   PEV_GENOMIC_AND_CONFIRMATORY_PLAN: 'pev_genomic_and_confirmatory_plan',
   PEV_CONFIRMATORY_BX_RESULT: 'pev_confirmatory_bx_result',
@@ -84,7 +83,6 @@ function App() {
       [STEPS.END_ACTIVE_SURVEILLANCE]: 'Result: Active Surveillance',
       [STEPS.END_DEFINITIVE_TREATMENT]: 'Result: Definitive Treatment',
       [STEPS.END_REFUSE_DEFER]: 'Result: Refuse/Defer',
-      [STEPS.PEV_START]: 'Phase 2: Pre-Enrollment Verification',
       [STEPS.PEV_LIFE_EXPECTANCY]: 'Phase 2: Life Expectancy',
       [STEPS.PEV_GENOMIC_AND_CONFIRMATORY_PLAN]: 'Phase 2: Genomic & Biopsy Plan',
       [STEPS.PEV_CONFIRMATORY_BX_RESULT]: 'Phase 2: Biopsy Result',
@@ -166,11 +164,9 @@ function App() {
     return ((currentIndex + 1) / allSteps.length) * 100
   }
 
-  const showProgressBar = currentStep !== STEPS.START && 
+  const showProgressBar = currentStep !== STEPS.START &&
     !currentStep.startsWith('end_') &&
-    currentStep !== STEPS.PEV_START &&
     currentStep !== STEPS.PEV_ENROLL_AS_PROTOCOL &&
-    currentStep !== STEPS.PEV_END_HIGH_INTENSITY_AS &&
     currentStep !== STEPS.PEV_END_WATCHFUL_WAITING
 
   const STEP_LABELS = {
@@ -182,7 +178,6 @@ function App() {
     [STEPS.END_ACTIVE_SURVEILLANCE]: 'Active Surveillance Initiation',
     [STEPS.END_DEFINITIVE_TREATMENT]: 'Definitive Treatment',
     [STEPS.END_REFUSE_DEFER]: 'Refuse/Defer',
-    [STEPS.PEV_START]: 'Phase 2: Pre-Enrollment Verification',
     [STEPS.PEV_LIFE_EXPECTANCY]: 'Phase 2: Life Expectancy',
     [STEPS.PEV_GENOMIC_AND_CONFIRMATORY_PLAN]: 'Phase 2: Genomic & Biopsy Plan',
     [STEPS.PEV_CONFIRMATORY_BX_RESULT]: 'Phase 2: Biopsy Result',

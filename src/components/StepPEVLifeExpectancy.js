@@ -14,10 +14,18 @@ export default function StepPEVLifeExpectancy({ onNo, onYes, onBack, onForward, 
     ),
     React.createElement('div', { className: 'mb-6 p-4 bg-sinai-cerulean/5 border border-sinai-cerulean/20 rounded-xl' },
       React.createElement('p', { className: 'text-sm font-semibold text-sinai-navy mb-2' },
-        'Reference: Lee-Schonberg tool'
+        'Reference: Lee-Schonberg life expectancy calculator'
       ),
-      React.createElement('p', { className: 'text-sm text-slate-700' },
-        'Use validated life expectancy calculator to assess patient eligibility.'
+      React.createElement('p', { className: 'text-sm text-slate-700 mb-2' },
+        'For provider assessment, use this validated prognostic tool to estimate whether life expectancy exceeds 10 years for eligibility decisions.'
+      ),
+      React.createElement('a', {
+        href: 'https://eprognosis.ucsf.edu/leeschonberg.php',
+        target: '_blank',
+        rel: 'noreferrer',
+        className: 'text-sm font-medium text-sinai-cerulean underline break-all'
+      },
+        'https://eprognosis.ucsf.edu/leeschonberg.php'
       )
     ),
     React.createElement('div', { className: 'mb-6' },

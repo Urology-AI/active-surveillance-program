@@ -15,11 +15,28 @@ export default function StepPEVConcerningFeatures({ onYes, onNo, onBack, onForwa
     React.createElement('div', { className: 'mb-6 p-4 bg-amber-50 border border-amber-200 rounded-xl' },
       React.createElement('p', { className: 'text-sm font-semibold text-sinai-navy mb-2' }, 'Concerning Features Include:'),
       React.createElement('ul', { className: 'list-disc list-inside text-sm text-slate-700 space-y-1' },
-        React.createElement('li', null, 'PSA velocity >0.75 ng/mL/year'),
-        React.createElement('li', null, 'PSA density >0.15 ng/mL/cc'),
-        React.createElement('li', null, 'Multiple positive cores'),
-        React.createElement('li', null, 'High-grade PIN or ASAP'),
-        React.createElement('li', null, 'Family history of aggressive prostate cancer')
+        React.createElement('li', null, 'Elevated PSA >10 ng/dL on 2 separate readings'),
+        React.createElement('li', null, 'PSA density >0.15'),
+        React.createElement('li', null,
+          'High risk biopsy features:',
+          React.createElement('ul', { className: 'list-disc list-inside ml-4 mt-1 space-y-1' },
+            React.createElement('li', null, 'Positive cores ≥ 50%'),
+            React.createElement('li', null, 'PNI on bx'),
+            React.createElement('li', null, 'Presence of variant histology/intraductal carcinoma')
+          )
+        ),
+        React.createElement('li', null,
+          'High risk imaging features:',
+          React.createElement('ul', { className: 'list-disc list-inside ml-4 mt-1 space-y-1' },
+            React.createElement('li', null, 'LN enlargement')
+          )
+        ),
+        React.createElement('li', null,
+          'Positive ancillary biomarkers',
+          React.createElement('ul', { className: 'list-disc list-inside ml-4 mt-1 space-y-1' },
+            React.createElement('li', null, 'High-risk Decipher')
+          )
+        )
       ),
       React.createElement('p', { className: 'text-xs text-slate-600 mt-3 font-medium italic' },
         'Note: If patient not seen in ≥6 months, immediate RTO (Return to Office) required.'
