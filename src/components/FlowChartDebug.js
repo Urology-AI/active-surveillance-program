@@ -18,9 +18,16 @@ export default function FlowChartDebug({ currentStep, stepHistory, onStepClick }
       'step2': 'Step 2: Gleason Score',
       'step3': 'Step 3: Risk Stratification',
       'step4': 'Step 4: Medical History',
-      'end_active_surveillance': 'End: Active Surveillance',
+      'end_active_surveillance': 'End: Active Surveillance Initiation',
       'end_definitive_treatment': 'End: Definitive Treatment',
-      'end_refuse_defer': 'End: Refuse/Defer'
+      'end_refuse_defer': 'End: Refuse/Defer',
+      'pev_life_expectancy': 'Phase 2: Life Expectancy',
+      'pev_genomic_and_confirmatory_plan': 'Phase 2: Genomic & Biopsy Plan',
+      'pev_confirmatory_bx_result': 'Phase 2: Biopsy Result',
+      'pev_concerning_features_check': 'Phase 2: Concerning Features',
+      'pev_intensified_as_discussion': 'Phase 2: High-Intensity AS',
+      'pev_enroll_as_protocol': 'End: Enroll AS Protocol',
+      'pev_end_watchful_waiting': 'End: Watchful Waiting'
     }
     return labels[step] || step
   }

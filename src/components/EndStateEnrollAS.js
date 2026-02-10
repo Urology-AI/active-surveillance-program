@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import { CheckCircle2, RotateCcw, Copy, FileImage, FileText, ArrowLeft } from 'lucide-react'
 
-export default function EndStateActiveSurveillance({ onReset, pathSummary, onBack, canGoBack, onPrintChart, onContinueToPhase2 }) {
+export default function EndStateEnrollAS({ onReset, pathSummary, onBack, canGoBack, onPrintChart }) {
   const [copied, setCopied] = useState(false)
   const [showResetConfirm, setShowResetConfirm] = useState(false)
   const handleCopy = () => {
@@ -19,21 +19,27 @@ export default function EndStateActiveSurveillance({ onReset, pathSummary, onBac
       )
     ),
     React.createElement('h2', { className: 'text-2xl font-bold text-sinai-cetacean text-center mb-4' },
-      'Candidate for Active Surveillance Initiation'
+      'Enroll in Active Surveillance Protocol'
     ),
     React.createElement('div', { className: 'bg-emerald-50 border-2 border-emerald-200 rounded-lg p-6 mb-6' },
-      React.createElement('p', { className: 'text-base text-slate-800 text-center font-semibold mb-3' },
-        'Proceed to SDM on risks and benefits.'
+      React.createElement('p', { className: 'text-base text-slate-800 text-center font-semibold mb-2' },
+        'Patient enrolled in Active Surveillance.'
       ),
-      onContinueToPhase2 && React.createElement('div', { className: 'mt-4 pt-4 border-t border-emerald-300' },
-        React.createElement('p', { className: 'text-sm text-slate-700 text-center mb-3' },
-          'After SDM, proceed to Pre-Enrollment Verification:'
+      React.createElement('p', { className: 'text-sm text-slate-700 text-center mb-3' },
+        'Actions completed:'
+      ),
+      React.createElement('ul', { className: 'text-sm text-slate-700 space-y-1 text-left max-w-md mx-auto' },
+        React.createElement('li', { className: 'flex items-start gap-2' },
+          React.createElement('span', { className: 'text-emerald-600 font-bold' }, '•'),
+          React.createElement('span', null, 'Educate patient on AS protocol')
         ),
-        React.createElement('button', {
-          onClick: onContinueToPhase2,
-          className: 'w-full btn-primary px-6 py-3 bg-sinai-navy text-white font-semibold rounded-xl hover:bg-sinai-navy-dark shadow-sinai hover:shadow-sinai-lg'
-        },
-          'Continue to Phase 2: Pre-Enrollment Verification'
+        React.createElement('li', { className: 'flex items-start gap-2' },
+          React.createElement('span', { className: 'text-emerald-600 font-bold' }, '•'),
+          React.createElement('span', null, 'Send patient education materials')
+        ),
+        React.createElement('li', { className: 'flex items-start gap-2' },
+          React.createElement('span', { className: 'text-emerald-600 font-bold' }, '•'),
+          React.createElement('span', null, 'Document enrollment')
         )
       )
     ),
@@ -81,18 +87,10 @@ export default function EndStateActiveSurveillance({ onReset, pathSummary, onBac
         className: 'bg-white rounded-xl shadow-xl p-6 max-w-sm w-full border border-slate-200',
         onClick: (e) => e.stopPropagation()
       },
-        React.createElement('p', { className: 'text-sinai-cetacean font-semibold mb-4' },
-          'Clear pathway and start over?'
-        ),
+        React.createElement('p', { className: 'text-sinai-cetacean font-semibold mb-4' }, 'Clear pathway and start over?'),
         React.createElement('div', { className: 'flex gap-3 justify-end' },
-          React.createElement('button', {
-            onClick: () => setShowResetConfirm(false),
-            className: 'px-4 py-2.5 border-2 border-slate-200 rounded-xl font-medium text-slate-700 hover:bg-slate-50'
-          }, 'Cancel'),
-          React.createElement('button', {
-            onClick: () => { setShowResetConfirm(false); onReset() },
-            className: 'px-4 py-2.5 bg-sinai-cerulean text-white rounded-xl font-semibold hover:bg-sinai-cerulean-dark'
-          }, 'Reset')
+          React.createElement('button', { onClick: () => setShowResetConfirm(false), className: 'px-4 py-2.5 border-2 border-slate-200 rounded-xl font-medium text-slate-700 hover:bg-slate-50' }, 'Cancel'),
+          React.createElement('button', { onClick: () => { setShowResetConfirm(false); onReset() }, className: 'px-4 py-2.5 bg-sinai-cerulean text-white rounded-xl font-semibold hover:bg-sinai-cerulean-dark' }, 'Reset')
         )
       )
     )

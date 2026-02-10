@@ -8,12 +8,21 @@ export default function InteractiveFlowChart({ currentStep, stepHistory, onStepC
     'step3': { x: 80, y: 350, label: 'Step 3:\nRisk Stratification', width: 140, height: 60 },
     'step4': { x: 320, y: 350, label: 'Step 4:\nMedical History', width: 140, height: 60 },
     'end_refuse_defer': { x: 50, y: 200, label: 'Refuse/Defer', width: 100, height: 50 },
-    'end_active_surveillance': { x: 320, y: 460, label: 'Active\nSurveillance', width: 140, height: 60 },
-    'end_definitive_treatment': { x: 80, y: 460, label: 'Definitive\nTreatment', width: 140, height: 60 }
+    'end_active_surveillance': { x: 320, y: 460, label: 'AS\nInitiation', width: 140, height: 60 },
+    'end_definitive_treatment': { x: 80, y: 460, label: 'Definitive\nTreatment', width: 140, height: 60 },
+    // Phase 2: Pre-Enrollment Verification
+    'pev_life_expectancy': { x: 500, y: 460, label: 'P2: Life\nExpectancy', width: 140, height: 60 },
+    'pev_genomic_and_confirmatory_plan': { x: 500, y: 350, label: 'P2: Genomic\n& Biopsy Plan', width: 140, height: 60 },
+    'pev_confirmatory_bx_result': { x: 500, y: 230, label: 'P2: Bx\nResult', width: 140, height: 60 },
+    'pev_concerning_features_check': { x: 680, y: 230, label: 'P2: Concerning\nFeatures', width: 140, height: 60 },
+    'pev_intensified_as_discussion': { x: 680, y: 120, label: 'P2: High-\nIntensity AS', width: 140, height: 60 },
+    'pev_enroll_as_protocol': { x: 680, y: 30, label: 'Enroll\nAS', width: 120, height: 50 },
+    'pev_end_watchful_waiting': { x: 500, y: 580, label: 'Watchful\nWaiting', width: 120, height: 50 }
   }
 
   // Define connections with labels for decision paths
   const connections = [
+    // Phase 1
     { from: 'start', to: 'step1', label: '' },
     { from: 'step1', to: 'end_refuse_defer', label: 'Refuse', offset: -30 },
     { from: 'step1', to: 'step2', label: 'Proceed', offset: 30 },
@@ -23,7 +32,17 @@ export default function InteractiveFlowChart({ currentStep, stepHistory, onStepC
     { from: 'step3', to: 'step4', label: 'Favorable', offset: 40 },
     { from: 'step3', to: 'end_definitive_treatment', label: 'Unfavorable', offset: -30 },
     { from: 'step4', to: 'end_active_surveillance', label: 'No High Risk', offset: 40 },
-    { from: 'step4', to: 'end_definitive_treatment', label: 'High Risk', offset: -40 }
+    { from: 'step4', to: 'end_definitive_treatment', label: 'High Risk', offset: -40 },
+    // Phase 2: Pre-Enrollment Verification
+    { from: 'end_active_surveillance', to: 'pev_life_expectancy', label: 'Continue', offset: 0 },
+    { from: 'pev_life_expectancy', to: 'pev_end_watchful_waiting', label: '≤10y', offset: -30 },
+    { from: 'pev_life_expectancy', to: 'pev_genomic_and_confirmatory_plan', label: '>10y', offset: 0 },
+    { from: 'pev_genomic_and_confirmatory_plan', to: 'pev_confirmatory_bx_result', label: '', offset: 0 },
+    { from: 'pev_confirmatory_bx_result', to: 'pev_concerning_features_check', label: 'Neg/G6', offset: 40 },
+    { from: 'pev_confirmatory_bx_result', to: 'end_definitive_treatment', label: 'G7(3+4)', offset: -60 },
+    { from: 'pev_concerning_features_check', to: 'pev_intensified_as_discussion', label: 'Yes', offset: 0 },
+    { from: 'pev_concerning_features_check', to: 'pev_enroll_as_protocol', label: 'No', offset: 40 },
+    { from: 'pev_intensified_as_discussion', to: 'pev_enroll_as_protocol', label: '', offset: 0 }
   ]
 
   const getStepColor = (step) => {
@@ -102,9 +121,9 @@ export default function InteractiveFlowChart({ currentStep, stepHistory, onStepC
 
   return React.createElement('div', { className: 'w-full overflow-auto bg-slate-100 p-4 rounded-lg' },
     React.createElement('svg', {
-      width: '500',
-      height: '580',
-      viewBox: '0 0 500 580',
+      width: '850',
+      height: '680',
+      viewBox: '0 0 850 680',
       className: 'bg-white border border-slate-200 rounded-lg shadow-sm'
     },
       React.createElement('defs', null,

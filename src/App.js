@@ -7,6 +7,13 @@ import Step4MedicalHistory from './components/Step4MedicalHistory.js'
 import EndStateActiveSurveillance from './components/EndStateActiveSurveillance.js'
 import EndStateDefinitiveTreatment from './components/EndStateDefinitiveTreatment.js'
 import EndStateRefuseDefer from './components/EndStateRefuseDefer.js'
+import StepPEVLifeExpectancy from './components/StepPEVLifeExpectancy.js'
+import StepPEVConfirmatoryPlan from './components/StepPEVConfirmatoryPlan.js'
+import StepPEVBxResult from './components/StepPEVBxResult.js'
+import StepPEVConcerningFeatures from './components/StepPEVConcerningFeatures.js'
+import StepPEVIntensifiedAS from './components/StepPEVIntensifiedAS.js'
+import EndStateWatchfulWaiting from './components/EndStateWatchfulWaiting.js'
+import EndStateEnrollAS from './components/EndStateEnrollAS.js'
 import ProgressBar from './components/ProgressBar.js'
 import FlowChartDebug from './components/FlowChartDebug.js'
 import PasswordProtection from './components/PasswordProtection.js'
@@ -23,6 +30,15 @@ const STEPS = {
   END_ACTIVE_SURVEILLANCE: 'end_active_surveillance',
   END_DEFINITIVE_TREATMENT: 'end_definitive_treatment',
   END_REFUSE_DEFER: 'end_refuse_defer',
+  // Phase 2: Pre-Enrollment Verification
+  PEV_START: 'pev_start',
+  PEV_LIFE_EXPECTANCY: 'pev_life_expectancy',
+  PEV_GENOMIC_AND_CONFIRMATORY_PLAN: 'pev_genomic_and_confirmatory_plan',
+  PEV_CONFIRMATORY_BX_RESULT: 'pev_confirmatory_bx_result',
+  PEV_CONCERNING_FEATURES_CHECK: 'pev_concerning_features_check',
+  PEV_INTENSIFIED_AS_DISCUSSION: 'pev_intensified_as_discussion',
+  PEV_ENROLL_AS_PROTOCOL: 'pev_enroll_as_protocol',
+  PEV_END_WATCHFUL_WAITING: 'pev_end_watchful_waiting',
 }
 
 function App() {
@@ -64,7 +80,15 @@ function App() {
       [STEPS.STEP4]: 'Step 4: Medical History',
       [STEPS.END_ACTIVE_SURVEILLANCE]: 'Result: Active Surveillance',
       [STEPS.END_DEFINITIVE_TREATMENT]: 'Result: Definitive Treatment',
-      [STEPS.END_REFUSE_DEFER]: 'Result: Refuse/Defer'
+      [STEPS.END_REFUSE_DEFER]: 'Result: Refuse/Defer',
+      [STEPS.PEV_START]: 'Phase 2: Pre-Enrollment Verification',
+      [STEPS.PEV_LIFE_EXPECTANCY]: 'Phase 2: Life Expectancy',
+      [STEPS.PEV_GENOMIC_AND_CONFIRMATORY_PLAN]: 'Phase 2: Genomic & Biopsy Plan',
+      [STEPS.PEV_CONFIRMATORY_BX_RESULT]: 'Phase 2: Biopsy Result',
+      [STEPS.PEV_CONCERNING_FEATURES_CHECK]: 'Phase 2: Concerning Features',
+      [STEPS.PEV_INTENSIFIED_AS_DISCUSSION]: 'Phase 2: High-Intensity AS',
+      [STEPS.PEV_ENROLL_AS_PROTOCOL]: 'Result: Enroll AS',
+      [STEPS.PEV_END_WATCHFUL_WAITING]: 'Result: Watchful Waiting'
     }
     const t = titles[currentStep]
     document.title = t ? `${t} · Mount Sinai` : 'Mount Sinai · Prostate Cancer Clinical Pathway'
@@ -119,20 +143,19 @@ function App() {
   }
 
   const getProgress = () => {
-    const stepOrder = [
-      STEPS.START,
-      STEPS.STEP1,
-      STEPS.STEP2,
-      STEPS.STEP3,
-      STEPS.STEP4,
-    ]
-    const currentIndex = stepOrder.indexOf(currentStep)
-    if (currentIndex === -1) return 100 // End states
-    return ((currentIndex + 1) / stepOrder.length) * 100
+    const phase1Steps = [STEPS.START, STEPS.STEP1, STEPS.STEP2, STEPS.STEP3, STEPS.STEP4]
+    const phase2Steps = [STEPS.PEV_LIFE_EXPECTANCY, STEPS.PEV_GENOMIC_AND_CONFIRMATORY_PLAN, STEPS.PEV_CONFIRMATORY_BX_RESULT, STEPS.PEV_CONCERNING_FEATURES_CHECK, STEPS.PEV_INTENSIFIED_AS_DISCUSSION]
+    const allSteps = [...phase1Steps, ...phase2Steps]
+    const currentIndex = allSteps.indexOf(currentStep)
+    if (currentIndex === -1) {
+      if (currentStep.startsWith('pev_') || currentStep.startsWith('end_')) return 100
+      return 0
+    }
+    return ((currentIndex + 1) / allSteps.length) * 100
   }
 
   const showProgressBar = currentStep !== STEPS.START && 
-    !currentStep.startsWith('end_')
+    !currentStep.startsWith('end_') && currentStep !== STEPS.PEV_START && currentStep !== STEPS.PEV_ENROLL_AS_PROTOCOL && currentStep !== STEPS.PEV_END_WATCHFUL_WAITING
 
   const STEP_LABELS = {
     [STEPS.START]: 'Start',
@@ -140,9 +163,17 @@ function App() {
     [STEPS.STEP2]: 'Step 2: Gleason Score',
     [STEPS.STEP3]: 'Step 3: Risk Stratification',
     [STEPS.STEP4]: 'Step 4: Medical History',
-    [STEPS.END_ACTIVE_SURVEILLANCE]: 'Active Surveillance',
+    [STEPS.END_ACTIVE_SURVEILLANCE]: 'Active Surveillance Initiation',
     [STEPS.END_DEFINITIVE_TREATMENT]: 'Definitive Treatment',
-    [STEPS.END_REFUSE_DEFER]: 'Refuse/Defer'
+    [STEPS.END_REFUSE_DEFER]: 'Refuse/Defer',
+    [STEPS.PEV_START]: 'Phase 2: Pre-Enrollment Verification',
+    [STEPS.PEV_LIFE_EXPECTANCY]: 'Phase 2: Life Expectancy',
+    [STEPS.PEV_GENOMIC_AND_CONFIRMATORY_PLAN]: 'Phase 2: Genomic & Biopsy Plan',
+    [STEPS.PEV_CONFIRMATORY_BX_RESULT]: 'Phase 2: Biopsy Result',
+    [STEPS.PEV_CONCERNING_FEATURES_CHECK]: 'Phase 2: Concerning Features',
+    [STEPS.PEV_INTENSIFIED_AS_DISCUSSION]: 'Phase 2: High-Intensity AS',
+    [STEPS.PEV_ENROLL_AS_PROTOCOL]: 'Enroll AS Protocol',
+    [STEPS.PEV_END_WATCHFUL_WAITING]: 'Watchful Waiting'
   }
   const pathTaken = [...stepHistory, currentStep]
   const pathSummary = pathTaken.map(s => STEP_LABELS[s] || s).join(' → ')
@@ -225,6 +256,59 @@ function App() {
           pathSummary: pathSummaryFull,
           onBack: goBack,
           canGoBack: stepHistory.length > 0,
+          onPrintChart: () => setShowChartForPrint(true),
+          onContinueToPhase2: () => goToStep(STEPS.PEV_LIFE_EXPECTANCY)
+        }),
+        currentStep === STEPS.PEV_LIFE_EXPECTANCY && React.createElement(StepPEVLifeExpectancy, {
+          onNo: () => goToStep(STEPS.PEV_END_WATCHFUL_WAITING),
+          onYes: () => goToStep(STEPS.PEV_GENOMIC_AND_CONFIRMATORY_PLAN),
+          onBack: goBack,
+          onForward: goForward,
+          canGoBack: stepHistory.length > 0,
+          canGoForward: forwardStack.length > 0
+        }),
+        currentStep === STEPS.PEV_GENOMIC_AND_CONFIRMATORY_PLAN && React.createElement(StepPEVConfirmatoryPlan, {
+          onProceed: () => goToStep(STEPS.PEV_CONFIRMATORY_BX_RESULT),
+          onBack: goBack,
+          onForward: goForward,
+          canGoBack: stepHistory.length > 0,
+          canGoForward: forwardStack.length > 0
+        }),
+        currentStep === STEPS.PEV_CONFIRMATORY_BX_RESULT && React.createElement(StepPEVBxResult, {
+          onNegativeOrGleason6: () => goToStep(STEPS.PEV_CONCERNING_FEATURES_CHECK),
+          onGleason7_3_4: () => goToStep(STEPS.END_DEFINITIVE_TREATMENT),
+          onBack: goBack,
+          onForward: goForward,
+          canGoBack: stepHistory.length > 0,
+          canGoForward: forwardStack.length > 0
+        }),
+        currentStep === STEPS.PEV_CONCERNING_FEATURES_CHECK && React.createElement(StepPEVConcerningFeatures, {
+          onYes: () => goToStep(STEPS.PEV_INTENSIFIED_AS_DISCUSSION),
+          onNo: () => goToStep(STEPS.PEV_ENROLL_AS_PROTOCOL),
+          onBack: goBack,
+          onForward: goForward,
+          canGoBack: stepHistory.length > 0,
+          canGoForward: forwardStack.length > 0
+        }),
+        currentStep === STEPS.PEV_INTENSIFIED_AS_DISCUSSION && React.createElement(StepPEVIntensifiedAS, {
+          onProceed: () => goToStep(STEPS.PEV_ENROLL_AS_PROTOCOL),
+          onBack: goBack,
+          onForward: goForward,
+          canGoBack: stepHistory.length > 0,
+          canGoForward: forwardStack.length > 0
+        }),
+        currentStep === STEPS.PEV_ENROLL_AS_PROTOCOL && React.createElement(EndStateEnrollAS, {
+          onReset: reset,
+          pathSummary: pathSummaryFull,
+          onBack: goBack,
+          canGoBack: stepHistory.length > 0,
+          onPrintChart: () => setShowChartForPrint(true)
+        }),
+        currentStep === STEPS.PEV_END_WATCHFUL_WAITING && React.createElement(EndStateWatchfulWaiting, {
+          onReset: reset,
+          pathSummary: pathSummaryFull,
+          onBack: goBack,
+          canGoBack: stepHistory.length > 0,
           onPrintChart: () => setShowChartForPrint(true)
         }),
         currentStep === STEPS.END_DEFINITIVE_TREATMENT && React.createElement(EndStateDefinitiveTreatment, {
@@ -257,7 +341,7 @@ function App() {
       currentStep: currentStep,
       stepHistory: stepHistory,
       onStepClick: (step) => {
-        if (step === STEPS.START || step.startsWith('end_')) {
+        if (step === STEPS.START || step.startsWith('end_') || step.startsWith('pev_')) {
           goToStep(step)
         }
       }
