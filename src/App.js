@@ -155,19 +155,27 @@ function App() {
       STEPS.PEV_INTENSIFIED_AS_DISCUSSION,
       STEPS.PEV_POLY_ICLC_ENROLLMENT_DECISION
     ]
-    const allSteps = [...phase1Steps, ...phase2Steps]
-    const currentIndex = allSteps.indexOf(currentStep)
-    if (currentIndex === -1) {
-      if (currentStep.startsWith('pev_') || currentStep.startsWith('end_')) return 100
+    // Check if we're in Phase 2
+    const isPhase2 = currentStep.startsWith('pev_') && !currentStep.startsWith('pev_end_')
+    if (isPhase2) {
+      const phase2Index = phase2Steps.indexOf(currentStep)
+      if (phase2Index === -1) return 100
+      return ((phase2Index + 1) / phase2Steps.length) * 100
+    }
+    // Phase 1 progress
+    const phase1Index = phase1Steps.indexOf(currentStep)
+    if (phase1Index === -1) {
+      if (currentStep.startsWith('end_') || currentStep.startsWith('pev_end_')) return 100
       return 0
     }
-    return ((currentIndex + 1) / allSteps.length) * 100
+    return ((phase1Index + 1) / phase1Steps.length) * 100
   }
 
   const showProgressBar = currentStep !== STEPS.START &&
     !currentStep.startsWith('end_') &&
     currentStep !== STEPS.PEV_ENROLL_AS_PROTOCOL &&
-    currentStep !== STEPS.PEV_END_WATCHFUL_WAITING
+    currentStep !== STEPS.PEV_END_WATCHFUL_WAITING &&
+    currentStep !== STEPS.PEV_END_HIGH_INTENSITY_AS
 
   const STEP_LABELS = {
     [STEPS.START]: 'Start',
