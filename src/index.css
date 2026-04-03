@@ -69,14 +69,55 @@ input::placeholder {
   animation: formCardIn 0.4s ease-out;
 }
 @keyframes formCardIn {
-  from {
-    opacity: 0;
-    transform: translateY(8px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0);   }
+}
+
+/* Step card entrance — fires whenever key changes in React */
+.step-card {
+  animation: stepCardEnter 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+}
+@keyframes stepCardEnter {
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: translateY(0);    }
+}
+
+/* Option card color-accent variants */
+/* Proceed / continue AS path */
+.option-card-proceed {
+  border-left: 4px solid #10b981 !important;
+  border-left-color: #10b981 !important;
+}
+.option-card-proceed:hover {
+  background-color: #f0fdf4 !important;
+  border-color: #10b981 !important;
+}
+/* Caution / alternative path */
+.option-card-caution {
+  border-left: 4px solid #f59e0b !important;
+}
+.option-card-caution:hover {
+  background-color: #fffbeb !important;
+  border-color: #f59e0b !important;
+}
+/* Stop / definitive treatment */
+.option-card-stop {
+  border-left: 4px solid #f43f5e !important;
+}
+.option-card-stop:hover {
+  background-color: #fff1f2 !important;
+  border-color: #f43f5e !important;
+}
+
+/* Smooth page background */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Focus visible ring */
+:focus-visible {
+  outline: 2px solid #06ABEB;
+  outline-offset: 2px;
 }
 
 @media print {

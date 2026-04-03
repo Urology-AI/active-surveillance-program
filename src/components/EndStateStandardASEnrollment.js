@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
-import { CheckCircle2, RotateCcw, Copy, FileText, ArrowLeft, ArrowRight } from 'lucide-react'
+import { ShieldCheck, RotateCcw, Copy, FileText, ArrowLeft, ArrowRight } from 'lucide-react'
 
-export default function EndStateActiveSurveillance({ onReset, pathSummary, onBack, canGoBack, onPrintChart, onContinuePart2 }) {
+export default function EndStateStandardASEnrollment({ onReset, pathSummary, onBack, canGoBack, onContinuePart3 }) {
   const [copied, setCopied] = useState(false)
   const [showResetConfirm, setShowResetConfirm] = useState(false)
 
@@ -14,7 +14,7 @@ export default function EndStateActiveSurveillance({ onReset, pathSummary, onBac
     }
   }
 
-  return React.createElement('div', { className: 'bg-white rounded-xl border border-slate-100 overflow-hidden', style: { boxShadow: '0 8px 40px -8px rgba(16,185,129,0.18)' } },
+  return React.createElement('div', { className: 'bg-white rounded-xl border border-slate-100 overflow-hidden', style: { boxShadow: '0 8px 40px -8px rgba(16,185,129,0.15)' } },
 
     // Header band
     React.createElement('div', {
@@ -23,46 +23,54 @@ export default function EndStateActiveSurveillance({ onReset, pathSummary, onBac
     },
       React.createElement('div', { className: 'flex justify-center mb-4' },
         React.createElement('div', { className: 'w-14 h-14 rounded-full bg-white/15 border-2 border-white/30 flex items-center justify-center' },
-          React.createElement(CheckCircle2, { className: 'w-8 h-8 text-emerald-300' })
+          React.createElement(ShieldCheck, { className: 'w-8 h-8 text-emerald-300' })
         )
       ),
-      React.createElement('h2', { className: 'text-2xl font-bold text-white mb-1' }, 'Active Surveillance Initiated'),
-      React.createElement('p', { className: 'text-emerald-300 text-sm font-medium' }, 'Part 1 complete — Patient has agreed to AS following SDM')
+      React.createElement('h2', { className: 'text-2xl font-bold text-white mb-1' }, 'Enrolled in Active Surveillance'),
+      React.createElement('p', { className: 'text-emerald-300 text-sm font-medium' }, 'Part 2 complete — No concerning features detected')
     ),
 
     React.createElement('div', { className: 'p-6 md:p-8' },
 
-      // Summary box
-      React.createElement('div', { className: 'bg-emerald-50 border border-emerald-200 rounded-xl p-4 mb-6' },
-        React.createElement('p', { className: 'text-sm font-semibold text-emerald-800 mb-1' }, 'Next steps per Tewari program guidelines:'),
-        React.createElement('ul', { className: 'space-y-1 text-sm text-slate-700 mt-2' },
-          React.createElement('li', { className: 'flex items-start gap-2' },
+      // Checklist
+      React.createElement('div', { className: 'bg-emerald-50 border border-emerald-200 rounded-xl p-5 mb-6' },
+        React.createElement('p', { className: 'text-sm font-bold text-emerald-800 mb-3' }, 'Complete before proceeding to Part 3:'),
+        React.createElement('div', { className: 'space-y-2 text-sm text-slate-700' },
+          React.createElement('div', { className: 'flex items-start gap-2' },
             React.createElement('span', { className: 'text-emerald-600 font-bold mt-0.5' }, '✓'),
-            'Proceed to Active Surveillance Initiation protocol'
+            React.createElement('span', null, React.createElement('span', { className: 'font-semibold' }, 'Educate patient '), 'on the Active Surveillance protocol')
           ),
-          React.createElement('li', { className: 'flex items-start gap-2' },
+          React.createElement('div', { className: 'flex items-start gap-2' },
             React.createElement('span', { className: 'text-emerald-600 font-bold mt-0.5' }, '✓'),
-            React.createElement('span', null, React.createElement('span', { className: 'font-semibold text-sinai-magenta' }, 'Document '), 'SDM discussion and patient agreement')
+            React.createElement('span', null, React.createElement('span', { className: 'font-semibold' }, 'Officially enroll '), 'patient in Active Surveillance')
+          ),
+          React.createElement('div', { className: 'flex items-start gap-2' },
+            React.createElement('span', { className: 'text-emerald-600 font-bold mt-0.5' }, '✓'),
+            React.createElement('span', null, React.createElement('span', { className: 'font-semibold' }, 'Send patient educational materials '), 'on AS')
+          ),
+          React.createElement('div', { className: 'flex items-start gap-2' },
+            React.createElement('span', { className: 'text-sinai-magenta font-bold mt-0.5' }, '✓'),
+            React.createElement('span', { className: 'font-semibold text-sinai-magenta' }, 'Document')
           )
         )
       ),
 
-      // Part 2 CTA
-      onContinuePart2 && React.createElement('div', {
+      // Part 3 CTA
+      onContinuePart3 && React.createElement('div', {
         className: 'mb-6 p-5 rounded-xl border-2',
-        style: { background: 'rgb(33 32 112 / 0.03)', borderColor: 'rgb(33 32 112 / 0.15)' }
+        style: { background: 'rgb(16 185 129 / 0.04)', borderColor: 'rgb(16 185 129 / 0.25)' }
       },
-        React.createElement('p', { className: 'text-xs font-bold uppercase tracking-wider text-sinai-navy mb-1' }, 'Continue Pathway'),
-        React.createElement('p', { className: 'text-sm font-semibold text-sinai-cetacean mb-1' }, 'Part 2 — Pre-Enrollment Verification'),
+        React.createElement('p', { className: 'text-xs font-bold uppercase tracking-wider mb-1', style: { color: '#065f46' } }, 'Continue Pathway'),
+        React.createElement('p', { className: 'text-sm font-semibold text-sinai-cetacean mb-1' }, 'Part 3 — Standard AS Protocol'),
         React.createElement('p', { className: 'text-xs text-slate-500 mb-4' },
-          'Assess life expectancy, schedule confirmatory biopsy, and order genomic tests.'
+          'Uroflow check, initiate ongoing monitoring, and assess for new findings.'
         ),
         React.createElement('button', {
-          onClick: onContinuePart2,
+          onClick: onContinuePart3,
           className: 'btn-primary w-full flex items-center justify-center gap-2 py-3.5 rounded-xl font-bold text-white',
-          style: { background: 'linear-gradient(135deg, #212070 0%, #1a1a5e 100%)', boxShadow: '0 4px 16px rgba(33,32,112,0.25)' }
+          style: { background: 'linear-gradient(135deg, #059669 0%, #065f46 100%)', boxShadow: '0 4px 16px rgba(16,185,129,0.3)' }
         },
-          'Continue to Pre-Enrollment Verification',
+          'Continue to Standard Protocol',
           React.createElement(ArrowRight, { className: 'w-5 h-5' })
         )
       ),
