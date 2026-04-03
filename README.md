@@ -1,59 +1,80 @@
-# Prostate Cancer Clinical Pathway
+# Tewari Active Surveillance Program
 
-A clinical decision support tool for determining next steps after a positive prostate biopsy. This React application provides a step-by-step wizard interface that guides clinicians through the logic flow to determine patient treatment pathways.
+A clinical decision support tool for guiding clinicians through the Tewari Active Surveillance (AS) protocol after a positive prostate biopsy. Built as a step-by-step wizard that covers all three phases of the pathway — from initial risk stratification through enrollment and ongoing monitoring.
 
 ## Features
 
-- **Interactive Wizard Interface**: Step-by-step guidance through the clinical decision process
-- **Visual Flow Map**: Interactive flow chart showing current position and path taken
-- **Progress Tracking**: Visual progress bar and step history
-- **Responsive Design**: Works on desktop and mobile devices
-- **Professional Medical UI**: Clean, medical-grade interface with Tailwind CSS
+- **3-Part Clinical Pathway**: Covers Initial Risk Stratification, Pre-Enrollment Verification, and Standard AS Protocol
+- **Sticky Header Navigation**: Mount Sinai branding with color-coded part badge and live step breadcrumb
+- **Interactive Flow Map**: Visual flowchart showing current position and path taken through the decision tree
+- **Progress Tracking**: Gradient progress bar with step label and back/forward navigation
+- **Step-Card Animations**: Smooth fade-and-slide transitions between steps
+- **Copy & Export**: Copy path summary to clipboard or export as PDF from any end state
+- **Responsive Design**: Optimized for desktop clinic use and mobile review
 
-## Workflow Steps
+## Clinical Pathway
 
-### Path 1: Initial Assessment & Active Surveillance Initiation
+### Part 1 — Initial Risk Stratification (Steps 1–5)
 
-1. **Start Screen**: Initial assessment trigger
-2. **Step 1: Patient Intent**: Determine if patient agrees to further testing
-3. **Step 2: Gleason Score**: Select biopsy Gleason score
-4. **Step 3: Risk Stratification**: Evaluate intermediate risk factors (for Gleason 7 3+4)
-5. **Step 4: Medical History**: Check for disqualifying high-risk medical history
-6. **End States**: 
-   - Active Surveillance Initiation
-   - Definitive Treatment Recommendation
-   - Patient Refuses/Defers
+Triggered by a first positive prostate biopsy.
 
-### Path 2: Pre-Enrollment Verification (Phase 2)
+| Step | Screen | Decision |
+|------|--------|----------|
+| 1 | Patient Intent / SDM | Does patient agree to further testing? |
+| 2 | Gleason Score | Gleason 6, 7 (3+4), or 7 (4+3)+? |
+| 3 | Risk Stratification | Favorable vs. unfavorable intermediate risk (Gleason 7 3+4 only) |
+| 4 | Medical History | Any disqualifying high-risk history? |
+| 5 | SDM on Active Surveillance | Shared decision-making discussion |
 
-After Active Surveillance Initiation, proceed to Pre-Enrollment Verification:
+**End States:**
+- **AS Initiated** → continues to Part 2
+- **Definitive Treatment** — patient does not meet AS criteria
+- **Refuse / Defer** — patient declines further workup; return visit in 3–6 months
 
-1. **Life Expectancy Assessment**: Evaluate if patient life expectancy >10 years (using Lee-Schonberg tool)
-   - **No (≤10 years)**: Proceed to Watchful Waiting discussion
-   - **Yes (>10 years)**: Continue to genomic testing and confirmatory biopsy planning
+---
 
-2. **Genomic Testing & Confirmatory Biopsy Plan**: 
-   - Schedule confirmatory biopsy in 3-6 months
-   - Order genomic testing (Decipher, ExoDx, OncoDx, Selec MDx, or BRCA if indicated)
+### Part 2 — Pre-Enrollment Verification (Steps 6–9)
 
-3. **Confirmatory Biopsy Result**:
-   - **Gleason 7 (3+4)**: Proceed to Definitive Treatment
-   - **Negative or Gleason 6 (3+3)**: Continue to concerning features check
+Confirms eligibility and completes workup before formal AS enrollment.
 
-4. **Concerning Features Check**:
-   - **Yes**: Discuss high-intensity AS protocol (biopsy q1-2 years, optional Poly-ICLC enrollment)
-   - **No**: Enroll in standard AS protocol
+| Step | Screen | Decision |
+|------|--------|----------|
+| 6 | Life Expectancy | > 10 years? (Lee-Schonberg calculator) |
+| 7 | Provider Actions | Order confirmatory Bx + genomics (Decipher, ExoDx, OncoDx, SelectMDx, BRCA) |
+| 8 | TR Confirmatory Biopsy | Negative / Gleason 6, or Gleason 7 (3+4)? |
+| 9 | Concerning Features | Any concerning features present? |
 
-5. **End States**:
-   - **Enroll AS Protocol**: Patient enrolled with education materials sent and documented
-   - **Watchful Waiting**: Patient life expectancy ≤10 years, discuss and document
-   - **Definitive Treatment**: (reused from Path 1)
+**End States:**
+- **Enrolled in AS** → continues to Part 3
+- **High Intensity AS Protocol** — concerning features present; biopsy q1–2 years; consider Poly-ICLC trial
+- **Watchful Waiting** — life expectancy ≤ 10 years
+- **Definitive Treatment** — confirmatory Bx shows Gleason 7 (3+4)
+
+---
+
+### Part 3 — Standard AS Protocol (Steps 10–14)
+
+Ongoing monitoring for patients formally enrolled in active surveillance.
+
+| Step | Screen | Decision |
+|------|--------|----------|
+| 10 | Uroflow + PVR Check | Baseline uroflowmetry and post-void residual |
+| 11 | Initiate AS Protocol | Quarterly PSA + office visit; annual MRI, MUS (ExactVu), DRE |
+| 12 | PSMA Assessment (No MRI) | PSMA PET/CT if MRI not available |
+| 13 | New Positive Findings | Any new concerning findings on monitoring? |
+| 14 | Early Biopsy Results | Results of surveillance biopsy |
+
+**End States:**
+- **Continue on AS** — patient remains on monitoring protocol (Q PSA, A MRI/DRE, B biopsy + genomics)
+- **Definitive Treatment** — reclassification triggers treatment
+
+---
 
 ## Tech Stack
 
-- React 18
+- React 18 (no JSX — uses `React.createElement` throughout)
 - Vite
-- Tailwind CSS
+- Tailwind CSS (Mount Sinai palette: cerulean `#06ABEB`, navy `#212070`, cetacean `#00002D`, magenta `#DC298D`)
 - Lucide React (icons)
 
 ## Development

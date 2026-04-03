@@ -1,25 +1,18 @@
 import React from 'react'
-import { ArrowLeft, ArrowRight } from 'lucide-react'
+import { ArrowLeft } from 'lucide-react'
 
-export default function StepNav({ onBack, onForward, canGoBack, canGoForward }) {
-  return React.createElement('div', { className: 'flex gap-2 mt-6 pt-4 border-t border-slate-100' },
+// Subtle in-card back link — only shows "← Back" when user has history.
+// Forward navigation is handled by the top ProgressBar.
+export default function StepNav({ onBack, canGoBack }) {
+  if (!canGoBack) return null
+  return React.createElement('div', { className: 'flex mt-5 pt-4 border-t border-slate-100' },
     React.createElement('button', {
       type: 'button',
       onClick: onBack,
-      disabled: !canGoBack,
-      className: `flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-lg border transition-colors ${!canGoBack ? 'text-slate-400 border-slate-100 bg-slate-50 cursor-not-allowed' : 'text-sinai-navy border-slate-200 hover:bg-sinai-cerulean/5'}`
+      className: 'flex items-center gap-1.5 text-sm text-slate-400 hover:text-sinai-navy transition-colors'
     },
-      React.createElement(ArrowLeft, { className: 'w-4 h-4' }),
+      React.createElement(ArrowLeft, { className: 'w-3.5 h-3.5' }),
       'Back'
-    ),
-    React.createElement('button', {
-      type: 'button',
-      onClick: onForward,
-      disabled: !canGoForward,
-      className: `flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-lg border transition-colors ${!canGoForward ? 'text-slate-400 border-slate-100 bg-slate-50 cursor-not-allowed' : 'text-sinai-navy border-slate-200 hover:bg-sinai-cerulean/5'}`
-    },
-      'Forward',
-      React.createElement(ArrowRight, { className: 'w-4 h-4' })
     )
   )
 }

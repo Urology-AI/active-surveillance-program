@@ -18,18 +18,26 @@ export default function FlowChartDebug({ currentStep, stepHistory, onStepClick }
       'step2': 'Step 2: Gleason Score',
       'step3': 'Step 3: Risk Stratification',
       'step4': 'Step 4: Medical History',
-      'end_active_surveillance': 'End: Active Surveillance Initiation',
+      'step5': 'Step 5: SDM on Active Surveillance',
+      // Part 2
+      'step6': 'Step 6: Life Expectancy',
+      'step7': 'Step 7: Provider Actions',
+      'step8': 'Step 8: TR Confirmatory Biopsy',
+      'step9': 'Step 9: Concerning Features',
+      // Part 3
+      'step10': 'Step 10: Uroflow Check',
+      'step11': 'Step 11: AS Standard Protocol',
+      'step12': 'Step 12: PSMA Assessment',
+      'step13': 'Step 13: New Positive Findings',
+      'step14': 'Step 14: Early Biopsy Results',
+      // End states
+      'end_active_surveillance': 'AS Initiated → Part 2',
       'end_definitive_treatment': 'End: Definitive Treatment',
       'end_refuse_defer': 'End: Refuse/Defer',
-      'pev_life_expectancy': 'Phase 2: Life Expectancy',
-      'pev_genomic_and_confirmatory_plan': 'Phase 2: Genomic & Biopsy Plan',
-      'pev_confirmatory_bx_result': 'Phase 2: Biopsy Result',
-      'pev_concerning_features_check': 'Phase 2: Concerning Features',
-      'pev_intensified_as_discussion': 'Phase 2: High-Intensity AS',
-      'pev_polyiclc_enrollment_decision': 'Phase 2: Enroll in Poly-ICLC?',
-      'pev_enroll_as_protocol': 'End: Enroll AS Protocol',
-      'pev_end_high_intensity_as': 'End: High-Intensity AS + Document',
-      'pev_end_watchful_waiting': 'End: Watchful Waiting'
+      'end_watchful_waiting': 'End: Watchful Waiting',
+      'end_high_intensity_as': 'End: High Intensity AS',
+      'end_standard_as_enrollment': 'End: Enrolled in AS → Part 3',
+      'end_continue_as': 'End: Continue on AS'
     }
     return labels[step] || step
   }
