@@ -19,9 +19,18 @@ export default function FlowChartDebug({ currentStep, stepHistory, onStepClick }
       'step3': 'Step 3: Risk Stratification',
       'step4': 'Step 4: Medical History',
       'step5': 'Step 5: SDM on Active Surveillance',
-      'end_active_surveillance': 'End: Active Surveillance',
+      // Part 2
+      'step6': 'Step 6: Life Expectancy',
+      'step7': 'Step 7: Provider Actions',
+      'step8': 'Step 8: TR Confirmatory Biopsy',
+      'step9': 'Step 9: Concerning Features',
+      // End states
+      'end_active_surveillance': 'AS Initiated → Part 2',
       'end_definitive_treatment': 'End: Definitive Treatment',
-      'end_refuse_defer': 'End: Refuse/Defer'
+      'end_refuse_defer': 'End: Refuse/Defer',
+      'end_watchful_waiting': 'End: Watchful Waiting',
+      'end_high_intensity_as': 'End: High Intensity AS Protocol',
+      'end_standard_as_enrollment': 'End: Enrolled in AS'
     }
     return labels[step] || step
   }

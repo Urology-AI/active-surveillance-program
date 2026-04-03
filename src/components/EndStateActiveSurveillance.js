@@ -1,9 +1,10 @@
 import React, { useState } from 'react'
-import { CheckCircle2, RotateCcw, Copy, FileImage, FileText, ArrowLeft } from 'lucide-react'
+import { CheckCircle2, RotateCcw, Copy, FileImage, FileText, ArrowLeft, ArrowRight } from 'lucide-react'
 
-export default function EndStateActiveSurveillance({ onReset, pathSummary, onBack, canGoBack, onPrintChart }) {
+export default function EndStateActiveSurveillance({ onReset, pathSummary, onBack, canGoBack, onPrintChart, onContinuePart2 }) {
   const [copied, setCopied] = useState(false)
   const [showResetConfirm, setShowResetConfirm] = useState(false)
+
   const handleCopy = () => {
     if (pathSummary && navigator.clipboard?.writeText) {
       navigator.clipboard.writeText(pathSummary).then(() => {
@@ -12,16 +13,19 @@ export default function EndStateActiveSurveillance({ onReset, pathSummary, onBac
       })
     }
   }
+
   return React.createElement('div', { className: 'bg-white rounded-xl shadow-sinai border border-slate-100 p-6 md:p-8' },
     React.createElement('div', { className: 'flex items-center justify-center mb-6' },
       React.createElement('div', { className: 'bg-emerald-100 p-4 rounded-full ring-4 ring-emerald-200/50' },
         React.createElement(CheckCircle2, { className: 'w-12 h-12 text-emerald-600' })
       )
     ),
+
     React.createElement('h2', { className: 'text-2xl font-bold text-sinai-cetacean text-center mb-4' },
       'Active Surveillance Initiated'
     ),
-    React.createElement('div', { className: 'bg-emerald-50 border-2 border-emerald-200 rounded-lg p-6 mb-6' },
+
+    React.createElement('div', { className: 'bg-emerald-50 border-2 border-emerald-200 rounded-lg p-6 mb-4' },
       React.createElement('p', { className: 'text-base text-slate-800 text-center font-semibold mb-2' },
         'Patient has agreed to Active Surveillance following SDM discussion.'
       ),
@@ -29,13 +33,30 @@ export default function EndStateActiveSurveillance({ onReset, pathSummary, onBac
         'Proceed to Active Surveillance Initiation protocol per Tewari program guidelines.'
       )
     ),
+
+    // Continue to Part 2 CTA
+    onContinuePart2 && React.createElement('div', { className: 'mb-6 p-4 bg-sinai-cerulean/5 border-2 border-sinai-cerulean/30 rounded-xl' },
+      React.createElement('p', { className: 'text-sm font-semibold text-sinai-navy mb-3' },
+        'Next: Part 2 — Pre-Enrollment Verification'
+      ),
+      React.createElement('p', { className: 'text-xs text-slate-500 mb-3' },
+        'Assess life expectancy, schedule confirmatory biopsy, order genomic tests, and evaluate for enrollment.'
+      ),
+      React.createElement('button', {
+        onClick: onContinuePart2,
+        className: 'btn-primary w-full flex items-center justify-center gap-2 px-6 py-3.5 bg-sinai-navy text-white font-semibold rounded-xl hover:bg-sinai-navy-dark shadow-sinai'
+      },
+        'Continue to Pre-Enrollment Verification',
+        React.createElement(ArrowRight, { className: 'w-5 h-5' })
+      )
+    ),
+
     React.createElement('div', { className: 'flex flex-wrap justify-center gap-3' },
       canGoBack && onBack && React.createElement('button', {
         onClick: onBack,
         className: 'flex items-center gap-2 px-4 py-2.5 border-2 border-slate-200 rounded-xl text-slate-700 font-medium hover:border-sinai-cerulean hover:bg-sinai-cerulean/5 transition-colors'
       },
-        React.createElement(ArrowLeft, { className: 'w-4 h-4' }),
-        'Back'
+        React.createElement(ArrowLeft, { className: 'w-4 h-4' }), 'Back'
       ),
       pathSummary && React.createElement('button', {
         onClick: handleCopy,
@@ -47,24 +68,22 @@ export default function EndStateActiveSurveillance({ onReset, pathSummary, onBac
         onClick: onPrintChart,
         className: 'flex items-center gap-2 px-4 py-2.5 border-2 border-slate-200 rounded-xl text-slate-700 font-medium hover:border-sinai-cerulean hover:bg-sinai-cerulean/5 transition-colors'
       },
-        React.createElement(FileImage, { className: 'w-4 h-4' }),
-        'Export chart as PDF'
+        React.createElement(FileImage, { className: 'w-4 h-4' }), 'Export chart as PDF'
       ),
       React.createElement('button', {
         onClick: () => window.print(),
         className: 'flex items-center gap-2 px-4 py-2.5 border-2 border-slate-200 rounded-xl text-slate-700 font-medium hover:border-sinai-cerulean hover:bg-sinai-cerulean/5 transition-colors'
       },
-        React.createElement(FileText, { className: 'w-4 h-4' }),
-        'Export result as PDF'
+        React.createElement(FileText, { className: 'w-4 h-4' }), 'Export result as PDF'
       ),
       React.createElement('button', {
         onClick: () => setShowResetConfirm(true),
         className: 'btn-primary flex items-center gap-2 px-6 py-3.5 bg-sinai-cerulean text-white font-semibold rounded-xl hover:bg-sinai-cerulean-dark shadow-sinai hover:shadow-sinai-lg'
       },
-        React.createElement(RotateCcw, { className: 'w-5 h-5' }),
-        'Reset'
+        React.createElement(RotateCcw, { className: 'w-5 h-5' }), 'Reset'
       )
     ),
+
     showResetConfirm && React.createElement('div', {
       className: 'fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40',
       onClick: () => setShowResetConfirm(false)
@@ -73,9 +92,7 @@ export default function EndStateActiveSurveillance({ onReset, pathSummary, onBac
         className: 'bg-white rounded-xl shadow-xl p-6 max-w-sm w-full border border-slate-200',
         onClick: (e) => e.stopPropagation()
       },
-        React.createElement('p', { className: 'text-sinai-cetacean font-semibold mb-4' },
-          'Clear pathway and start over?'
-        ),
+        React.createElement('p', { className: 'text-sinai-cetacean font-semibold mb-4' }, 'Clear pathway and start over?'),
         React.createElement('div', { className: 'flex gap-3 justify-end' },
           React.createElement('button', {
             onClick: () => setShowResetConfirm(false),
