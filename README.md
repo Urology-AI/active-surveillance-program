@@ -12,6 +12,8 @@ A clinical decision support tool for determining next steps after a positive pro
 
 ## Workflow Steps
 
+### Path 1: Initial Assessment & Active Surveillance Initiation
+
 1. **Start Screen**: Initial assessment trigger
 2. **Step 1: Patient Intent**: Determine if patient agrees to further testing
 3. **Step 2: Gleason Score**: Select biopsy Gleason score
@@ -21,6 +23,31 @@ A clinical decision support tool for determining next steps after a positive pro
    - Active Surveillance Initiation
    - Definitive Treatment Recommendation
    - Patient Refuses/Defers
+
+### Path 2: Pre-Enrollment Verification (Phase 2)
+
+After Active Surveillance Initiation, proceed to Pre-Enrollment Verification:
+
+1. **Life Expectancy Assessment**: Evaluate if patient life expectancy >10 years (using Lee-Schonberg tool)
+   - **No (≤10 years)**: Proceed to Watchful Waiting discussion
+   - **Yes (>10 years)**: Continue to genomic testing and confirmatory biopsy planning
+
+2. **Genomic Testing & Confirmatory Biopsy Plan**: 
+   - Schedule confirmatory biopsy in 3-6 months
+   - Order genomic testing (Decipher, ExoDx, OncoDx, Selec MDx, or BRCA if indicated)
+
+3. **Confirmatory Biopsy Result**:
+   - **Gleason 7 (3+4)**: Proceed to Definitive Treatment
+   - **Negative or Gleason 6 (3+3)**: Continue to concerning features check
+
+4. **Concerning Features Check**:
+   - **Yes**: Discuss high-intensity AS protocol (biopsy q1-2 years, optional Poly-ICLC enrollment)
+   - **No**: Enroll in standard AS protocol
+
+5. **End States**:
+   - **Enroll AS Protocol**: Patient enrolled with education materials sent and documented
+   - **Watchful Waiting**: Patient life expectancy ≤10 years, discuss and document
+   - **Definitive Treatment**: (reused from Path 1)
 
 ## Tech Stack
 
