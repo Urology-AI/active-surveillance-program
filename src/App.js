@@ -4,6 +4,7 @@ import Step1PatientIntent from './components/Step1PatientIntent.js'
 import Step2GleasonScore from './components/Step2GleasonScore.js'
 import Step3RiskStratification from './components/Step3RiskStratification.js'
 import Step4MedicalHistory from './components/Step4MedicalHistory.js'
+import Step5SDMActiveSurveillance from './components/Step5SDMActiveSurveillance.js'
 import EndStateActiveSurveillance from './components/EndStateActiveSurveillance.js'
 import EndStateDefinitiveTreatment from './components/EndStateDefinitiveTreatment.js'
 import EndStateRefuseDefer from './components/EndStateRefuseDefer.js'
@@ -20,6 +21,7 @@ const STEPS = {
   STEP2: 'step2',
   STEP3: 'step3',
   STEP4: 'step4',
+  STEP5: 'step5',
   END_ACTIVE_SURVEILLANCE: 'end_active_surveillance',
   END_DEFINITIVE_TREATMENT: 'end_definitive_treatment',
   END_REFUSE_DEFER: 'end_refuse_defer',
@@ -57,17 +59,18 @@ function App() {
 
   useEffect(() => {
     const titles = {
-      [STEPS.START]: 'Prostate Cancer Clinical Pathway',
+      [STEPS.START]: 'Tewari Active Surveillance Program',
       [STEPS.STEP1]: 'Step 1: Patient Intent',
       [STEPS.STEP2]: 'Step 2: Gleason Score',
       [STEPS.STEP3]: 'Step 3: Risk Stratification',
       [STEPS.STEP4]: 'Step 4: Medical History',
-      [STEPS.END_ACTIVE_SURVEILLANCE]: 'Result: Active Surveillance',
+      [STEPS.STEP5]: 'Step 5: SDM — Active Surveillance',
+      [STEPS.END_ACTIVE_SURVEILLANCE]: 'Result: Active Surveillance Initiated',
       [STEPS.END_DEFINITIVE_TREATMENT]: 'Result: Definitive Treatment',
       [STEPS.END_REFUSE_DEFER]: 'Result: Refuse/Defer'
     }
     const t = titles[currentStep]
-    document.title = t ? `${t} · Mount Sinai` : 'Mount Sinai · Prostate Cancer Clinical Pathway'
+    document.title = t ? `${t} · Mount Sinai` : 'Mount Sinai · Tewari Active Surveillance Program'
   }, [currentStep])
 
   const goToStep = (step) => {
@@ -119,19 +122,21 @@ function App() {
   }
 
   const getProgress = () => {
+    // Longest possible path: START → STEP1 → STEP2 → STEP3 → STEP4 → STEP5
     const stepOrder = [
       STEPS.START,
       STEPS.STEP1,
       STEPS.STEP2,
       STEPS.STEP3,
       STEPS.STEP4,
+      STEPS.STEP5,
     ]
     const currentIndex = stepOrder.indexOf(currentStep)
     if (currentIndex === -1) return 100 // End states
     return ((currentIndex + 1) / stepOrder.length) * 100
   }
 
-  const showProgressBar = currentStep !== STEPS.START && 
+  const showProgressBar = currentStep !== STEPS.START &&
     !currentStep.startsWith('end_')
 
   const STEP_LABELS = {
@@ -140,13 +145,14 @@ function App() {
     [STEPS.STEP2]: 'Step 2: Gleason Score',
     [STEPS.STEP3]: 'Step 3: Risk Stratification',
     [STEPS.STEP4]: 'Step 4: Medical History',
-    [STEPS.END_ACTIVE_SURVEILLANCE]: 'Active Surveillance',
+    [STEPS.STEP5]: 'Step 5: SDM on Active Surveillance',
+    [STEPS.END_ACTIVE_SURVEILLANCE]: 'Active Surveillance Initiated',
     [STEPS.END_DEFINITIVE_TREATMENT]: 'Definitive Treatment',
     [STEPS.END_REFUSE_DEFER]: 'Refuse/Defer'
   }
   const pathTaken = [...stepHistory, currentStep]
   const pathSummary = pathTaken.map(s => STEP_LABELS[s] || s).join(' → ')
-  const pathSummaryFull = `Mount Sinai · Prostate Cancer Clinical Pathway\nPath: ${pathSummary}\n${new Date().toLocaleString()}`
+  const pathSummaryFull = `Mount Sinai · Tewari Active Surveillance Program\nPath: ${pathSummary}\n${new Date().toLocaleString()}`
 
   // Show password protection if not authenticated
   if (!isAuthenticated) {
@@ -187,6 +193,7 @@ function App() {
       }),
       React.createElement('div', { className: 'mt-8' },
         currentStep === STEPS.START && React.createElement(StartScreen, { onStart: () => goToStep(STEPS.STEP1) }),
+
         currentStep === STEPS.STEP1 && React.createElement(Step1PatientIntent, {
           onRefuseDefer: () => goToStep(STEPS.END_REFUSE_DEFER),
           onProceed: () => goToStep(STEPS.STEP2),
@@ -195,6 +202,7 @@ function App() {
           canGoBack: stepHistory.length > 0,
           canGoForward: forwardStack.length > 0
         }),
+
         currentStep === STEPS.STEP2 && React.createElement(Step2GleasonScore, {
           onGleason6: () => goToStep(STEPS.STEP4),
           onGleason7_3_4: () => goToStep(STEPS.STEP3),
@@ -204,6 +212,7 @@ function App() {
           canGoBack: stepHistory.length > 0,
           canGoForward: forwardStack.length > 0
         }),
+
         currentStep === STEPS.STEP3 && React.createElement(Step3RiskStratification, {
           onFavorable: () => goToStep(STEPS.STEP4),
           onUnfavorable: () => goToStep(STEPS.END_DEFINITIVE_TREATMENT),
@@ -212,14 +221,25 @@ function App() {
           canGoBack: stepHistory.length > 0,
           canGoForward: forwardStack.length > 0
         }),
+
         currentStep === STEPS.STEP4 && React.createElement(Step4MedicalHistory, {
           onHighRisk: () => goToStep(STEPS.END_DEFINITIVE_TREATMENT),
-          onLowRisk: () => goToStep(STEPS.END_ACTIVE_SURVEILLANCE),
+          onLowRisk: () => goToStep(STEPS.STEP5),
           onBack: goBack,
           onForward: goForward,
           canGoBack: stepHistory.length > 0,
           canGoForward: forwardStack.length > 0
         }),
+
+        currentStep === STEPS.STEP5 && React.createElement(Step5SDMActiveSurveillance, {
+          onConfirm: () => goToStep(STEPS.END_ACTIVE_SURVEILLANCE),
+          onDeclineToDT: () => goToStep(STEPS.END_DEFINITIVE_TREATMENT),
+          onBack: goBack,
+          onForward: goForward,
+          canGoBack: stepHistory.length > 0,
+          canGoForward: forwardStack.length > 0
+        }),
+
         currentStep === STEPS.END_ACTIVE_SURVEILLANCE && React.createElement(EndStateActiveSurveillance, {
           onReset: reset,
           pathSummary: pathSummaryFull,

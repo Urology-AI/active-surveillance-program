@@ -19,11 +19,14 @@ export default function EndStateActiveSurveillance({ onReset, pathSummary, onBac
       )
     ),
     React.createElement('h2', { className: 'text-2xl font-bold text-sinai-cetacean text-center mb-4' },
-      'Candidate for Active Surveillance Initiation'
+      'Active Surveillance Initiated'
     ),
     React.createElement('div', { className: 'bg-emerald-50 border-2 border-emerald-200 rounded-lg p-6 mb-6' },
-      React.createElement('p', { className: 'text-base text-slate-800 text-center font-semibold' },
-        'Proceed to SDM on risks and benefits.'
+      React.createElement('p', { className: 'text-base text-slate-800 text-center font-semibold mb-2' },
+        'Patient has agreed to Active Surveillance following SDM discussion.'
+      ),
+      React.createElement('p', { className: 'text-sm text-slate-600 text-center' },
+        'Proceed to Active Surveillance Initiation protocol per Tewari program guidelines.'
       )
     ),
     React.createElement('div', { className: 'flex flex-wrap justify-center gap-3' },

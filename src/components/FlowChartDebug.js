@@ -18,6 +18,7 @@ export default function FlowChartDebug({ currentStep, stepHistory, onStepClick }
       'step2': 'Step 2: Gleason Score',
       'step3': 'Step 3: Risk Stratification',
       'step4': 'Step 4: Medical History',
+      'step5': 'Step 5: SDM on Active Surveillance',
       'end_active_surveillance': 'End: Active Surveillance',
       'end_definitive_treatment': 'End: Definitive Treatment',
       'end_refuse_defer': 'End: Refuse/Defer'
