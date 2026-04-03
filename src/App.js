@@ -10,6 +10,12 @@ import Step6LifeExpectancy from './components/Step6LifeExpectancy.js'
 import Step7ProviderActions from './components/Step7ProviderActions.js'
 import Step8ConfirmatoryBx from './components/Step8ConfirmatoryBx.js'
 import Step9ConcerningFeatures from './components/Step9ConcerningFeatures.js'
+// Part 3
+import Step10UroflowCheck from './components/Step10UroflowCheck.js'
+import Step11ASProtocol from './components/Step11ASProtocol.js'
+import Step12PSMAAssessment from './components/Step12PSMAAssessment.js'
+import Step13NewFindings from './components/Step13NewFindings.js'
+import Step14EarlyBxResults from './components/Step14EarlyBxResults.js'
 // End states
 import EndStateActiveSurveillance from './components/EndStateActiveSurveillance.js'
 import EndStateDefinitiveTreatment from './components/EndStateDefinitiveTreatment.js'
@@ -17,6 +23,7 @@ import EndStateRefuseDefer from './components/EndStateRefuseDefer.js'
 import EndStateWatchfulWaiting from './components/EndStateWatchfulWaiting.js'
 import EndStateHighIntensityAS from './components/EndStateHighIntensityAS.js'
 import EndStateStandardASEnrollment from './components/EndStateStandardASEnrollment.js'
+import EndStateContinueAS from './components/EndStateContinueAS.js'
 // UI
 import ProgressBar from './components/ProgressBar.js'
 import FlowChartDebug from './components/FlowChartDebug.js'
@@ -38,6 +45,12 @@ const STEPS = {
   STEP7: 'step7',
   STEP8: 'step8',
   STEP9: 'step9',
+  // Part 3
+  STEP10: 'step10',
+  STEP11: 'step11',
+  STEP12: 'step12',
+  STEP13: 'step13',
+  STEP14: 'step14',
   // End states
   END_ACTIVE_SURVEILLANCE: 'end_active_surveillance',
   END_DEFINITIVE_TREATMENT: 'end_definitive_treatment',
@@ -45,6 +58,7 @@ const STEPS = {
   END_WATCHFUL_WAITING: 'end_watchful_waiting',
   END_HIGH_INTENSITY_AS: 'end_high_intensity_as',
   END_STANDARD_AS_ENROLLMENT: 'end_standard_as_enrollment',
+  END_CONTINUE_AS: 'end_continue_as',
 }
 
 const STEP_LABELS = {
@@ -58,12 +72,18 @@ const STEP_LABELS = {
   [STEPS.STEP7]: 'Step 7: Provider Actions',
   [STEPS.STEP8]: 'Step 8: TR Confirmatory Biopsy',
   [STEPS.STEP9]: 'Step 9: Concerning Features',
+  [STEPS.STEP10]: 'Step 10: Uroflow Check',
+  [STEPS.STEP11]: 'Step 11: AS Standard Protocol',
+  [STEPS.STEP12]: 'Step 12: PSMA Assessment',
+  [STEPS.STEP13]: 'Step 13: New Positive Findings',
+  [STEPS.STEP14]: 'Step 14: Early Biopsy Results',
   [STEPS.END_ACTIVE_SURVEILLANCE]: 'Active Surveillance Initiated',
   [STEPS.END_DEFINITIVE_TREATMENT]: 'Definitive Treatment',
   [STEPS.END_REFUSE_DEFER]: 'Refuse/Defer',
   [STEPS.END_WATCHFUL_WAITING]: 'Watchful Waiting',
   [STEPS.END_HIGH_INTENSITY_AS]: 'High Intensity AS Protocol',
   [STEPS.END_STANDARD_AS_ENROLLMENT]: 'Enrolled in Active Surveillance',
+  [STEPS.END_CONTINUE_AS]: 'Continue on Active Surveillance',
 }
 
 const PAGE_TITLES = {
@@ -77,15 +97,21 @@ const PAGE_TITLES = {
   [STEPS.STEP7]: 'Step 7: Provider Actions',
   [STEPS.STEP8]: 'Step 8: TR Confirmatory Biopsy',
   [STEPS.STEP9]: 'Step 9: Concerning Features',
+  [STEPS.STEP10]: 'Step 10: Uroflow Check',
+  [STEPS.STEP11]: 'Step 11: AS Standard Protocol',
+  [STEPS.STEP12]: 'Step 12: PSMA Assessment',
+  [STEPS.STEP13]: 'Step 13: New Positive Findings',
+  [STEPS.STEP14]: 'Step 14: Early Biopsy Results',
   [STEPS.END_ACTIVE_SURVEILLANCE]: 'Active Surveillance Initiated',
   [STEPS.END_DEFINITIVE_TREATMENT]: 'Result: Definitive Treatment',
   [STEPS.END_REFUSE_DEFER]: 'Result: Refuse/Defer',
   [STEPS.END_WATCHFUL_WAITING]: 'Result: Watchful Waiting',
   [STEPS.END_HIGH_INTENSITY_AS]: 'Result: High Intensity AS Protocol',
   [STEPS.END_STANDARD_AS_ENROLLMENT]: 'Result: Enrolled in AS',
+  [STEPS.END_CONTINUE_AS]: 'Result: Continue on AS',
 }
 
-// Longest possible path for progress calculation
+// Longest possible path for progress bar
 const STEP_ORDER = [
   STEPS.START,
   STEPS.STEP1,
@@ -97,6 +123,10 @@ const STEP_ORDER = [
   STEPS.STEP7,
   STEPS.STEP8,
   STEPS.STEP9,
+  STEPS.STEP10,
+  STEPS.STEP11,
+  STEPS.STEP13,
+  STEPS.STEP14,
 ]
 
 function App() {
@@ -182,7 +212,7 @@ function App() {
 
   const getProgress = () => {
     const idx = STEP_ORDER.indexOf(currentStep)
-    if (idx === -1) return 100 // end states
+    if (idx === -1) return 100
     return ((idx + 1) / STEP_ORDER.length) * 100
   }
 
@@ -213,7 +243,6 @@ function App() {
 
   return React.createElement('div', { className: 'min-h-screen bg-sinai-page py-8 px-4' },
 
-    // Resume modal
     showResumePrompt && React.createElement('div', {
       className: 'fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40'
     },
@@ -306,6 +335,40 @@ function App() {
             ...navProps,
           }),
 
+        // ── PART 3 ──
+        currentStep === STEPS.STEP10 &&
+          React.createElement(Step10UroflowCheck, {
+            onProceed: () => goToStep(STEPS.STEP11),
+            ...navProps,
+          }),
+
+        currentStep === STEPS.STEP11 &&
+          React.createElement(Step11ASProtocol, {
+            onMRIPossible: () => goToStep(STEPS.STEP13),
+            onNoMRI: () => goToStep(STEPS.STEP12),
+            ...navProps,
+          }),
+
+        currentStep === STEPS.STEP12 &&
+          React.createElement(Step12PSMAAssessment, {
+            onContinue: () => goToStep(STEPS.END_CONTINUE_AS),
+            ...navProps,
+          }),
+
+        currentStep === STEPS.STEP13 &&
+          React.createElement(Step13NewFindings, {
+            onYes: () => goToStep(STEPS.STEP14),
+            onNo: () => goToStep(STEPS.END_CONTINUE_AS),
+            ...navProps,
+          }),
+
+        currentStep === STEPS.STEP14 &&
+          React.createElement(Step14EarlyBxResults, {
+            onGleason6: () => goToStep(STEPS.END_CONTINUE_AS),
+            onGleason7Plus: () => goToStep(STEPS.END_DEFINITIVE_TREATMENT),
+            ...navProps,
+          }),
+
         // ── END STATES ──
         currentStep === STEPS.END_ACTIVE_SURVEILLANCE &&
           React.createElement(EndStateActiveSurveillance, {
@@ -337,6 +400,15 @@ function App() {
 
         currentStep === STEPS.END_STANDARD_AS_ENROLLMENT &&
           React.createElement(EndStateStandardASEnrollment, {
+            onReset: reset,
+            pathSummary: pathSummaryFull,
+            onBack: goBack,
+            canGoBack: stepHistory.length > 0,
+            onContinuePart3: () => goToStep(STEPS.STEP10),
+          }),
+
+        currentStep === STEPS.END_CONTINUE_AS &&
+          React.createElement(EndStateContinueAS, {
             onReset: reset,
             pathSummary: pathSummaryFull,
             onBack: goBack,

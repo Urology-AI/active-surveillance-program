@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
-import { ShieldCheck, RotateCcw, Copy, FileText, ArrowLeft, ArrowRight } from 'lucide-react'
+import { RefreshCw, RotateCcw, Copy, FileText, ArrowLeft } from 'lucide-react'
 
-export default function EndStateStandardASEnrollment({ onReset, pathSummary, onBack, canGoBack, onContinuePart3 }) {
+export default function EndStateContinueAS({ onReset, pathSummary, onBack, canGoBack }) {
   const [copied, setCopied] = useState(false)
   const [showResetConfirm, setShowResetConfirm] = useState(false)
 
@@ -16,63 +16,38 @@ export default function EndStateStandardASEnrollment({ onReset, pathSummary, onB
 
   return React.createElement('div', { className: 'bg-white rounded-xl shadow-sinai border border-slate-100 p-6 md:p-8' },
     React.createElement('div', { className: 'flex items-center justify-center mb-6' },
-      React.createElement('div', { className: 'bg-emerald-100 p-4 rounded-full ring-4 ring-emerald-200/50' },
-        React.createElement(ShieldCheck, { className: 'w-12 h-12 text-emerald-600' })
+      React.createElement('div', { className: 'bg-sinai-cerulean/10 p-4 rounded-full ring-4 ring-sinai-cerulean/5' },
+        React.createElement(RefreshCw, { className: 'w-12 h-12 text-sinai-cerulean' })
       )
     ),
 
-    React.createElement('h2', { className: 'text-2xl font-bold text-sinai-cetacean text-center mb-6' },
-      'Enrolled in Active Surveillance'
+    React.createElement('h2', { className: 'text-2xl font-bold text-sinai-cetacean text-center mb-2' },
+      'Continue on Active Surveillance'
+    ),
+    React.createElement('p', { className: 'text-sinai-magenta font-semibold text-center mb-6' },
+      'Patient remains on the Active Surveillance protocol'
     ),
 
-    React.createElement('div', { className: 'bg-emerald-50 border-2 border-emerald-200 rounded-lg p-6 mb-6' },
-      React.createElement('p', { className: 'text-base font-semibold text-emerald-800 mb-4' },
-        'No concerning features — Standard AS Protocol'
-      ),
+    React.createElement('div', { className: 'bg-sinai-cerulean/5 border-2 border-sinai-cerulean/20 rounded-lg p-6 mb-6' },
+      React.createElement('p', { className: 'text-sm font-semibold text-sinai-navy mb-3' }, 'Ongoing Monitoring Schedule'),
       React.createElement('div', { className: 'space-y-2 text-sm text-slate-700' },
-        React.createElement('div', { className: 'flex items-start gap-2' },
-          React.createElement('span', { className: 'text-emerald-600 font-bold mt-0.5' }, '✓'),
-          React.createElement('span', null,
-            React.createElement('span', { className: 'font-semibold' }, 'Educate patient '),
-            'on the active surveillance protocol'
-          )
+        React.createElement('div', { className: 'flex items-center gap-2' },
+          React.createElement('span', { className: 'w-5 h-5 rounded-full bg-sinai-cerulean text-white text-xs flex items-center justify-center font-bold shrink-0' }, 'Q'),
+          'Quarterly PSA + office visit with AS team'
         ),
-        React.createElement('div', { className: 'flex items-start gap-2' },
-          React.createElement('span', { className: 'text-emerald-600 font-bold mt-0.5' }, '✓'),
-          React.createElement('span', null,
-            React.createElement('span', { className: 'font-semibold' }, 'Officially enroll '),
-            'patient in Active Surveillance'
-          )
+        React.createElement('div', { className: 'flex items-center gap-2' },
+          React.createElement('span', { className: 'w-5 h-5 rounded-full bg-sinai-navy text-white text-xs flex items-center justify-center font-bold shrink-0' }, 'A'),
+          'Annual MRI, MUS (ExactVu), DRE'
         ),
-        React.createElement('div', { className: 'flex items-start gap-2' },
-          React.createElement('span', { className: 'text-emerald-600 font-bold mt-0.5' }, '✓'),
-          React.createElement('span', null,
-            React.createElement('span', { className: 'font-semibold' }, 'Send patient educational materials '),
-            'on Active Surveillance'
-          )
-        ),
-        React.createElement('div', { className: 'flex items-start gap-2' },
-          React.createElement('span', { className: 'text-sinai-magenta font-bold mt-0.5' }, '✓'),
-          React.createElement('span', { className: 'font-semibold text-sinai-magenta' }, 'Document')
+        React.createElement('div', { className: 'flex items-center gap-2' },
+          React.createElement('span', { className: 'w-5 h-5 rounded-full bg-purple-500 text-white text-xs flex items-center justify-center font-bold shrink-0' }, 'B'),
+          'Biopsy every 1–3 years + genomics'
         )
       )
     ),
 
-    // Continue to Part 3 CTA
-    onContinuePart3 && React.createElement('div', { className: 'mb-6 p-4 bg-sinai-cerulean/5 border-2 border-sinai-cerulean/30 rounded-xl' },
-      React.createElement('p', { className: 'text-sm font-semibold text-sinai-navy mb-3' },
-        'Next: Part 3 — Standard Protocol'
-      ),
-      React.createElement('p', { className: 'text-xs text-slate-500 mb-3' },
-        'Uroflow check, initiate ongoing monitoring, and assess for new findings.'
-      ),
-      React.createElement('button', {
-        onClick: onContinuePart3,
-        className: 'btn-primary w-full flex items-center justify-center gap-2 px-6 py-3.5 bg-sinai-navy text-white font-semibold rounded-xl hover:bg-sinai-navy-dark shadow-sinai'
-      },
-        'Continue to Standard Protocol',
-        React.createElement(ArrowRight, { className: 'w-5 h-5' })
-      )
+    React.createElement('div', { className: 'mb-6 p-3 bg-red-50 border border-red-200 rounded-xl text-xs text-red-700 font-medium text-center' },
+      'If patient not seen in ≥ 6 months — immediate return-to-office (RTO) required'
     ),
 
     React.createElement('div', { className: 'flex flex-wrap justify-center gap-3' },

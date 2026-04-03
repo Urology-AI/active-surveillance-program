@@ -1,7 +1,7 @@
 import React from 'react'
 
 // ─── NODES ───────────────────────────────────────────────────────────────────
-// SVG canvas: 540 wide × 1460 tall
+// SVG canvas: 540 wide × 2100 tall
 const NODES = {
   // ── PART 1 ──
   start:                    { x: 185, y: 20,   w: 170, h: 48,  label: '1st Positive Bx',            shape: 'diamond' },
@@ -14,9 +14,6 @@ const NODES = {
   step5:                    { x: 34,  y: 454,  w: 148, h: 58,  label: 'Step 5\nSDM on AS' },
   end_active_surveillance:  { x: 34,  y: 572,  w: 148, h: 58,  label: 'AS Initiated\n→ Part 2',        color: 'success' },
 
-  // ── DIVIDER LABEL (rendered as text, not a node) ──
-  // y ≈ 668
-
   // ── PART 2 ──
   step6:                    { x: 165, y: 690,  w: 210, h: 58,  label: 'Step 6\nLife Expectancy > 10y?' },
   end_watchful_waiting:     { x: 404, y: 698,  w: 124, h: 50,  label: 'Watchful\nWaiting',             color: 'warning' },
@@ -25,7 +22,16 @@ const NODES = {
   end_definitive_p2:        { x: 404, y: 944,  w: 124, h: 50,  label: '→ Definitive\nTreatment',        color: 'warning' },
   step9:                    { x: 165, y: 1054, w: 210, h: 58,  label: 'Step 9\nConcerning Features?' },
   end_high_intensity_as:    { x: 404, y: 1054, w: 124, h: 68,  label: 'High Intensity\nAS Protocol\n+ Poly-ICLC?', color: 'info' },
-  end_standard_as:          { x: 165, y: 1182, w: 210, h: 60,  label: 'Enrolled in AS\n(Standard Protocol)', color: 'success' },
+  end_standard_as:          { x: 165, y: 1182, w: 210, h: 60,  label: 'Enrolled in AS\n→ Part 3',        color: 'success' },
+
+  // ── PART 3 ──
+  step10:                   { x: 165, y: 1310, w: 210, h: 58,  label: 'Step 10\nUroflow + PVR Check' },
+  step11:                   { x: 165, y: 1428, w: 210, h: 68,  label: 'Step 11\nInitiate AS Protocol\n(Quarterly/Annual)' },
+  step12:                   { x: 34,  y: 1556, w: 148, h: 58,  label: 'Step 12\nPSMA Assessment\n(No MRI)' },
+  step13:                   { x: 358, y: 1556, w: 148, h: 58,  label: 'Step 13\nNew Positive\nFindings?' },
+  step14:                   { x: 358, y: 1674, w: 148, h: 58,  label: 'Step 14\nEarly Bx Results' },
+  end_continue_as:          { x: 165, y: 1792, w: 210, h: 60,  label: 'Continue on\nActive Surveillance', color: 'success' },
+  end_definitive_p3:        { x: 358, y: 1792, w: 148, h: 50,  label: '→ Definitive\nTreatment',          color: 'warning' },
 }
 
 // ─── CONNECTIONS ─────────────────────────────────────────────────────────────
@@ -53,6 +59,17 @@ const CONNECTIONS = [
   { from: 'step8',                    to: 'step9',                    label: 'Neg / G6' },
   { from: 'step9',                    to: 'end_high_intensity_as',    label: 'Yes' },
   { from: 'step9',                    to: 'end_standard_as',          label: 'No concerns' },
+  // Part 2 → Part 3 bridge
+  { from: 'end_standard_as',          to: 'step10',                   label: 'Continue\nPart 3' },
+  // Part 3
+  { from: 'step10',                   to: 'step11',                   label: 'Proceed' },
+  { from: 'step11',                   to: 'step12',                   label: 'No MRI' },
+  { from: 'step11',                   to: 'step13',                   label: 'MRI OK' },
+  { from: 'step12',                   to: 'end_continue_as',          label: 'PSMA done' },
+  { from: 'step13',                   to: 'end_continue_as',          label: 'No findings' },
+  { from: 'step13',                   to: 'step14',                   label: 'Yes' },
+  { from: 'step14',                   to: 'end_continue_as',          label: 'Gleason 6' },
+  { from: 'step14',                   to: 'end_definitive_p3',        label: '≥ G7' },
 ]
 
 // ─── HELPERS ─────────────────────────────────────────────────────────────────
@@ -101,6 +118,10 @@ function getConnectionPoints(conn) {
   if (conn.from === 'step6'                   && conn.to === 'end_watchful_waiting')     { x1 = from.x + from.w; y1 = fcy;            x2 = to.x;            y2 = tcy }
   if (conn.from === 'step8'                   && conn.to === 'end_definitive_p2')        { x1 = from.x + from.w; y1 = fcy;            x2 = to.x;            y2 = tcy }
   if (conn.from === 'step9'                   && conn.to === 'end_high_intensity_as')    { x1 = from.x + from.w; y1 = fcy;            x2 = to.x;            y2 = tcy }
+  // Part 3
+  if (conn.from === 'step11'                  && conn.to === 'step12')                  { x1 = from.x + from.w * 0.22; y1 = from.y + from.h }
+  if (conn.from === 'step11'                  && conn.to === 'step13')                  { x1 = from.x + from.w * 0.78; y1 = from.y + from.h }
+  if (conn.from === 'step14'                  && conn.to === 'end_definitive_p3')       { x1 = from.x + from.w; y1 = fcy;            x2 = to.x;            y2 = tcy }
 
   const mx = (x1 + x2) / 2
   const my = (y1 + y2) / 2
@@ -205,8 +226,8 @@ function DrawNode({ nodeId, node, isCurrent, isVisited, onStepClick }) {
 export default function InteractiveFlowChart({ currentStep, stepHistory, onStepClick }) {
   return React.createElement('div', { className: 'w-full overflow-auto' },
     React.createElement('svg', {
-      width: '540', height: '1290',
-      viewBox: '0 0 540 1290',
+      width: '540', height: '1900',
+      viewBox: '0 0 540 1900',
       className: 'bg-white border border-slate-200 rounded-lg shadow-sm'
     },
       // Markers
@@ -224,6 +245,10 @@ export default function InteractiveFlowChart({ currentStep, stepHistory, onStepC
       React.createElement('text', { x: 270, y: 672, textAnchor: 'middle', fontSize: 9, fontWeight: 'bold', fill: '#DC298D', className: 'select-none' },
         'PART 2 — Pre-Enrollment Verification'
       ),
+      React.createElement('line', { x1: 20, y1: 1290, x2: 520, y2: 1290, stroke: '#e2e8f0', strokeWidth: 1, strokeDasharray: '4 3' }),
+      React.createElement('text', { x: 270, y: 1304, textAnchor: 'middle', fontSize: 9, fontWeight: 'bold', fill: '#059669', className: 'select-none' },
+        'PART 3 — Standard Protocol'
+      ),
       // Connections behind nodes
       CONNECTIONS.map((conn, i) =>
         React.createElement(DrawConnection, { key: i, conn, stepHistory, currentStep })
@@ -239,7 +264,7 @@ export default function InteractiveFlowChart({ currentStep, stepHistory, onStepC
       ),
       // Footer
       React.createElement('text', {
-        x: 270, y: 1280, textAnchor: 'middle',
+        x: 270, y: 1890, textAnchor: 'middle',
         fontSize: 8, fill: '#94a3b8', className: 'select-none'
       }, 'Tewari Active Surveillance Program · Mount Sinai · Last Updated 2/28/25')
     )
