@@ -86,11 +86,6 @@ export default function Step11ASProtocol({ onMRIPossible, onNoMRI, onBack, onFor
       )
     ),
 
-    (onBack != null || onForward != null) && React.createElement(StepNav, {
-      onBack: onBack || (() => {}),
-      onForward: onForward || (() => {}),
-      canGoBack: !!canGoBack,
-      canGoForward: !!canGoForward
-    })
+    React.createElement(StepNav, { onBack, canGoBack: !!canGoBack })
   )
 }

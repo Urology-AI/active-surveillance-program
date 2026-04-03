@@ -6,6 +6,10 @@ const optionClass = 'option-card w-full p-4 pl-5 text-left bg-slate-50/80 border
 
 export default function Step3RiskStratification({ onFavorable, onUnfavorable, onBack, onForward, canGoBack, canGoForward }) {
   return React.createElement('div', { className: 'bg-white rounded-xl shadow-sinai border border-slate-100 p-6 md:p-8' },
+
+    React.createElement('div', { className: 'inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-sinai-cerulean border border-sinai-cerulean/20 rounded-full px-3 py-1 mb-4', style: { background: 'rgb(6 171 235 / 0.08)' } },
+      'Part 1 · Initial Risk Stratification'
+    ),
     React.createElement('div', { className: 'flex items-center gap-3 mb-6' },
       React.createElement('div', { className: 'bg-sinai-cerulean/10 p-2 rounded-lg' },
         React.createElement(AlertCircle, { className: 'w-6 h-6 text-sinai-cerulean' })
@@ -43,6 +47,6 @@ export default function Step3RiskStratification({ onFavorable, onUnfavorable, on
         React.createElement(ChevronRight, { className: 'w-5 h-5 text-slate-400 group-hover:text-sinai-cerulean shrink-0' })
       )
     ),
-    (onBack != null || onForward != null) && React.createElement(StepNav, { onBack: onBack || (() => {}), onForward: onForward || (() => {}), canGoBack: !!canGoBack, canGoForward: !!canGoForward })
+    React.createElement(StepNav, { onBack, canGoBack: !!canGoBack })
   )
 }

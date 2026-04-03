@@ -59,11 +59,6 @@ export default function Step8ConfirmatoryBx({ onNegative, onGleason6, onGleason7
       )
     ),
 
-    (onBack != null || onForward != null) && React.createElement(StepNav, {
-      onBack: onBack || (() => {}),
-      onForward: onForward || (() => {}),
-      canGoBack: !!canGoBack,
-      canGoForward: !!canGoForward
-    })
+    React.createElement(StepNav, { onBack, canGoBack: !!canGoBack })
   )
 }

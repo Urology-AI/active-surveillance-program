@@ -93,11 +93,6 @@ export default function Step9ConcerningFeatures({ onYes, onNo, onBack, onForward
       )
     ),
 
-    (onBack != null || onForward != null) && React.createElement(StepNav, {
-      onBack: onBack || (() => {}),
-      onForward: onForward || (() => {}),
-      canGoBack: !!canGoBack,
-      canGoForward: !!canGoForward
-    })
+    React.createElement(StepNav, { onBack, canGoBack: !!canGoBack })
   )
 }

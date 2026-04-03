@@ -60,11 +60,6 @@ export default function Step6LifeExpectancy({ onYes, onNo, onBack, onForward, ca
       )
     ),
 
-    (onBack != null || onForward != null) && React.createElement(StepNav, {
-      onBack: onBack || (() => {}),
-      onForward: onForward || (() => {}),
-      canGoBack: !!canGoBack,
-      canGoForward: !!canGoForward
-    })
+    React.createElement(StepNav, { onBack, canGoBack: !!canGoBack })
   )
 }

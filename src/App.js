@@ -29,6 +29,7 @@ import ProgressBar from './components/ProgressBar.js'
 import FlowChartDebug from './components/FlowChartDebug.js'
 import PasswordProtection from './components/PasswordProtection.js'
 import ChartPrintView from './components/ChartPrintView.js'
+import AppHeader from './components/AppHeader.js'
 
 const STORAGE_KEY = 'sinai-pathway-progress'
 
@@ -218,6 +219,18 @@ function App() {
 
   const showProgressBar = currentStep !== STEPS.START && !currentStep.startsWith('end_')
 
+  const getCurrentPart = () => {
+    const p1 = ['step1','step2','step3','step4','step5','end_active_surveillance','end_definitive_treatment','end_refuse_defer']
+    const p2 = ['step6','step7','step8','step9','end_watchful_waiting','end_high_intensity_as','end_standard_as_enrollment']
+    const p3 = ['step10','step11','step12','step13','step14','end_continue_as']
+    if (p1.includes(currentStep)) return 1
+    if (p2.includes(currentStep)) return 2
+    if (p3.includes(currentStep)) return 3
+    return null
+  }
+  const currentPart = currentStep !== STEPS.START ? getCurrentPart() : null
+  const currentStepLabel = currentStep !== STEPS.START ? (STEP_LABELS[currentStep] || null) : null
+
   const pathTaken = [...stepHistory, currentStep]
   const pathSummary = pathTaken.map(s => STEP_LABELS[s] || s).join(' → ')
   const pathSummaryFull = `Mount Sinai · Tewari Active Surveillance Program\nPath: ${pathSummary}\n${new Date().toLocaleString()}`
@@ -241,7 +254,15 @@ function App() {
     return React.createElement(PasswordProtection, { onAuthenticated: () => setIsAuthenticated(true) })
   }
 
-  return React.createElement('div', { className: 'min-h-screen bg-sinai-page py-8 px-4' },
+  return React.createElement('div', { className: 'min-h-screen bg-sinai-page' },
+
+    // Sticky top header (shown for all non-start screens)
+    currentStep !== STEPS.START && React.createElement(AppHeader, {
+      currentPart,
+      stepLabel: currentStepLabel,
+      onReset: reset,
+      showReset: true,
+    }),
 
     showResumePrompt && React.createElement('div', {
       className: 'fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40'
@@ -255,16 +276,17 @@ function App() {
       )
     ),
 
-    React.createElement('div', { className: 'max-w-4xl mx-auto' },
+    React.createElement('div', { className: `max-w-4xl mx-auto px-4 ${currentStep !== STEPS.START ? 'pt-6 pb-12' : 'py-8'}` },
       showProgressBar && React.createElement(ProgressBar, {
         progress: getProgress(),
+        stepLabel: currentStepLabel,
         onBack: goBack,
         onForward: goForward,
         canGoBack: stepHistory.length > 0,
         canGoForward: forwardStack.length > 0,
       }),
 
-      React.createElement('div', { className: 'mt-8' },
+      React.createElement('div', { className: 'step-card mt-6', key: currentStep },
 
         // ── PART 1 ──
         currentStep === STEPS.START &&
@@ -416,7 +438,7 @@ function App() {
           }),
       ),
 
-      React.createElement('footer', { className: 'mt-12 pt-6 border-t border-slate-200 text-center text-xs text-slate-500' },
+      React.createElement('footer', { className: 'mt-10 pt-6 border-t border-slate-200 text-center text-xs text-slate-500' },
         React.createElement('p', { className: 'mb-1' }, 'Clinical decision support only; does not replace clinical judgment.'),
         React.createElement('p', null,
           'Refer to institutional protocol or ',

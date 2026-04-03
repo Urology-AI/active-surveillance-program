@@ -14,64 +14,70 @@ export default function EndStateWatchfulWaiting({ onReset, pathSummary, onBack, 
     }
   }
 
-  return React.createElement('div', { className: 'bg-white rounded-xl shadow-sinai border border-slate-100 p-6 md:p-8' },
-    React.createElement('div', { className: 'flex items-center justify-center mb-6' },
-      React.createElement('div', { className: 'bg-amber-100 p-4 rounded-full ring-4 ring-amber-200/50' },
-        React.createElement(Eye, { className: 'w-12 h-12 text-amber-600' })
-      )
-    ),
+  return React.createElement('div', { className: 'bg-white rounded-xl border border-slate-100 overflow-hidden', style: { boxShadow: '0 8px 40px -8px rgba(245,158,11,0.2)' } },
 
-    React.createElement('h2', { className: 'text-2xl font-bold text-sinai-cetacean text-center mb-6' },
-      'Discuss / Offer Watchful Waiting'
-    ),
-
-    React.createElement('div', { className: 'bg-amber-50 border-2 border-amber-200 rounded-lg p-6 mb-4' },
-      React.createElement('p', { className: 'text-base font-semibold text-amber-900 mb-2' },
-        'Life expectancy ≤ 10 years — Active Surveillance not recommended.'
-      ),
-      React.createElement('p', { className: 'text-sm text-slate-700' },
-        'Discuss watchful waiting as the preferred management approach. Explain the differences between watchful waiting and active surveillance.'
-      )
-    ),
-
-    React.createElement('div', { className: 'bg-slate-50 border border-slate-200 rounded-lg p-4 mb-6' },
-      React.createElement('p', { className: 'text-sm font-semibold text-sinai-navy mb-2' }, 'Next Steps'),
-      React.createElement('ul', { className: 'space-y-1 text-sm text-slate-700' },
-        React.createElement('li', { className: 'flex items-center gap-2' },
-          React.createElement('span', { className: 'text-sinai-cerulean font-bold' }, '•'),
-          'Counsel patient on watchful waiting vs. active surveillance'
-        ),
-        React.createElement('li', { className: 'flex items-center gap-2' },
-          React.createElement('span', { className: 'text-sinai-cerulean font-bold' }, '•'),
-          React.createElement('span', { className: 'font-semibold text-sinai-magenta' }, 'Document')
+    // Header band
+    React.createElement('div', {
+      className: 'px-8 py-7 text-center',
+      style: { background: 'linear-gradient(135deg, #451a03 0%, #78350f 60%, #b45309 100%)' }
+    },
+      React.createElement('div', { className: 'flex justify-center mb-4' },
+        React.createElement('div', { className: 'w-14 h-14 rounded-full bg-white/15 border-2 border-white/30 flex items-center justify-center' },
+          React.createElement(Eye, { className: 'w-8 h-8 text-amber-300' })
         )
+      ),
+      React.createElement('h2', { className: 'text-2xl font-bold text-white mb-1' }, 'Discuss / Offer Watchful Waiting'),
+      React.createElement('p', { style: { color: '#fcd34d', fontSize: '14px', fontWeight: 500 } },
+        'Life expectancy ≤ 10 years — AS not recommended'
       )
     ),
 
-    React.createElement('div', { className: 'flex flex-wrap justify-center gap-3' },
-      canGoBack && onBack && React.createElement('button', {
-        onClick: onBack,
-        className: 'flex items-center gap-2 px-4 py-2.5 border-2 border-slate-200 rounded-xl text-slate-700 font-medium hover:border-sinai-cerulean hover:bg-sinai-cerulean/5 transition-colors'
+    React.createElement('div', { className: 'p-6 md:p-8' },
+
+      React.createElement('div', {
+        className: 'rounded-xl p-5 mb-6',
+        style: { background: '#fffbeb', border: '1px solid #fde68a' }
       },
-        React.createElement(ArrowLeft, { className: 'w-4 h-4' }), 'Back'
+        React.createElement('p', { className: 'text-sm font-bold mb-3', style: { color: '#78350f' } }, 'Recommended approach:'),
+        React.createElement('div', { className: 'space-y-2 text-sm text-slate-700' },
+          React.createElement('div', { className: 'flex items-start gap-2' },
+            React.createElement('span', { className: 'font-bold mt-0.5', style: { color: '#b45309' } }, '•'),
+            'Counsel patient on watchful waiting vs. active surveillance differences'
+          ),
+          React.createElement('div', { className: 'flex items-start gap-2' },
+            React.createElement('span', { className: 'font-bold mt-0.5', style: { color: '#b45309' } }, '•'),
+            'Discuss symptom-directed monitoring (PSA, DRE as needed)'
+          ),
+          React.createElement('div', { className: 'flex items-start gap-2' },
+            React.createElement('span', { className: 'font-bold mt-0.5 text-sinai-magenta' }, '✓'),
+            React.createElement('span', { className: 'font-semibold text-sinai-magenta' }, 'Document')
+          )
+        )
       ),
-      pathSummary && React.createElement('button', {
-        onClick: handleCopy,
-        className: 'flex items-center gap-2 px-4 py-2.5 border-2 border-slate-200 rounded-xl text-slate-700 font-medium hover:border-sinai-cerulean hover:bg-sinai-cerulean/5 transition-colors'
-      },
-        copied ? 'Copied!' : [React.createElement(Copy, { key: 'i', className: 'w-4 h-4' }), 'Copy summary']
-      ),
-      React.createElement('button', {
-        onClick: () => window.print(),
-        className: 'flex items-center gap-2 px-4 py-2.5 border-2 border-slate-200 rounded-xl text-slate-700 font-medium hover:border-sinai-cerulean hover:bg-sinai-cerulean/5 transition-colors'
-      },
-        React.createElement(FileText, { className: 'w-4 h-4' }), 'Export as PDF'
-      ),
-      React.createElement('button', {
-        onClick: () => setShowResetConfirm(true),
-        className: 'btn-primary flex items-center gap-2 px-6 py-3.5 bg-sinai-cerulean text-white font-semibold rounded-xl hover:bg-sinai-cerulean-dark shadow-sinai'
-      },
-        React.createElement(RotateCcw, { className: 'w-5 h-5' }), 'Reset'
+
+      // Secondary actions
+      React.createElement('div', { className: 'flex flex-wrap items-center gap-2 pt-4 border-t border-slate-100' },
+        canGoBack && onBack && React.createElement('button', {
+          onClick: onBack,
+          className: 'flex items-center gap-1.5 px-3 py-2 text-sm text-slate-600 border border-slate-200 rounded-lg hover:border-sinai-cerulean hover:text-sinai-navy transition-colors'
+        }, React.createElement(ArrowLeft, { className: 'w-4 h-4' }), 'Back'),
+
+        pathSummary && React.createElement('button', {
+          onClick: handleCopy,
+          className: 'flex items-center gap-1.5 px-3 py-2 text-sm text-slate-600 border border-slate-200 rounded-lg hover:border-sinai-cerulean hover:text-sinai-navy transition-colors'
+        }, React.createElement(Copy, { className: 'w-4 h-4' }), copied ? 'Copied!' : 'Copy summary'),
+
+        React.createElement('button', {
+          onClick: () => window.print(),
+          className: 'flex items-center gap-1.5 px-3 py-2 text-sm text-slate-600 border border-slate-200 rounded-lg hover:border-sinai-cerulean hover:text-sinai-navy transition-colors'
+        }, React.createElement(FileText, { className: 'w-4 h-4' }), 'Export PDF'),
+
+        React.createElement('div', { className: 'flex-1' }),
+
+        React.createElement('button', {
+          onClick: () => setShowResetConfirm(true),
+          className: 'flex items-center gap-1.5 px-3 py-2 text-sm text-slate-400 hover:text-rose-600 transition-colors rounded-lg'
+        }, React.createElement(RotateCcw, { className: 'w-3.5 h-3.5' }), 'New Patient')
       )
     ),
 
@@ -83,10 +89,11 @@ export default function EndStateWatchfulWaiting({ onReset, pathSummary, onBack, 
         className: 'bg-white rounded-xl shadow-xl p-6 max-w-sm w-full border border-slate-200',
         onClick: e => e.stopPropagation()
       },
-        React.createElement('p', { className: 'text-sinai-cetacean font-semibold mb-4' }, 'Clear pathway and start over?'),
+        React.createElement('p', { className: 'text-sinai-cetacean font-semibold mb-1' }, 'Start a new patient?'),
+        React.createElement('p', { className: 'text-sm text-slate-500 mb-4' }, 'This will clear all progress and return to the start screen.'),
         React.createElement('div', { className: 'flex gap-3 justify-end' },
-          React.createElement('button', { onClick: () => setShowResetConfirm(false), className: 'px-4 py-2.5 border-2 border-slate-200 rounded-xl font-medium text-slate-700 hover:bg-slate-50' }, 'Cancel'),
-          React.createElement('button', { onClick: () => { setShowResetConfirm(false); onReset() }, className: 'px-4 py-2.5 bg-sinai-cerulean text-white rounded-xl font-semibold hover:bg-sinai-cerulean-dark' }, 'Reset')
+          React.createElement('button', { onClick: () => setShowResetConfirm(false), className: 'px-4 py-2 border border-slate-200 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50' }, 'Cancel'),
+          React.createElement('button', { onClick: () => { setShowResetConfirm(false); onReset() }, className: 'px-4 py-2 bg-sinai-cerulean text-white rounded-lg text-sm font-semibold hover:bg-sinai-cerulean-dark' }, 'Start Over')
         )
       )
     )

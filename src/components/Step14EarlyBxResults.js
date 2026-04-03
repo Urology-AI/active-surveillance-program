@@ -51,11 +51,6 @@ export default function Step14EarlyBxResults({ onGleason6, onGleason7Plus, onBac
       )
     ),
 
-    (onBack != null || onForward != null) && React.createElement(StepNav, {
-      onBack: onBack || (() => {}),
-      onForward: onForward || (() => {}),
-      canGoBack: !!canGoBack,
-      canGoForward: !!canGoForward
-    })
+    React.createElement(StepNav, { onBack, canGoBack: !!canGoBack })
   )
 }
