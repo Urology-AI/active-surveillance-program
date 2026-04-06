@@ -18,7 +18,7 @@ export default function EndStateHighIntensityAS({ onReset, pathSummary, onBack, 
 
     // Header band
     React.createElement('div', {
-      className: 'px-8 py-7 text-center',
+      className: 'px-4 sm:px-8 py-6 sm:py-7 text-center',
       style: { background: 'linear-gradient(135deg, #00002D 0%, #212070 60%, #4338ca 100%)' }
     },
       React.createElement('div', { className: 'flex justify-center mb-4' },
@@ -26,7 +26,7 @@ export default function EndStateHighIntensityAS({ onReset, pathSummary, onBack, 
           React.createElement(Activity, { className: 'w-8 h-8 text-indigo-300' })
         )
       ),
-      React.createElement('h2', { className: 'text-2xl font-bold text-white mb-1' }, 'High Intensity AS Protocol'),
+      React.createElement('h2', { className: 'text-xl sm:text-2xl font-bold text-white mb-1' }, 'High Intensity AS Protocol'),
       React.createElement('p', { style: { color: '#a5b4fc', fontSize: '14px', fontWeight: 500 } },
         'Concerning features present — Intensive monitoring required'
       )
@@ -76,24 +76,24 @@ export default function EndStateHighIntensityAS({ onReset, pathSummary, onBack, 
       React.createElement('div', { className: 'flex flex-wrap items-center gap-2 pt-4 border-t border-slate-100' },
         canGoBack && onBack && React.createElement('button', {
           onClick: onBack,
-          className: 'flex items-center gap-1.5 px-3 py-2 text-sm text-slate-600 border border-slate-200 rounded-lg hover:border-sinai-cerulean hover:text-sinai-navy transition-colors'
+          className: 'flex items-center gap-1.5 px-3 py-2.5 text-sm text-slate-600 border border-slate-200 rounded-lg hover:border-sinai-cerulean hover:text-sinai-navy transition-colors'
         }, React.createElement(ArrowLeft, { className: 'w-4 h-4' }), 'Back'),
 
         pathSummary && React.createElement('button', {
           onClick: handleCopy,
-          className: 'flex items-center gap-1.5 px-3 py-2 text-sm text-slate-600 border border-slate-200 rounded-lg hover:border-sinai-cerulean hover:text-sinai-navy transition-colors'
+          className: 'flex items-center gap-1.5 px-3 py-2.5 text-sm text-slate-600 border border-slate-200 rounded-lg hover:border-sinai-cerulean hover:text-sinai-navy transition-colors'
         }, React.createElement(Copy, { className: 'w-4 h-4' }), copied ? 'Copied!' : 'Copy summary'),
 
         React.createElement('button', {
           onClick: () => window.print(),
-          className: 'flex items-center gap-1.5 px-3 py-2 text-sm text-slate-600 border border-slate-200 rounded-lg hover:border-sinai-cerulean hover:text-sinai-navy transition-colors'
+          className: 'flex items-center gap-1.5 px-3 py-2.5 text-sm text-slate-600 border border-slate-200 rounded-lg hover:border-sinai-cerulean hover:text-sinai-navy transition-colors'
         }, React.createElement(FileText, { className: 'w-4 h-4' }), 'Export PDF'),
 
         React.createElement('div', { className: 'flex-1' }),
 
         React.createElement('button', {
           onClick: () => setShowResetConfirm(true),
-          className: 'flex items-center gap-1.5 px-3 py-2 text-sm text-slate-400 hover:text-rose-600 transition-colors rounded-lg'
+          className: 'flex items-center gap-1.5 px-3 py-2.5 text-sm text-slate-400 hover:text-rose-600 transition-colors rounded-lg'
         }, React.createElement(RotateCcw, { className: 'w-3.5 h-3.5' }), 'New Patient')
       )
     ),

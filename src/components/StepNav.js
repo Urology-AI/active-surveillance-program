@@ -9,7 +9,7 @@ export default function StepNav({ onBack, canGoBack }) {
     React.createElement('button', {
       type: 'button',
       onClick: onBack,
-      className: 'flex items-center gap-1.5 text-sm text-slate-400 hover:text-sinai-navy transition-colors'
+      className: 'flex items-center gap-1.5 px-2 py-2 text-sm text-slate-400 hover:text-sinai-navy transition-colors rounded-lg'
     },
       React.createElement(ArrowLeft, { className: 'w-3.5 h-3.5' }),
       'Back'

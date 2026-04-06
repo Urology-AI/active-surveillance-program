@@ -59,7 +59,7 @@ export default function AppHeader({ currentPart, stepLabel, onReset, showReset }
       showReset && React.createElement('button', {
         onClick: onReset,
         className: 'flex items-center gap-1.5 shrink-0 rounded-lg transition-all',
-        style: { fontSize: '12px', color: 'rgba(255,255,255,0.4)', padding: '5px 10px', background: 'transparent', border: '1px solid rgba(255,255,255,0.1)' },
+        style: { fontSize: '12px', color: 'rgba(255,255,255,0.4)', padding: '8px 12px', background: 'transparent', border: '1px solid rgba(255,255,255,0.1)' },
         onMouseEnter: e => { e.currentTarget.style.color = 'rgba(255,255,255,0.8)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.3)'; e.currentTarget.style.background = 'rgba(255,255,255,0.08)' },
         onMouseLeave: e => { e.currentTarget.style.color = 'rgba(255,255,255,0.4)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)'; e.currentTarget.style.background = 'transparent' }
       },

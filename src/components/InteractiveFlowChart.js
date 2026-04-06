@@ -223,10 +223,12 @@ function DrawNode({ nodeId, node, isCurrent, isVisited, onStepClick }) {
 }
 
 // ─── MAIN EXPORT ─────────────────────────────────────────────────────────────
-export default function InteractiveFlowChart({ currentStep, stepHistory, onStepClick }) {
+export default function InteractiveFlowChart({ currentStep, stepHistory, onStepClick, scale = 1 }) {
+  const svgW = Math.round(540 * scale)
+  const svgH = Math.round(1900 * scale)
   return React.createElement('div', { className: 'w-full overflow-auto' },
     React.createElement('svg', {
-      width: '540', height: '1900',
+      width: svgW, height: svgH,
       viewBox: '0 0 540 1900',
       className: 'bg-white border border-slate-200 rounded-lg shadow-sm'
     },

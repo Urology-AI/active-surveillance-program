@@ -9,7 +9,7 @@ export default function ProgressBar({ progress, stepLabel, onBack, onForward, ca
       React.createElement('button', {
         onClick: onBack,
         disabled: !canGoBack,
-        className: `flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-xl border transition-all ${
+        className: `flex items-center gap-1.5 px-3 py-2.5 text-sm font-medium rounded-xl border transition-all ${
           canGoBack
             ? 'text-sinai-navy bg-white border-slate-200 hover:bg-sinai-cerulean/5 hover:border-sinai-cerulean/40 shadow-sm'
             : 'text-slate-300 border-slate-100 bg-slate-50 cursor-not-allowed'
@@ -42,7 +42,7 @@ export default function ProgressBar({ progress, stepLabel, onBack, onForward, ca
       React.createElement('button', {
         onClick: onForward,
         disabled: !canGoForward,
-        className: `flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-xl border transition-all ${
+        className: `flex items-center gap-1.5 px-3 py-2.5 text-sm font-medium rounded-xl border transition-all ${
           canGoForward
             ? 'text-sinai-navy bg-white border-slate-200 hover:bg-sinai-cerulean/5 hover:border-sinai-cerulean/40 shadow-sm'
             : 'text-slate-300 border-slate-100 bg-slate-50 cursor-not-allowed'

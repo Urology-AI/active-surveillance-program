@@ -276,7 +276,7 @@ function App() {
       )
     ),
 
-    React.createElement('div', { className: `max-w-4xl mx-auto px-4 ${currentStep !== STEPS.START ? 'pt-6 pb-12' : 'py-8'}` },
+    React.createElement('div', { className: `main-content-padded max-w-4xl mx-auto px-4 ${currentStep !== STEPS.START ? 'pt-6' : 'py-8'}` },
       showProgressBar && React.createElement(ProgressBar, {
         progress: getProgress(),
         stepLabel: currentStepLabel,

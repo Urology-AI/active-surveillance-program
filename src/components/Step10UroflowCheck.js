@@ -36,7 +36,7 @@ export default function Step10UroflowCheck({ onProceed, onBack, onForward, canGo
     subState === null && React.createElement('div', null,
       React.createElement('div', { className: 'mb-5 p-4 bg-purple-50 border border-purple-200 rounded-xl' },
         React.createElement('p', { className: 'text-sm font-semibold text-purple-800 mb-2' }, 'Indications for Uroflow + PVR'),
-        React.createElement('ul', { className: 'grid grid-cols-2 gap-x-4 gap-y-1 text-sm text-slate-700' },
+        React.createElement('ul', { className: 'grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1.5 text-sm text-slate-700' },
           INDICATIONS.map((ind, i) =>
             React.createElement('li', { key: i, className: 'flex items-start gap-1.5' },
               React.createElement('span', { className: 'text-purple-400 mt-0.5 shrink-0' }, '•'),
