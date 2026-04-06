@@ -214,7 +214,7 @@ export default function StartScreen({ onStart }) {
 
       // Top gradient banner
       React.createElement('div', {
-        className: 'px-8 pt-8 pb-7 text-center',
+        className: 'px-4 sm:px-8 pt-6 sm:pt-8 pb-6 sm:pb-7 text-center',
         style: { background: 'linear-gradient(135deg, #00002D 0%, #212070 55%, #06ABEB 140%)' }
       },
         React.createElement('div', { className: 'flex justify-center mb-5' },

@@ -114,6 +114,21 @@ html {
   scroll-behavior: smooth;
 }
 
+/* iOS safe-area support for fixed bottom panel */
+.fixed-bottom-panel {
+  bottom: calc(0.5rem + env(safe-area-inset-bottom));
+}
+@media (min-width: 640px) {
+  .fixed-bottom-panel {
+    bottom: calc(1rem + env(safe-area-inset-bottom));
+  }
+}
+
+/* Extra bottom clearance so content isn't hidden behind the floating chart panel */
+.main-content-padded {
+  padding-bottom: max(3rem, calc(3rem + env(safe-area-inset-bottom)));
+}
+
 /* Focus visible ring */
 :focus-visible {
   outline: 2px solid #06ABEB;

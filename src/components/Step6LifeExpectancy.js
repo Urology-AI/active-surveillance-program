@@ -31,7 +31,7 @@ export default function Step6LifeExpectancy({ onYes, onNo, onBack, onForward, ca
           rel: 'noopener noreferrer',
           className: 'inline-flex items-center gap-1.5 text-sm text-sinai-cerulean hover:underline font-medium'
         },
-          'eprognosis.ucsf.edu/leeschonberg.php',
+          React.createElement('span', { className: 'break-all' }, 'eprognosis.ucsf.edu/leeschonberg.php'),
           React.createElement(ExternalLink, { className: 'w-3.5 h-3.5' })
         )
       )
