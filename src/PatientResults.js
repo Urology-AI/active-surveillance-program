@@ -330,7 +330,13 @@ export default function PatientResults({ results, inputs, onBack }) {
 
     // ── Disclaimer ───────────────────────────────────────────────────────
     e('div', { className: 'rounded-xl p-4 space-y-2', style: { background: '#f8fafc', border: '1px solid #e2e8f0' } },
-      e('p', { className: 'text-xs font-semibold text-gray-500 uppercase tracking-wide' }, 'Clinical Disclaimer'),
+      e('div', { className: 'flex items-center justify-between flex-wrap gap-2' },
+        e('p', { className: 'text-xs font-semibold text-gray-500 uppercase tracking-wide' }, 'Clinical Disclaimer'),
+        inputs.epsaContext?.source === 'epsa' && e('span', {
+          className: 'text-xs font-medium px-2 py-0.5 rounded-full',
+          style: { background: '#f3f4f6', color: '#6b7280' },
+        }, 'Via ePSA')
+      ),
       e('p', { className: 'text-xs text-gray-400 leading-relaxed' },
         'This tool provides algorithmic decision-support output only. It does not constitute medical advice, a diagnosis, or a treatment recommendation. Scoring thresholds are based on published literature; point weights are ordinal proxies for published risk tiers and have not been prospectively validated as an integrated composite score. All clinical decisions must be made by a qualified healthcare provider in the context of the patient\'s full clinical history, institutional protocols, and shared decision-making.'
       ),

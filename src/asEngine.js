@@ -91,7 +91,7 @@ export function validateInputs(inputs) {
  *
  *  · PI-RADS v2.1: Turkbey B et al., Eur Urol 2019; 76(3):340-351
  */
-function calcBasic({ ggg, positiveCores, totalCores, maxCorePercent, psa, prostateVolume, pirads }) {
+function calcBasic({ ggg, positiveCores, totalCores, maxCorePercent, psa, prostateVolume, pirads, epsaPreBiopsyTier }) {
   const factors = []
   let score = 0
 
@@ -172,6 +172,16 @@ function calcBasic({ ggg, positiveCores, totalCores, maxCorePercent, psa, prosta
            : pirads === 3 ? 'PI-RADS v2.1: equivocal — requires clinical judgment'
            : pirads === 4 ? 'PI-RADS v2.1: high probability of clinically significant cancer'
            : 'PI-RADS v2.1: very high probability of clinically significant cancer' })
+  }
+
+  // ePSA pre-biopsy tier modifier — only fires for high/intermediate-high
+  if (epsaPreBiopsyTier === 'high' || epsaPreBiopsyTier === 'intermediate-high') {
+    const pts   = epsaPreBiopsyTier === 'high' ? 1 : 0.5
+    const label = epsaPreBiopsyTier === 'high'
+      ? 'Elevated pre-biopsy ePSA tier (High)'
+      : 'Elevated pre-biopsy ePSA tier (Intermediate-High)'
+    score += pts
+    factors.push({ label, points: pts, tier: 'intermediate', basis: 'ePSA pre-biopsy context' })
   }
 
   // Tier mapping (calibrated to NCCN/PRIAS criteria deviation)

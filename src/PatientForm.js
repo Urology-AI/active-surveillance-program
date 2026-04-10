@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 
 const e = React.createElement
 
@@ -142,7 +142,7 @@ const PIRADS_OPTIONS = [
 ]
 
 // ─── Main component ───────────────────────────────────────────────────────────
-export default function PatientForm({ onSubmit }) {
+export default function PatientForm({ onSubmit, initialValues = {} }) {
   // Required fields
   const [ggg,            setGgg]           = useState(null)
   const [positiveCores,  setPositiveCores] = useState('')
@@ -151,6 +151,12 @@ export default function PatientForm({ onSubmit }) {
   const [psa,            setPsa]           = useState('')
   const [prostateVolume, setVolume]        = useState('')
   const [pirads,         setPirads]        = useState(null)
+  // ePSA banner
+  const [bannerDismissed, setBannerDismissed] = useState(false)
+
+  useEffect(() => {
+    if (initialValues.psa != null) setPsa(String(initialValues.psa))
+  }, [])
   // Section visibility
   const [showGenomic,    setShowGenomic]   = useState(false)
   const [showPSMA,       setShowPSMA]      = useState(false)
@@ -222,7 +228,41 @@ export default function PatientForm({ onSubmit }) {
     onSubmit(buildInputs())
   }
 
+  const showBanner = !bannerDismissed
+    && initialValues.source === 'epsa'
+    && initialValues.epsaPreBiopsyTier
+
   return e('form', { onSubmit: handleSubmit, noValidate: true, className: 'space-y-4' },
+
+    // ── ePSA handoff banner (only when arriving from ePSA with tier param) ─
+    showBanner && e('div', {
+      className: 'flex items-start justify-between gap-3 px-4 py-3 rounded-xl border',
+      style: { background: '#eff6ff', borderColor: '#bfdbfe' },
+    },
+      e('div', { className: 'flex items-start gap-2.5 flex-1 min-w-0' },
+        e('svg', { className: 'w-4 h-4 flex-shrink-0 mt-0.5', style: { color: '#2563eb' }, fill: 'currentColor', viewBox: '0 0 20 20' },
+          e('path', { fillRule: 'evenodd', clipRule: 'evenodd', d: 'M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 00-1 1v4a1 1 0 102 0V7a1 1 0 00-1-1zm1 8a1 1 0 10-2 0 1 1 0 002 0z' })
+        ),
+        e('div', {},
+          e('p', { className: 'text-xs font-semibold', style: { color: '#1d4ed8' } },
+            `Continuing from your ePSA assessment \u00b7 Pre-biopsy risk: ${initialValues.epsaPreBiopsyTier}`
+          ),
+          e('p', { className: 'text-xs mt-0.5', style: { color: '#3b82f6' } },
+            'Your PSA has been pre-filled. Complete the remaining fields below.'
+          )
+        )
+      ),
+      e('button', {
+        type: 'button',
+        onClick: () => setBannerDismissed(true),
+        className: 'flex-shrink-0 text-blue-300 hover:text-blue-500 transition-colors focus:outline-none',
+        'aria-label': 'Dismiss',
+      },
+        e('svg', { className: 'w-4 h-4', fill: 'none', viewBox: '0 0 24 24', stroke: 'currentColor', strokeWidth: 2 },
+          e('path', { strokeLinecap: 'round', strokeLinejoin: 'round', d: 'M6 18L18 6M6 6l12 12' })
+        )
+      )
+    ),
 
     // ── Section 1: Required ────────────────────────────────────────────────
     e('div', { className: 'bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden' },
