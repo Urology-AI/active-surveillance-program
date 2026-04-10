@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import PatientForm from './PatientForm.js'
 import PatientResults from './PatientResults.js'
 import { runAssessment } from './asEngine.js'
@@ -6,13 +6,38 @@ import { runAssessment } from './asEngine.js'
 const e = React.createElement
 
 export default function PatientApp({ onBack }) {
-  const [view, setView]       = useState('form')   // 'form' | 'results'
-  const [inputs, setInputs]   = useState(null)
-  const [results, setResults] = useState(null)
+  const [view, setView]               = useState('form')   // 'form' | 'results'
+  const [inputs, setInputs]           = useState(null)
+  const [results, setResults]         = useState(null)
+  const [initialValues, setInitialValues] = useState({})
+
+  useEffect(() => {
+    const params   = new URLSearchParams(window.location.search)
+    const psa      = params.get('psa')
+    const source   = params.get('source')
+    const epsaTier = params.get('epsaTier')
+    if (psa || source || epsaTier) {
+      setInitialValues({
+        psa:               psa      ? parseFloat(psa) : undefined,
+        source:            source   || undefined,
+        epsaPreBiopsyTier: epsaTier || undefined,
+      })
+    }
+  }, [])
 
   function handleFormSubmit(formInputs) {
-    const assessment = runAssessment(formInputs)
-    setInputs(formInputs)
+    const epsaContext = {
+      source:        initialValues.source            || null,
+      prebiopsyTier: initialValues.epsaPreBiopsyTier || null,
+    }
+    const enrichedInputs = {
+      ...formInputs,
+      source:            initialValues.source            || null,
+      epsaPreBiopsyTier: initialValues.epsaPreBiopsyTier || null,
+      epsaContext,
+    }
+    const assessment = runAssessment(enrichedInputs)
+    setInputs(enrichedInputs)
     setResults(assessment)
     setView('results')
     window.scrollTo({ top: 0, behavior: 'smooth' })
@@ -65,7 +90,7 @@ export default function PatientApp({ onBack }) {
               e('h1', { className: 'text-xl font-bold text-gray-900 mb-1' }, 'Active Surveillance Assessment'),
               e('p', { className: 'text-sm text-gray-500' }, 'Enter your biopsy and diagnostic data below. Sections marked optional provide additional precision when available.')
             ),
-            e(PatientForm, { onSubmit: handleFormSubmit })
+            e(PatientForm, { onSubmit: handleFormSubmit, initialValues })
           )
         : e(PatientResults, { results, inputs, onBack: handleBackToForm })
     )
