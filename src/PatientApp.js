@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react'
 import PatientForm from './PatientForm.js'
 import PatientResults from './PatientResults.js'
+import CareTeamModal from './components/CareTeamModal.js'
 import { runAssessment } from './asEngine.js'
+import { Info } from 'lucide-react'
 
 const e = React.createElement
 const PATIENT_EXPORT_VERSION = 1
@@ -13,6 +15,7 @@ export default function PatientApp({ onBack }) {
   const [initialValues, setInitialValues] = useState({})
   const [uploadError, setUploadError] = useState('')
   const [uploadNotice, setUploadNotice] = useState('')
+  const [careOpen, setCareOpen] = useState(false)
 
   useEffect(() => {
     const params   = new URLSearchParams(window.location.search)
@@ -157,23 +160,31 @@ export default function PatientApp({ onBack }) {
 
   return e('div', { className: 'min-h-screen', style: { background: '#f8fafc' } },
 
+    e(CareTeamModal, { open: careOpen, onClose: () => setCareOpen(false) }),
+
     // Header
     e('div', { className: 'no-print', style: { background: '#00002D' } },
-      e('div', { className: 'max-w-2xl mx-auto px-4 py-3 flex items-center justify-between' },
+      e('div', { className: 'max-w-2xl mx-auto px-4 py-3 flex items-center justify-between gap-2' },
         e('button', {
           onClick: onBack,
-          className: 'flex items-center gap-1.5 text-white/60 hover:text-white text-sm transition-colors',
+          className: 'flex items-center gap-1.5 text-white/60 hover:text-white text-sm transition-colors shrink-0',
         },
           e('svg', { className: 'w-4 h-4', fill: 'none', viewBox: '0 0 24 24', stroke: 'currentColor', strokeWidth: 2 },
             e('path', { strokeLinecap: 'round', strokeLinejoin: 'round', d: 'M15 19l-7-7 7-7' })
           ),
           'Change role'
         ),
-        e('div', { className: 'text-center' },
+        e('div', { className: 'text-center min-w-0 flex-1' },
           e('div', { className: 'text-white text-xs font-semibold tracking-wide' }, 'MOUNT SINAI'),
           e('div', { className: 'text-white/50 text-xs' }, 'Patient Assessment')
         ),
-        e('div', { className: 'w-20' }) // spacer
+        e('button', {
+          type: 'button',
+          onClick: () => setCareOpen(true),
+          className: 'inline-flex h-8 w-8 items-center justify-center shrink-0 rounded-full border border-white/20 bg-white/5 text-white/85 transition-colors hover:bg-white/15 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-white/30',
+          title: 'Meet the Care Team',
+          'aria-label': 'Meet the Care Team',
+        }, e(Info, { className: 'h-4 w-4' }))
       )
     ),
 

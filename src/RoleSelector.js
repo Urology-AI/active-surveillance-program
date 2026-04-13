@@ -1,9 +1,33 @@
-import React from 'react'
+import React, { useState } from 'react'
+import { Info } from 'lucide-react'
+import CareTeamModal from './components/CareTeamModal.js'
 
 const e = React.createElement
 
 export default function RoleSelector({ onSelectRole }) {
-  return e('div', { className: 'min-h-screen flex flex-col items-center justify-center p-6', style: { background: 'linear-gradient(135deg, #00002D 0%, #212070 60%, #06ABEB 100%)' } },
+  const [careOpen, setCareOpen] = useState(false)
+
+  return e('div', { className: 'min-h-screen flex flex-col', style: { background: 'linear-gradient(135deg, #00002D 0%, #212070 60%, #06ABEB 100%)' } },
+
+    e(CareTeamModal, { open: careOpen, onClose: () => setCareOpen(false) }),
+
+    // Top bar
+    e('header', {
+      className: 'no-print sticky top-0 z-40 w-full shrink-0 border-b border-white/10',
+      style: { background: 'rgba(0,0,45,0.88)', backdropFilter: 'blur(10px)' },
+    },
+      e('div', { className: 'mx-auto flex max-w-2xl items-center justify-end px-4 py-3' },
+        e('button', {
+          type: 'button',
+          onClick: () => setCareOpen(true),
+          className: 'inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/20 bg-white/10 text-white/90 transition-colors hover:bg-white/20 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-white/40',
+          title: 'Meet the Care Team',
+          'aria-label': 'Meet the Care Team',
+        }, e(Info, { className: 'h-4 w-4' }))
+      )
+    ),
+
+    e('div', { className: 'flex flex-1 flex-col items-center justify-center p-6' },
 
     // Logo / wordmark
     e('div', { className: 'mb-10 text-center' },
@@ -69,6 +93,7 @@ export default function RoleSelector({ onSelectRole }) {
     // Footer
     e('p', { className: 'mt-10 text-white/40 text-xs text-center max-w-sm' },
       'For educational and clinical decision-support purposes only. Not a substitute for professional medical advice.'
+    )
     )
   )
 }

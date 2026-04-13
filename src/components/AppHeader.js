@@ -1,5 +1,6 @@
-import React from 'react'
-import { Activity, RotateCcw } from 'lucide-react'
+import React, { useState } from 'react'
+import { Activity, RotateCcw, Info } from 'lucide-react'
+import CareTeamModal from './CareTeamModal.js'
 
 const PART_META = {
   1: { short: 'Part 1', full: 'Initial Risk Stratification', dot: '#06ABEB' },
@@ -9,11 +10,14 @@ const PART_META = {
 
 export default function AppHeader({ currentPart, stepLabel, onReset, showReset }) {
   const meta = currentPart ? PART_META[currentPart] : null
+  const [careOpen, setCareOpen] = useState(false)
 
-  return React.createElement('header', {
-    className: 'sticky top-0 z-40 print:hidden',
-    style: { background: 'linear-gradient(90deg, #00002D 0%, #212070 100%)', boxShadow: '0 2px 16px 0 rgba(0,0,45,0.35)' }
-  },
+  return React.createElement(React.Fragment, null,
+    React.createElement(CareTeamModal, { open: careOpen, onClose: () => setCareOpen(false) }),
+    React.createElement('header', {
+      className: 'sticky top-0 z-40 print:hidden',
+      style: { background: 'linear-gradient(90deg, #00002D 0%, #212070 100%)', boxShadow: '0 2px 16px 0 rgba(0,0,45,0.35)' }
+    },
     React.createElement('div', { className: 'max-w-4xl mx-auto px-4 flex items-center gap-3', style: { height: '52px' } },
 
       // Brand mark
@@ -55,17 +59,30 @@ export default function AppHeader({ currentPart, stepLabel, onReset, showReset }
         }, stepLabel)
       ),
 
-      // Reset button
-      showReset && React.createElement('button', {
-        onClick: onReset,
-        className: 'flex items-center gap-1.5 shrink-0 rounded-lg transition-all',
-        style: { fontSize: '12px', color: 'rgba(255,255,255,0.4)', padding: '8px 12px', background: 'transparent', border: '1px solid rgba(255,255,255,0.1)' },
-        onMouseEnter: e => { e.currentTarget.style.color = 'rgba(255,255,255,0.8)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.3)'; e.currentTarget.style.background = 'rgba(255,255,255,0.08)' },
-        onMouseLeave: e => { e.currentTarget.style.color = 'rgba(255,255,255,0.4)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)'; e.currentTarget.style.background = 'transparent' }
-      },
-        React.createElement(RotateCcw, { style: { width: '11px', height: '11px' } }),
-        React.createElement('span', { className: 'hidden sm:inline' }, 'Reset')
+      React.createElement('div', { className: 'flex items-center gap-2 shrink-0' },
+        React.createElement('button', {
+          type: 'button',
+          onClick: () => setCareOpen(true),
+          className: 'flex h-8 w-8 items-center justify-center shrink-0 rounded-full transition-all',
+          style: { color: 'rgba(255,255,255,0.7)', background: 'transparent', border: '1px solid rgba(255,255,255,0.16)' },
+          title: 'Meet the Care Team',
+          onMouseEnter: e => { e.currentTarget.style.color = 'rgba(255,255,255,0.98)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.35)'; e.currentTarget.style.background = 'rgba(255,255,255,0.08)' },
+          onMouseLeave: e => { e.currentTarget.style.color = 'rgba(255,255,255,0.7)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.16)'; e.currentTarget.style.background = 'transparent' }
+        },
+          React.createElement(Info, { style: { width: '14px', height: '14px' } })
+        ),
+        showReset && React.createElement('button', {
+          onClick: onReset,
+          className: 'flex items-center gap-1.5 shrink-0 rounded-lg transition-all',
+          style: { fontSize: '12px', color: 'rgba(255,255,255,0.4)', padding: '8px 12px', background: 'transparent', border: '1px solid rgba(255,255,255,0.1)' },
+          onMouseEnter: e => { e.currentTarget.style.color = 'rgba(255,255,255,0.8)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.3)'; e.currentTarget.style.background = 'rgba(255,255,255,0.08)' },
+          onMouseLeave: e => { e.currentTarget.style.color = 'rgba(255,255,255,0.4)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)'; e.currentTarget.style.background = 'transparent' }
+        },
+          React.createElement(RotateCcw, { style: { width: '11px', height: '11px' } }),
+          React.createElement('span', { className: 'hidden sm:inline' }, 'Reset')
+        )
       )
+    )
     )
   )
 }
