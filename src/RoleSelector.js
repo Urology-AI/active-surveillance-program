@@ -20,10 +20,13 @@ export default function RoleSelector({ onSelectRole }) {
         e('button', {
           type: 'button',
           onClick: () => setCareOpen(true),
-          className: 'inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/20 bg-white/10 text-white/90 transition-colors hover:bg-white/20 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-white/40',
+          className: 'inline-flex h-9 items-center justify-center gap-1.5 rounded-full border border-white/20 bg-white/10 px-3 text-white/90 transition-colors hover:bg-white/20 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-white/40',
           title: 'Meet the Care Team',
           'aria-label': 'Meet the Care Team',
-        }, e(Info, { className: 'h-4 w-4' }))
+        },
+          e(Info, { className: 'h-4 w-4' }),
+          e('span', { className: 'text-xs font-semibold' }, 'Meet the Care Team')
+        )
       )
     ),
 

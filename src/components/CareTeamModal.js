@@ -41,8 +41,8 @@ function getInitials(name) {
 
 function PersonCard({ person, avatarColor }) {
   return React.createElement('div', {
-    className: 'flex items-start gap-3 p-3 rounded-xl border',
-    style: { background: '#f8fafc', borderColor: '#f1f5f9' },
+    className: 'flex items-start gap-3 rounded-xl border p-3.5 shadow-sm',
+    style: { background: '#ffffff', borderColor: '#e2e8f0' },
   },
     React.createElement('div', {
       className: 'w-9 h-9 rounded-full flex items-center justify-center shrink-0 text-white font-bold',
@@ -76,7 +76,10 @@ function PersonCard({ person, avatarColor }) {
 }
 
 function TeamSection({ title, members, avatarColor, accentColor }) {
-  return React.createElement('div', { className: 'mb-5 last:mb-0' },
+  return React.createElement('section', {
+    className: 'mb-6 rounded-2xl border p-4 sm:p-5',
+    style: { borderColor: '#e2e8f0', background: '#f8fafc' },
+  },
     React.createElement('div', {
       className: 'flex items-center gap-2 mb-3',
       style: { borderBottom: `2px solid ${accentColor}`, paddingBottom: '8px' },
@@ -121,32 +124,32 @@ export default function CareTeamModal({ open, onClose }) {
     role: 'presentation',
   },
     React.createElement('div', {
-      className: 'absolute inset-0 bg-black/50',
+      className: 'absolute inset-0 bg-slate-900/55 backdrop-blur-[2px]',
       onClick: onClose,
       'aria-hidden': true,
     }),
     React.createElement('div', {
-      className: 'relative flex h-[94vh] w-full max-w-6xl flex-col rounded-t-2xl border border-slate-100 bg-white shadow-2xl sm:h-[92vh] sm:rounded-2xl',
+      className: 'relative flex h-[94vh] w-full max-w-6xl flex-col rounded-t-2xl border border-slate-200 bg-white shadow-2xl sm:h-[92vh] sm:rounded-3xl',
       role: 'dialog',
       'aria-modal': true,
       'aria-labelledby': 'care-team-modal-title',
       onClick: (ev) => ev.stopPropagation(),
     },
       React.createElement('div', {
-        className: 'flex shrink-0 items-start justify-between gap-3 border-b border-slate-100 px-4 py-3 sm:px-6',
+        className: 'relative flex shrink-0 items-start justify-between gap-3 border-b border-slate-100 px-4 py-4 sm:px-6',
         style: { background: 'linear-gradient(135deg, #00002D 0%, #212070 55%, #06ABEB 140%)' },
       },
         React.createElement('div', { className: 'min-w-0 pt-0.5' },
           React.createElement('p', {
-            className: 'text-[10px] font-extrabold uppercase tracking-widest',
+            className: 'text-[10px] font-extrabold uppercase tracking-widest text-center sm:text-left',
             style: { color: '#06ABEB' },
           }, 'Mount Sinai · Urology'),
           React.createElement('h2', {
             id: 'care-team-modal-title',
-            className: 'text-base font-bold leading-snug text-white sm:text-lg',
+            className: 'text-lg font-bold leading-snug text-white text-center sm:text-left sm:text-xl',
           }, 'Active Surveillance Care Team'),
           React.createElement('p', {
-            className: 'mt-0.5 text-xs text-white/55',
+            className: 'mt-0.5 text-xs text-white/70 text-center sm:text-left',
           }, `${MEMBER_COUNT} members`)
         ),
         React.createElement('button', {
@@ -162,6 +165,9 @@ export default function CareTeamModal({ open, onClose }) {
       React.createElement('div', {
         className: 'min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-4 sm:px-6 sm:py-5',
       },
+        React.createElement('div', {
+          className: 'mb-5 rounded-xl border border-sky-100 bg-sky-50/70 px-4 py-3 text-center text-sm text-slate-700',
+        }, 'Meet the care team supporting the Active Surveillance pathway.'),
         React.createElement(TeamSection, {
           title: 'Physician Team',
           members: PHYSICIAN_TEAM,
@@ -181,7 +187,7 @@ export default function CareTeamModal({ open, onClose }) {
           accentColor: '#DC298D',
         }),
         React.createElement('div', {
-          className: 'rounded-xl p-4',
+          className: 'rounded-2xl border p-4 sm:p-5',
           style: { background: 'rgb(6 171 235 / 0.05)', border: '1px solid rgb(6 171 235 / 0.18)' },
         },
           React.createElement('p', {

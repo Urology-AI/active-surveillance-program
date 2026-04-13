@@ -63,13 +63,14 @@ export default function AppHeader({ currentPart, stepLabel, onReset, showReset }
         React.createElement('button', {
           type: 'button',
           onClick: () => setCareOpen(true),
-          className: 'flex h-8 w-8 items-center justify-center shrink-0 rounded-full transition-all',
-          style: { color: 'rgba(255,255,255,0.7)', background: 'transparent', border: '1px solid rgba(255,255,255,0.16)' },
+          className: 'flex items-center gap-1.5 shrink-0 rounded-full transition-all px-2.5 h-8',
+          style: { color: 'rgba(255,255,255,0.78)', background: 'transparent', border: '1px solid rgba(255,255,255,0.16)' },
           title: 'Meet the Care Team',
           onMouseEnter: e => { e.currentTarget.style.color = 'rgba(255,255,255,0.98)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.35)'; e.currentTarget.style.background = 'rgba(255,255,255,0.08)' },
           onMouseLeave: e => { e.currentTarget.style.color = 'rgba(255,255,255,0.7)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.16)'; e.currentTarget.style.background = 'transparent' }
         },
-          React.createElement(Info, { style: { width: '14px', height: '14px' } })
+          React.createElement(Info, { style: { width: '13px', height: '13px' } }),
+          React.createElement('span', { className: 'hidden md:inline', style: { fontSize: '11px', fontWeight: 600 } }, 'Meet the Care Team')
         ),
         showReset && React.createElement('button', {
           onClick: onReset,

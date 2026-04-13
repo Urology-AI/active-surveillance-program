@@ -181,10 +181,13 @@ export default function PatientApp({ onBack }) {
         e('button', {
           type: 'button',
           onClick: () => setCareOpen(true),
-          className: 'inline-flex h-8 w-8 items-center justify-center shrink-0 rounded-full border border-white/20 bg-white/5 text-white/85 transition-colors hover:bg-white/15 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-white/30',
+          className: 'inline-flex h-8 items-center justify-center gap-1.5 shrink-0 rounded-full border border-white/20 bg-white/5 px-2.5 text-white/85 transition-colors hover:bg-white/15 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-white/30',
           title: 'Meet the Care Team',
           'aria-label': 'Meet the Care Team',
-        }, e(Info, { className: 'h-4 w-4' }))
+        },
+          e(Info, { className: 'h-4 w-4' }),
+          e('span', { className: 'hidden sm:inline text-[11px] font-semibold' }, 'Meet the Care Team')
+        )
       )
     ),
 

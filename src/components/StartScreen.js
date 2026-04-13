@@ -18,10 +18,11 @@ export default function StartScreen({ onStart }) {
       React.createElement('button', {
         type: 'button',
         onClick: () => setCareOpen(true),
-        className: 'inline-flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-600 shadow-sm transition-colors hover:border-sky-200 hover:bg-sky-50 hover:text-sky-800',
+        className: 'inline-flex h-9 items-center justify-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 text-slate-600 shadow-sm transition-colors hover:border-sky-200 hover:bg-sky-50 hover:text-sky-800',
         title: 'Meet the Care Team',
       },
-        React.createElement(Info, { className: 'h-4 w-4' })
+        React.createElement(Info, { className: 'h-4 w-4' }),
+        React.createElement('span', { className: 'text-xs font-semibold' }, 'Meet the Care Team')
       )
     ),
 
