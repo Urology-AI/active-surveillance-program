@@ -33,7 +33,7 @@ const FELLOWS_PAS_NURSES = [
 
 const ADMIN_TEAM = [
   { name: 'Joseph Andre', creds: null, phone: '929-697-3643', email: 'joseph.andre@mountsinai.org' },
-  { name: 'Divya Kurup', creds: null, phone: '347-978-5740', email: 'divya.kurup@mountsinai.org' },
+  { name: 'Shreshth Shukla', creds: null, phone: '929-237-2338', email: 'Shreshth.Shukla@mountsinai.org' },
 ]
 
 function getInitials(name) {

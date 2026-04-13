@@ -89,7 +89,7 @@ function SummaryCard({ label, value, subvalue, highlight }) {
 }
 
 // ─── Main component ───────────────────────────────────────────────────────────
-export default function PatientResults({ results, inputs, onBack }) {
+export default function PatientResults({ results, inputs, onBack, onDownloadData, onUploadData }) {
   const {
     asTierKey, asScore, asFactors, psad,
     genomicRiskTier, genomicScore, genomicFactors, genomicAssessed,
@@ -302,10 +302,10 @@ export default function PatientResults({ results, inputs, onBack }) {
     ),
 
     // ── Actions ─────────────────────────────────────────────────────────
-    e('div', { className: 'flex gap-3 no-print' },
+    e('div', { className: 'flex flex-wrap gap-3 no-print' },
       e('button', {
         onClick: onBack,
-        className: 'flex-1 py-3 rounded-xl border-2 border-gray-200 text-sm font-semibold text-gray-600 hover:border-gray-300 hover:bg-gray-50 transition-colors',
+        className: 'flex-1 min-w-[160px] py-3 rounded-xl border-2 border-gray-200 text-sm font-semibold text-gray-600 hover:border-gray-300 hover:bg-gray-50 transition-colors',
       },
         e('span', { className: 'flex items-center justify-center gap-1.5' },
           e('svg', { className: 'w-4 h-4', fill: 'none', viewBox: '0 0 24 24', stroke: 'currentColor', strokeWidth: 2 },
@@ -314,9 +314,27 @@ export default function PatientResults({ results, inputs, onBack }) {
           'Edit Inputs'
         )
       ),
+      e('label', {
+        className: 'flex-1 min-w-[160px] py-3 rounded-xl border-2 border-slate-200 text-sm font-semibold text-slate-700 hover:border-slate-300 hover:bg-slate-50 transition-colors text-center cursor-pointer',
+      },
+        e('input', {
+          type: 'file',
+          accept: 'application/json,.json',
+          onChange: onUploadData,
+          className: 'hidden',
+        }),
+        e('span', { className: 'flex items-center justify-center gap-1.5' }, 'Upload Data')
+      ),
+      e('button', {
+        type: 'button',
+        onClick: onDownloadData,
+        className: 'flex-1 min-w-[160px] py-3 rounded-xl border-2 border-sky-200 bg-sky-50 text-sm font-semibold text-sky-700 hover:bg-sky-100 transition-colors',
+      },
+        e('span', { className: 'flex items-center justify-center gap-1.5' }, 'Download Data')
+      ),
       e('button', {
         onClick: () => window.print(),
-        className: 'flex-1 py-3 rounded-xl text-sm font-semibold text-white shadow-sm hover:opacity-90 transition-opacity',
+        className: 'flex-1 min-w-[160px] py-3 rounded-xl text-sm font-semibold text-white shadow-sm hover:opacity-90 transition-opacity',
         style: { background: '#06ABEB' },
       },
         e('span', { className: 'flex items-center justify-center gap-1.5' },
