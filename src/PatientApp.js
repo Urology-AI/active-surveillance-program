@@ -12,9 +12,11 @@ const e = React.createElement
 const PATIENT_CONSENT_KEY = 'as_patient_consent_accepted'
 
 /** Non-secret flag: key is embedded at build time (see vite.config.js define). Rebuild/deploy after setting VITE_GEMINI_API_KEY. */
-const GEMINI_KEY_CONFIGURED =
-  typeof __VITE_GEMINI_API_KEY_INJECTED__ === 'string' &&
-  __VITE_GEMINI_API_KEY_INJECTED__.trim().length > 0
+const GEMINI_KEY_LENGTH =
+  typeof __VITE_GEMINI_API_KEY_INJECTED__ === 'string'
+    ? __VITE_GEMINI_API_KEY_INJECTED__.trim().length
+    : 0
+const GEMINI_KEY_CONFIGURED = GEMINI_KEY_LENGTH > 0
 
 function PatientHeaderAiStatus() {
   if (GEMINI_KEY_CONFIGURED) {
@@ -29,8 +31,13 @@ function PatientHeaderAiStatus() {
           'h-2 w-2 rounded-full bg-emerald-400 shrink-0 shadow-[0_0_8px_rgba(52,211,153,0.75)]',
         'aria-hidden': true,
       }),
-      e('span', { className: 'text-[10px] sm:text-[11px] text-emerald-100/95 font-medium' },
-        'Gemini AI connected'
+      e('div', { className: 'flex flex-col items-start' },
+        e('span', { className: 'text-[10px] sm:text-[11px] text-emerald-100/95 font-medium' },
+          'Gemini AI connected'
+        ),
+        e('span', { className: 'text-[10px] text-emerald-100/70' },
+          `Build env check: VITE_GEMINI_API_KEY present (length ${GEMINI_KEY_LENGTH})`
+        )
       )
     )
   }
@@ -44,8 +51,13 @@ function PatientHeaderAiStatus() {
       className: 'h-2 w-2 rounded-full bg-amber-400/90 shrink-0',
       'aria-hidden': true,
     }),
-    e('span', { className: 'text-[10px] sm:text-[11px] text-white/50' },
-      'AI assistant offline — handout & topics only'
+    e('div', { className: 'flex flex-col items-start' },
+      e('span', { className: 'text-[10px] sm:text-[11px] text-white/50' },
+        'AI assistant offline — handout & topics only'
+      ),
+      e('span', { className: 'text-[10px] text-white/35' },
+        `Build env check: VITE_GEMINI_API_KEY missing (length ${GEMINI_KEY_LENGTH})`
+      )
     )
   )
 }
