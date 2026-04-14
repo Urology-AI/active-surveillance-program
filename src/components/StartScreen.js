@@ -1,6 +1,5 @@
-import React, { useState } from 'react'
-import { Activity, ChevronRight, Info } from 'lucide-react'
-import CareTeamModal from './CareTeamModal.js'
+import React from 'react'
+import { Activity, ChevronRight } from 'lucide-react'
 
 const PARTS = [
   { num: '1', title: 'Initial Risk Stratification', color: '#06ABEB', steps: 'Steps 1 – 5' },
@@ -9,22 +8,7 @@ const PARTS = [
 ]
 
 export default function StartScreen({ onStart }) {
-  const [careOpen, setCareOpen] = useState(false)
-
   return React.createElement('div', { className: 'max-w-xl mx-auto' },
-    React.createElement(CareTeamModal, { open: careOpen, onClose: () => setCareOpen(false) }),
-
-    React.createElement('div', { className: 'no-print mb-3 flex justify-end' },
-      React.createElement('button', {
-        type: 'button',
-        onClick: () => setCareOpen(true),
-        className: 'inline-flex h-9 items-center justify-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 text-slate-600 shadow-sm transition-colors hover:border-sky-200 hover:bg-sky-50 hover:text-sky-800',
-        title: 'Meet the Care Team',
-      },
-        React.createElement(Info, { className: 'h-4 w-4' }),
-        React.createElement('span', { className: 'text-xs font-semibold' }, 'Meet the Care Team')
-      )
-    ),
 
     // Hero card
     React.createElement('div', {
@@ -106,11 +90,6 @@ export default function StartScreen({ onStart }) {
           React.createElement(ChevronRight, { className: 'w-5 h-5' })
         )
       )
-    ),
-
-    // Disclaimer
-    React.createElement('p', { className: 'text-center text-xs text-slate-400 mt-5 px-4' },
-      'Clinical decision support only — does not replace clinical judgment.'
     )
   )
 }

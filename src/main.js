@@ -1,86 +1,93 @@
-import React, { useState } from 'react'
+import React, { useState, useRef, useEffect } from 'react'
 import ReactDOM from 'react-dom/client'
 import App from './App.js'
 import RoleSelector from './RoleSelector.js'
 import PatientApp from './PatientApp.js'
-import CareTeamModal from './components/CareTeamModal.js'
+import ProgramHeaderBar from './components/ProgramHeaderBar.js'
+import ProgramDisclaimerFooter from './components/ProgramDisclaimerFooter.js'
 import ClinicalCalculator from './components/ClinicalCalculator.js'
 import './index.css'
-import { Info } from 'lucide-react'
 
 const e = React.createElement
+const CLINICIAN_CONSENT_KEY = 'as_clinician_consent_accepted'
+
+function ClinicianShell({ onChangeRole }) {
+  const [toolMode, setToolMode] = useState('calculator')
+  const [clinicianConsentAccepted, setClinicianConsentAccepted] = useState(false)
+  const [pathwayMeta, setPathwayMeta] = useState({
+    currentPart: null,
+    stepLabel: null,
+    showReset: false,
+  })
+  const pathwayResetRef = useRef(() => {})
+
+  useEffect(() => {
+    try {
+      setClinicianConsentAccepted(localStorage.getItem(CLINICIAN_CONSENT_KEY) === 'true')
+    } catch (_) {}
+  }, [])
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(CLINICIAN_CONSENT_KEY, clinicianConsentAccepted ? 'true' : 'false')
+    } catch (_) {}
+  }, [clinicianConsentAccepted])
+
+  return e(React.Fragment, null,
+    e(ProgramHeaderBar, {
+      currentPart: toolMode === 'pathway' ? pathwayMeta.currentPart : null,
+      stepLabel: toolMode === 'pathway' ? pathwayMeta.stepLabel : 'AS Risk Calculator',
+      onReset: () => pathwayResetRef.current?.(),
+      showReset: clinicianConsentAccepted && toolMode === 'pathway' && pathwayMeta.showReset,
+      changeRoleOnClick: onChangeRole,
+      clinicianToolMode: toolMode,
+      onClinicianToolModeChange: setToolMode,
+    }),
+    !clinicianConsentAccepted
+      ? e('div', { className: 'min-h-[calc(100vh-1px)] bg-sinai-page px-4 py-8' },
+          e('div', { className: 'max-w-2xl mx-auto rounded-2xl border p-5 sm:p-6 shadow-sm', style: { background: '#fff7ed', borderColor: '#fed7aa' } },
+            e('h2', { className: 'text-base sm:text-lg font-bold text-amber-900 mb-2' }, 'Clinician Acknowledgment'),
+            e('p', { className: 'text-sm text-amber-900/90 leading-relaxed' },
+              'This clinical pathway and AS risk calculator are decision-support tools for trained clinicians. They are educational aids and do not replace independent medical judgment, institutional protocol, or formal specialist consultation.'
+            ),
+            e('p', { className: 'text-sm text-amber-900/90 leading-relaxed mt-2' },
+              'By continuing, you acknowledge responsibility for final clinical decisions and patient-specific management.'
+            ),
+            e('label', { className: 'mt-4 flex items-start gap-2.5 cursor-pointer select-none' },
+              e('input', {
+                type: 'checkbox',
+                checked: clinicianConsentAccepted,
+                onChange: (ev) => setClinicianConsentAccepted(ev.target.checked),
+                className: 'mt-0.5 h-4 w-4 rounded border-amber-300 text-amber-600 focus:ring-amber-500',
+              }),
+              e('span', { className: 'text-sm text-amber-900' },
+                'I acknowledge and want to continue to the clinician tool.'
+              )
+            )
+          )
+        )
+      : toolMode === 'pathway'
+        ? e(App, {
+            externalHeader: true,
+            onPathwayMetaChange: setPathwayMeta,
+            pathwayResetRef,
+          })
+        : e('div', { className: 'min-h-[calc(100vh-1px)] bg-sinai-page' },
+            e(ClinicalCalculator)
+          ),
+    e(ProgramDisclaimerFooter)
+  )
+}
 
 function Root() {
-  const [role,              setRole]             = useState(null) // null | 'patient' | 'clinician'
-  const [clinicianTab,      setClinicianTab]     = useState('pathway') // 'pathway' | 'calculator'
-  const [clinicianCareOpen, setClinicianCareOpen] = useState(false)
+  const [role, setRole] = useState(null)
 
   if (role === 'patient') {
     return e(PatientApp, { onBack: () => setRole(null) })
   }
 
   if (role === 'clinician') {
-    return e('div', {},
-      e(CareTeamModal, { open: clinicianCareOpen, onClose: () => setClinicianCareOpen(false) }),
-
-      // ── Fixed top bar: back + care team ───────────────────────────────────
-      e('div', {
-        className: 'no-print fixed top-0 left-0 right-0 z-50 flex items-center justify-between gap-3 px-4 py-2',
-        style: { background: 'rgba(0,0,45,0.95)', backdropFilter: 'blur(8px)', height: '40px' },
-      },
-        e('button', {
-          onClick: () => setRole(null),
-          className: 'flex items-center gap-1.5 text-white/60 hover:text-white text-sm transition-colors',
-        },
-          e('svg', { className: 'w-4 h-4', fill: 'none', viewBox: '0 0 24 24', stroke: 'currentColor', strokeWidth: 2 },
-            e('path', { strokeLinecap: 'round', strokeLinejoin: 'round', d: 'M15 19l-7-7 7-7' })
-          ),
-          'Change role'
-        ),
-        e('button', {
-          type: 'button',
-          onClick: () => setClinicianCareOpen(true),
-          className: 'inline-flex h-8 items-center justify-center gap-1.5 rounded-full border border-white/20 bg-white/10 px-3 text-white/90 transition-colors hover:bg-white/20 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-white/40',
-          title: 'Meet the Care Team',
-          'aria-label': 'Meet the Care Team',
-        },
-          e(Info, { className: 'h-4 w-4' }),
-          e('span', { className: 'text-xs font-semibold' }, 'Meet the Care Team')
-        )
-      ),
-
-      // ── Fixed tab bar: Pathway | Calculator ───────────────────────────────
-      e('div', {
-        className: 'no-print fixed left-0 right-0 z-40 flex items-stretch',
-        style: { top: '40px', height: '40px', background: '#00002D', borderBottom: '1px solid rgba(255,255,255,0.08)' },
-      },
-        [
-          { key: 'pathway',    label: 'Clinical Pathway', icon: 'M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7' },
-          { key: 'calculator', label: 'AS Calculator',    icon: 'M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 11h.01M12 11h.01M15 11h.01M4 19h16a2 2 0 002-2V7a2 2 0 00-2-2H4a2 2 0 00-2 2v10a2 2 0 002 2z' },
-        ].map(tab =>
-          e('button', {
-            key: tab.key, type: 'button',
-            onClick: () => setClinicianTab(tab.key),
-            className: 'flex items-center gap-2 px-5 text-xs font-semibold transition-colors focus:outline-none',
-            style: clinicianTab === tab.key
-              ? { color: '#06ABEB', borderBottom: '2px solid #06ABEB', marginBottom: '-1px', background: 'rgba(6,171,235,0.06)' }
-              : { color: 'rgba(255,255,255,0.45)', borderBottom: '2px solid transparent', background: 'transparent' },
-          },
-            e('svg', { className: 'w-3.5 h-3.5', fill: 'none', viewBox: '0 0 24 24', stroke: 'currentColor', strokeWidth: 2 },
-              e('path', { strokeLinecap: 'round', strokeLinejoin: 'round', d: tab.icon })
-            ),
-            tab.label
-          )
-        )
-      ),
-
-      // ── Content — 80 px top padding for both fixed bars ───────────────────
-      e('div', { style: { paddingTop: '80px' } },
-        clinicianTab === 'pathway'
-          ? e(App)
-          : e(ClinicalCalculator)
-      )
-    )
+    return e(ClinicianShell, { onChangeRole: () => setRole(null) })
   }
 
   return e(RoleSelector, { onSelectRole: setRole })

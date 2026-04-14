@@ -53,6 +53,13 @@ input[type="password"]:focus {
 input::placeholder {
   color: #94a3b8;
 }
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
 /* Primary button: subtle press and hover lift */
 .btn-primary {
   transition: transform 0.15s ease, box-shadow 0.2s ease;

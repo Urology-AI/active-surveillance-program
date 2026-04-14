@@ -32,6 +32,13 @@ const COMBINED_TIER_LABELS = {
   treatment_required:   'Treatment Required',
 }
 
+function formatEpsaTier(tier) {
+  if (tier == null || tier === '') return null
+  return String(tier)
+    .replace(/-/g, ' ')
+    .replace(/\b\w/g, (c) => c.toUpperCase())
+}
+
 // ─── Small components ─────────────────────────────────────────────────────────
 function FactorRow({ factor }) {
   const pts    = factor.points
@@ -96,7 +103,13 @@ export default function PatientResults({ results, inputs, onBack, onDownloadData
     psmaFinding, psmaScore, psmaFactors, psmaAssessed,
     monitoringTier, monitoringLabel, monitoringSchedule, features, featureCount,
     combinedTierKey, combinedRecommendation, combinedColor,
+    cohortContext,
   } = results
+
+  const showEpsaCard = Boolean(
+    inputs.epsaPreBiopsyTier ||
+    inputs.epsaContext?.source === 'epsa'
+  )
 
   const colors   = TIER_COLORS[combinedColor]   || TIER_COLORS.green
   const monStyle = MONITORING_STYLES[monitoringTier] || MONITORING_STYLES.standard
@@ -139,6 +152,44 @@ export default function PatientResults({ results, inputs, onBack, onDownloadData
             }, COMBINED_TIER_LABELS[combinedTierKey] || combinedTierKey)
           ),
           e('p', { className: 'text-base font-bold leading-snug', style: { color: colors.text } }, combinedRecommendation)
+        )
+      )
+    ),
+
+    // ── ePSA context (pre-biopsy handoff / JSON) ─────────────────────────
+    showEpsaCard && e('div', {
+      className: 'rounded-2xl border px-4 py-3 sm:p-4',
+      style: { background: '#eff6ff', borderColor: '#93c5fd' },
+    },
+      e('div', { className: 'flex items-start gap-3' },
+        e('svg', {
+          className: 'w-5 h-5 flex-shrink-0 mt-0.5',
+          style: { color: '#1d4ed8' },
+          fill: 'currentColor',
+          viewBox: '0 0 20 20',
+        },
+          e('path', { fillRule: 'evenodd', clipRule: 'evenodd', d: 'M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 00-1 1v4a1 1 0 102 0V7a1 1 0 00-1-1zm1 8a1 1 0 10-2 0 1 1 0 002 0z' })
+        ),
+        e('div', { className: 'flex-1 min-w-0' },
+          e('p', { className: 'text-xs font-bold text-blue-900 tracking-wide' }, 'ePSA-linked data'),
+          inputs.epsaPreBiopsyTier && e('p', { className: 'text-sm text-blue-950 mt-1' },
+            e('span', { className: 'text-blue-800/90 text-xs font-semibold' }, 'Pre-biopsy risk tier: '),
+            formatEpsaTier(inputs.epsaPreBiopsyTier)
+          ),
+          cohortContext?.epsaAsEligiblePct != null && e('p', { className: 'text-xs text-blue-900/95 mt-2 leading-relaxed' },
+            'In the Mount Sinai biopsied referral cohort (N=',
+            String(cohortContext.cohortN ?? 94),
+            '), about ',
+            e('strong', null, `${Math.round(Number(cohortContext.epsaAsEligiblePct) * 100)}%`),
+            ' of patients with this pre-biopsy ePSA tier had Grade Group 1–2 (AS-eligible) histology at biopsy',
+            cohortContext.epsaAsEligibleNote
+              ? e('span', null, ' (', cohortContext.epsaAsEligibleNote, ').')
+              : '.'
+          ),
+          !inputs.epsaPreBiopsyTier && inputs.epsaContext?.source === 'epsa' &&
+            e('p', { className: 'text-xs text-blue-800 mt-1.5 leading-relaxed' },
+              'This assessment was tagged as ePSA-sourced, but no pre-biopsy tier was included — cohort context for ePSA is not shown.'
+            )
         )
       )
     ),
@@ -350,9 +401,9 @@ export default function PatientResults({ results, inputs, onBack, onDownloadData
     e('div', { className: 'rounded-xl p-4 space-y-2', style: { background: '#f8fafc', border: '1px solid #e2e8f0' } },
       e('div', { className: 'flex items-center justify-between flex-wrap gap-2' },
         e('p', { className: 'text-xs font-semibold text-gray-500 uppercase tracking-wide' }, 'Clinical Disclaimer'),
-        inputs.epsaContext?.source === 'epsa' && e('span', {
+        showEpsaCard && e('span', {
           className: 'text-xs font-medium px-2 py-0.5 rounded-full',
-          style: { background: '#f3f4f6', color: '#6b7280' },
+          style: { background: '#dbeafe', color: '#1e40af' },
         }, 'Via ePSA')
       ),
       e('p', { className: 'text-xs text-gray-400 leading-relaxed' },

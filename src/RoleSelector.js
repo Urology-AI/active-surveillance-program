@@ -1,33 +1,18 @@
-import React, { useState } from 'react'
-import { Info } from 'lucide-react'
-import CareTeamModal from './components/CareTeamModal.js'
+import React from 'react'
+import ProgramHeaderBar from './components/ProgramHeaderBar.js'
 
 const e = React.createElement
 
 export default function RoleSelector({ onSelectRole }) {
-  const [careOpen, setCareOpen] = useState(false)
-
   return e('div', { className: 'min-h-screen flex flex-col', style: { background: 'linear-gradient(135deg, #00002D 0%, #212070 60%, #06ABEB 100%)' } },
 
-    e(CareTeamModal, { open: careOpen, onClose: () => setCareOpen(false) }),
-
-    // Top bar
-    e('header', {
-      className: 'no-print sticky top-0 z-40 w-full shrink-0 border-b border-white/10',
-      style: { background: 'rgba(0,0,45,0.88)', backdropFilter: 'blur(10px)' },
-    },
-      e('div', { className: 'mx-auto flex max-w-2xl items-center justify-end px-4 py-3' },
-        e('button', {
-          type: 'button',
-          onClick: () => setCareOpen(true),
-          className: 'inline-flex h-9 items-center justify-center gap-1.5 rounded-full border border-white/20 bg-white/10 px-3 text-white/90 transition-colors hover:bg-white/20 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-white/40',
-          title: 'Meet the Care Team',
-          'aria-label': 'Meet the Care Team',
-        },
-          e(Info, { className: 'h-4 w-4' }),
-          e('span', { className: 'text-xs font-semibold' }, 'Meet the Care Team')
-        )
-      )
+    // Same program header as clinical pathway (brand + Meet the Care Team; no part/step/reset)
+    e('div', { className: 'no-print shrink-0' },
+      e(ProgramHeaderBar, {
+        currentPart: null,
+        stepLabel: null,
+        showReset: false,
+      })
     ),
 
     e('div', { className: 'flex flex-1 flex-col items-center justify-center p-6' },

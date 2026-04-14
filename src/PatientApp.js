@@ -3,6 +3,7 @@ import CareTeamModal from './components/CareTeamModal.js'
 import { Info } from 'lucide-react'
 
 const e = React.createElement
+const PATIENT_CONSENT_KEY = 'as_patient_consent_accepted'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Knowledge base — sourced from NCCN, AUA, and EAU guidelines
@@ -206,7 +207,20 @@ export default function PatientApp({ onBack }) {
   const [messages, setMessages] = useState([])
   const [input, setInput]       = useState('')
   const [careOpen, setCareOpen] = useState(false)
+  const [consentAccepted, setConsentAccepted] = useState(false)
   const bottomRef               = useRef(null)
+
+  useEffect(() => {
+    try {
+      setConsentAccepted(localStorage.getItem(PATIENT_CONSENT_KEY) === 'true')
+    } catch (_) {}
+  }, [])
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(PATIENT_CONSENT_KEY, consentAccepted ? 'true' : 'false')
+    } catch (_) {}
+  }, [consentAccepted])
 
   useEffect(() => {
     if (bottomRef.current) {
@@ -271,6 +285,30 @@ export default function PatientApp({ onBack }) {
 
       !hasMessages && e(WelcomeBanner, {}),
 
+      !consentAccepted && e('div', {
+        className: 'mb-4 rounded-xl border p-4',
+        style: { background: '#fff7ed', borderColor: '#fed7aa' },
+      },
+        e('p', { className: 'text-sm font-semibold text-amber-900 mb-1' }, 'Consent and Educational Use Notice'),
+        e('p', { className: 'text-xs text-amber-800 leading-relaxed' },
+          'This patient screen is an educational tool only. It does not provide medical advice, diagnosis, or treatment, and it cannot replace discussion with your clinician.'
+        ),
+        e('p', { className: 'text-xs text-amber-800 leading-relaxed mt-1.5' },
+          'By continuing, you acknowledge that treatment decisions should be made with your healthcare team.'
+        ),
+        e('label', { className: 'mt-3 flex items-start gap-2.5 cursor-pointer select-none' },
+          e('input', {
+            type: 'checkbox',
+            checked: consentAccepted,
+            onChange: (ev) => setConsentAccepted(ev.target.checked),
+            className: 'mt-0.5 h-4 w-4 rounded border-amber-300 text-amber-600 focus:ring-amber-500',
+          }),
+          e('span', { className: 'text-xs text-amber-900' },
+            'I understand and want to continue using this educational resource.'
+          )
+        )
+      ),
+
       // Chat messages
       hasMessages && e('div', { className: 'flex-1 mb-4' },
         messages.map((msg, i) => e(MessageBubble, { key: i, role: msg.role, text: msg.text })),
@@ -278,7 +316,7 @@ export default function PatientApp({ onBack }) {
       ),
 
       // Suggested questions (always visible)
-      e(SuggestedQuestions, { onSelect: handleAsk }),
+      consentAccepted && e(SuggestedQuestions, { onSelect: handleAsk }),
 
       // Input
       e('form', { onSubmit: handleSubmit, className: 'mt-4 flex gap-2' },
@@ -287,11 +325,12 @@ export default function PatientApp({ onBack }) {
           value: input,
           onChange: ev => setInput(ev.target.value),
           placeholder: 'Ask a question about Active Surveillance…',
+          disabled: !consentAccepted,
           className: 'flex-1 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-800 placeholder-slate-400 shadow-sm focus:outline-none focus:ring-2 focus:ring-sky-400 focus:border-transparent',
         }),
         e('button', {
           type: 'submit',
-          disabled: !input.trim(),
+          disabled: !consentAccepted || !input.trim(),
           className: 'rounded-xl px-4 py-2.5 text-sm font-semibold text-white transition-colors disabled:opacity-40 disabled:cursor-not-allowed',
           style: { background: '#00002D' },
         }, 'Ask')

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import StartScreen from './components/StartScreen.js'
 import Step1PatientIntent from './components/Step1PatientIntent.js'
 import Step2GleasonScore from './components/Step2GleasonScore.js'
@@ -29,6 +29,7 @@ import ProgressBar from './components/ProgressBar.js'
 import FlowChartDebug from './components/FlowChartDebug.js'
 import ChartPrintView from './components/ChartPrintView.js'
 import AppHeader from './components/AppHeader.js'
+import ProgramDisclaimerFooter from './components/ProgramDisclaimerFooter.js'
 
 const STORAGE_KEY = 'sinai-pathway-progress'
 
@@ -129,7 +130,7 @@ const STEP_ORDER = [
   STEPS.STEP14,
 ]
 
-function App() {
+function App({ externalHeader, onPathwayMetaChange, pathwayResetRef } = {}) {
   const [currentStep, setCurrentStep] = useState(STEPS.START)
   const [stepHistory, setStepHistory] = useState([])
   const [forwardStack, setForwardStack] = useState([])
@@ -179,12 +180,12 @@ function App() {
     }
   }
 
-  const reset = () => {
+  const reset = useCallback(() => {
     setCurrentStep(STEPS.START)
     setStepHistory([])
     setForwardStack([])
     try { localStorage.removeItem(STORAGE_KEY) } catch (_) {}
-  }
+  }, [])
 
   const resumeProgress = () => {
     try {
@@ -223,6 +224,22 @@ function App() {
   const currentPart = currentStep !== STEPS.START ? getCurrentPart() : null
   const currentStepLabel = currentStep !== STEPS.START ? (STEP_LABELS[currentStep] || null) : null
 
+  useEffect(() => {
+    if (pathwayResetRef) pathwayResetRef.current = reset
+  }, [pathwayResetRef, reset])
+
+  useEffect(() => {
+    if (!externalHeader || !onPathwayMetaChange) return
+    const stepLabel =
+      currentStep === STEPS.START ? 'Clinical Pathway' : currentStepLabel
+    const partForHeader = currentStep === STEPS.START ? null : currentPart
+    onPathwayMetaChange({
+      currentPart: partForHeader,
+      stepLabel,
+      showReset: currentStep !== STEPS.START,
+    })
+  }, [externalHeader, onPathwayMetaChange, currentPart, currentStepLabel, currentStep])
+
   const pathTaken = [...stepHistory, currentStep]
   const pathSummary = pathTaken.map(s => STEP_LABELS[s] || s).join(' → ')
   const pathSummaryFull = `Mount Sinai · Tewari Active Surveillance Program\nPath: ${pathSummary}\n${new Date().toLocaleString()}`
@@ -244,13 +261,13 @@ function App() {
 
   return React.createElement('div', { className: 'min-h-screen bg-sinai-page' },
 
-    // Sticky top header (shown for all non-start screens)
-    currentStep !== STEPS.START && React.createElement(AppHeader, {
-      currentPart,
-      stepLabel: currentStepLabel,
-      onReset: reset,
-      showReset: true,
-    }),
+    !externalHeader &&
+      React.createElement(AppHeader, {
+        currentPart,
+        stepLabel: currentStepLabel,
+        onReset: reset,
+        showReset: true,
+      }),
 
     showResumePrompt && React.createElement('div', {
       className: 'fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/45 backdrop-blur-[2px]'
@@ -265,7 +282,7 @@ function App() {
       )
     ),
 
-    React.createElement('div', { className: `max-w-4xl mx-auto px-4 ${currentStep !== STEPS.START ? 'pt-6 pb-12' : 'py-8'}` },
+    React.createElement('div', { className: 'max-w-4xl mx-auto px-4 pt-6 pb-12' },
       showProgressBar && React.createElement(ProgressBar, {
         progress: getProgress(),
         stepLabel: currentStepLabel,
@@ -427,16 +444,7 @@ function App() {
           }),
       ),
 
-      React.createElement('footer', { className: 'mt-10 pt-8 border-t border-slate-200/90 text-center text-xs text-slate-600 max-w-2xl mx-auto' },
-        React.createElement('p', { className: 'mb-2 leading-relaxed' }, 'Clinical decision support only; does not replace clinical judgment.'),
-        React.createElement('p', { className: 'leading-relaxed' },
-          'Refer to institutional protocol or ',
-          React.createElement('a', { href: 'https://www.auanet.org/guidelines/guidelines/prostate-cancer-clinically-localized-guideline', target: '_blank', rel: 'noopener noreferrer', className: 'text-sinai-cerulean hover:underline' }, 'AUA'),
-          ' / ',
-          React.createElement('a', { href: 'https://www.nccn.org/guidelines/guidelines-detail?category=1&id=1459', target: '_blank', rel: 'noopener noreferrer', className: 'text-sinai-cerulean hover:underline' }, 'NCCN'),
-          ' guidelines.'
-        )
-      )
+      !externalHeader && React.createElement(ProgramDisclaimerFooter),
     ),
 
     React.createElement(FlowChartDebug, {

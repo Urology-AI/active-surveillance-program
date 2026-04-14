@@ -10,11 +10,19 @@ export default function FlowChartDebug({ currentStep, stepHistory, onStepClick }
   const [isExpanded, setIsExpanded] = useState(false)
   const [isMinimized, setIsMinimized] = useState(true)
   const [scale, setScale] = useState(1)
+  const [isMobile, setIsMobile] = useState(false)
 
   useEffect(() => {
-    if (typeof window !== 'undefined' && window.matchMedia('(max-width: 768px)').matches) {
-      setScale(0.8)
+    if (typeof window === 'undefined') return
+    const mq = window.matchMedia('(max-width: 768px)')
+    const apply = () => {
+      const mobile = mq.matches
+      setIsMobile(mobile)
+      setScale(mobile ? 0.72 : 1)
     }
+    apply()
+    mq.addEventListener('change', apply)
+    return () => mq.removeEventListener('change', apply)
   }, [])
 
   const zoomIn  = (e) => { e.stopPropagation(); setScale(s => Math.min(SCALE_MAX, parseFloat((s + SCALE_STEP).toFixed(1)))) }
@@ -60,7 +68,7 @@ export default function FlowChartDebug({ currentStep, stepHistory, onStepClick }
 
   if (isMinimized) {
     return React.createElement('div', {
-      className: 'fixed-bottom-panel fixed right-4 z-50 bg-white rounded-lg shadow-sinai border-2 border-sinai-cerulean p-2 cursor-pointer print:hidden',
+      className: 'fixed-bottom-panel fixed right-3 sm:right-4 bottom-3 sm:bottom-4 z-50 bg-white rounded-xl shadow-sinai border-2 border-sinai-cerulean p-2.5 cursor-pointer print:hidden',
       onClick: () => { setIsMinimized(false); setIsExpanded(true) },
       title: 'Open flow map',
       role: 'button',
@@ -78,16 +86,19 @@ export default function FlowChartDebug({ currentStep, stepHistory, onStepClick }
   }
 
   return React.createElement('div', {
-    className: 'fixed-bottom-panel fixed right-2 sm:right-4 z-50 bg-white rounded-lg shadow-sinai-lg border-2 border-sinai-cerulean flex flex-col print:hidden',
-    style: { width: 'min(500px, calc(100vw - 1rem))', maxHeight: '80vh' }
+    className: 'fixed-bottom-panel fixed z-50 bg-white shadow-sinai-lg border-2 border-sinai-cerulean flex flex-col print:hidden',
+    style: isMobile
+      ? { left: '0.5rem', right: '0.5rem', bottom: '0.5rem', width: 'auto', maxHeight: '74vh', borderRadius: '14px' }
+      : { right: '1rem', bottom: '1rem', width: 'min(500px, calc(100vw - 1rem))', maxHeight: '80vh', borderRadius: '10px' }
   },
     // Header
     React.createElement('div', {
-      className: 'flex items-center justify-between px-3 py-2 bg-sinai-navy text-white rounded-t-lg shrink-0'
+      className: 'flex items-center justify-between px-3 py-2 bg-sinai-navy text-white shrink-0',
+      style: { borderTopLeftRadius: isMobile ? '12px' : '8px', borderTopRightRadius: isMobile ? '12px' : '8px' }
     },
       React.createElement('div', { className: 'flex items-center gap-2' },
-        React.createElement(MapPin, { className: 'w-4 h-4' }),
-        React.createElement('h3', { className: 'font-semibold text-sm' }, 'Flow Map')
+        React.createElement(MapPin, { className: 'w-4 h-4 sm:w-4 sm:h-4' }),
+        React.createElement('h3', { className: 'font-semibold text-sm sm:text-sm' }, 'Flow Map')
       ),
       React.createElement('div', { className: 'flex items-center gap-0.5' },
         // Zoom controls (only when expanded)
@@ -95,46 +106,47 @@ export default function FlowChartDebug({ currentStep, stepHistory, onStepClick }
           React.createElement('button', {
             onClick: zoomOut,
             disabled: scale <= SCALE_MIN,
-            className: 'p-1.5 hover:bg-sinai-navy-dark rounded disabled:opacity-40',
+            className: 'p-2 sm:p-1.5 hover:bg-sinai-navy-dark rounded disabled:opacity-40',
             title: 'Zoom out'
-          }, React.createElement(ZoomOut, { className: 'w-3.5 h-3.5' })),
+          }, React.createElement(ZoomOut, { className: 'w-4 h-4 sm:w-3.5 sm:h-3.5' })),
           React.createElement('span', {
-            className: 'text-xs font-mono min-w-[2.5rem] text-center text-white/70'
+            className: 'text-[11px] font-mono min-w-[2.7rem] text-center text-white/75'
           }, `${Math.round(scale * 100)}%`),
           React.createElement('button', {
             onClick: zoomIn,
             disabled: scale >= SCALE_MAX,
-            className: 'p-1.5 hover:bg-sinai-navy-dark rounded disabled:opacity-40',
+            className: 'p-2 sm:p-1.5 hover:bg-sinai-navy-dark rounded disabled:opacity-40',
             title: 'Zoom in'
-          }, React.createElement(ZoomIn, { className: 'w-3.5 h-3.5' })),
+          }, React.createElement(ZoomIn, { className: 'w-4 h-4 sm:w-3.5 sm:h-3.5' })),
           scale !== 1 && React.createElement('button', {
             onClick: resetZoom,
-            className: 'p-1.5 hover:bg-sinai-navy-dark rounded',
+            className: 'p-2 sm:p-1.5 hover:bg-sinai-navy-dark rounded',
             title: 'Reset zoom'
-          }, React.createElement(Maximize2, { className: 'w-3.5 h-3.5' })),
+          }, React.createElement(Maximize2, { className: 'w-4 h-4 sm:w-3.5 sm:h-3.5' })),
           React.createElement('div', { style: { width: '1px', height: '14px', background: 'rgba(255,255,255,0.2)', margin: '0 4px' } })
         ),
         React.createElement('button', {
           onClick: () => setIsExpanded(!isExpanded),
-          className: 'p-1.5 hover:bg-sinai-navy-dark rounded'
+          className: 'p-2 sm:p-1.5 hover:bg-sinai-navy-dark rounded'
         },
           isExpanded ? React.createElement(ChevronDown, { className: 'w-4 h-4' }) : React.createElement(ChevronUp, { className: 'w-4 h-4' })
         ),
         React.createElement('button', {
           onClick: () => setIsMinimized(true),
-          className: 'p-1.5 hover:bg-sinai-navy-dark rounded'
+          className: 'p-2 sm:p-1.5 hover:bg-sinai-navy-dark rounded'
         },
           React.createElement(X, { className: 'w-4 h-4' })
         )
       )
     ),
-    isExpanded && React.createElement('div', { className: 'overflow-auto p-3' },
+    isExpanded && React.createElement('div', { className: 'overflow-auto p-2.5 sm:p-3' },
       React.createElement('div', { className: 'mb-4' },
         React.createElement(InteractiveFlowChart, {
           currentStep: currentStep,
           stepHistory: stepHistory,
           onStepClick: onStepClick,
-          scale: scale
+          scale: scale,
+          isMobile,
         })
       ),
       React.createElement('div', { className: 'space-y-2 border-t border-slate-200 pt-4' },

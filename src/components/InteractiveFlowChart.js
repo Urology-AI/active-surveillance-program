@@ -223,14 +223,18 @@ function DrawNode({ nodeId, node, isCurrent, isVisited, onStepClick }) {
 }
 
 // ─── MAIN EXPORT ─────────────────────────────────────────────────────────────
-export default function InteractiveFlowChart({ currentStep, stepHistory, onStepClick, scale = 1 }) {
-  const svgW = Math.round(540 * scale)
-  const svgH = Math.round(1900 * scale)
-  return React.createElement('div', { className: 'w-full overflow-auto' },
+export default function InteractiveFlowChart({ currentStep, stepHistory, onStepClick, scale = 1, isMobile = false }) {
+  const mobileScale = isMobile ? Math.min(scale, 0.8) : scale
+  const svgW = Math.round(540 * mobileScale)
+  const svgH = Math.round(1900 * mobileScale)
+  return React.createElement('div', {
+    className: 'w-full overflow-auto rounded-lg border border-slate-200',
+    style: { WebkitOverflowScrolling: 'touch' },
+  },
     React.createElement('svg', {
       width: svgW, height: svgH,
       viewBox: '0 0 540 1900',
-      className: 'bg-white border border-slate-200 rounded-lg shadow-sm'
+      className: 'bg-white shadow-sm'
     },
       // Markers
       React.createElement('defs', null,

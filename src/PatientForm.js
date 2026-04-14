@@ -191,7 +191,7 @@ export default function PatientForm({ onSubmit, initialValues = {} }) {
   const errorCount = Object.keys(errors).length
 
   function buildInputs() {
-    return {
+    const base = {
       ggg,
       positiveCores:  Number(positiveCores),
       totalCores:     Number(totalCores),
@@ -213,6 +213,14 @@ export default function PatientForm({ onSubmit, initialValues = {} }) {
       brca2:          brca2 || null,
       hoxb13:         hoxb13 || null,
     }
+    if (initialValues.source === 'epsa' && initialValues.epsaPreBiopsyTier) {
+      base.epsaPreBiopsyTier = initialValues.epsaPreBiopsyTier
+      base.epsaContext = {
+        source: 'epsa',
+        ...(initialValues.epsaContext && typeof initialValues.epsaContext === 'object' ? initialValues.epsaContext : {}),
+      }
+    }
+    return base
   }
 
   function handleSubmit(ev) {

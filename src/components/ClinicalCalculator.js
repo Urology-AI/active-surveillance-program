@@ -47,7 +47,12 @@ export default function ClinicalCalculator() {
     }
     const n = (v, fallback = null) =>
       (v === null || v === undefined || v === '') ? fallback : Number(v)
-    return {
+    const epsaPreBiopsyTier =
+      candidate.epsaPreBiopsyTier ?? payload.epsaPreBiopsyTier ?? null
+    const sourceMeta = candidate.source ?? payload.source ?? null
+    const epsaContextRaw = candidate.epsaContext ?? payload.epsaContext ?? null
+
+    const out = {
       ggg:             n(candidate.ggg),
       positiveCores:   n(candidate.positiveCores),
       totalCores:      n(candidate.totalCores),
@@ -69,6 +74,21 @@ export default function ClinicalCalculator() {
       psaVelocity:     n(candidate.psaVelocity),
       psaDoublingTime: n(candidate.psaDoublingTime),
     }
+
+    if (epsaPreBiopsyTier)
+      out.epsaPreBiopsyTier = epsaPreBiopsyTier
+    if (
+      sourceMeta === 'epsa' ||
+      epsaPreBiopsyTier ||
+      (epsaContextRaw && epsaContextRaw.source === 'epsa')
+    ) {
+      out.epsaContext =
+        typeof epsaContextRaw === 'object' && epsaContextRaw !== null
+          ? { source: 'epsa', ...epsaContextRaw }
+          : { source: 'epsa' }
+    }
+
+    return out
   }
 
   function handleUpload(ev) {
@@ -118,12 +138,12 @@ export default function ClinicalCalculator() {
   }
 
   // ── Render ───────────────────────────────────────────────────────────────────
-  return e('div', { className: 'max-w-2xl mx-auto px-4 py-6' },
+  return e('div', { className: 'max-w-2xl w-full mx-auto px-3 sm:px-4 py-4 sm:py-6 pb-8' },
 
     // Upload / Download toolbar
-    e('div', { className: 'no-print mb-4 flex flex-wrap items-center gap-2' },
+    e('div', { className: 'no-print mb-4 flex flex-wrap items-stretch sm:items-center gap-2' },
       e('label', {
-        className: 'inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-slate-200 bg-white text-sm font-medium text-slate-700 cursor-pointer hover:border-slate-300 hover:bg-slate-50 transition-colors',
+        className: 'inline-flex flex-1 min-w-[140px] sm:flex-initial justify-center sm:justify-start items-center gap-2 px-3 py-2.5 sm:py-2 rounded-xl border border-slate-200 bg-white text-sm font-medium text-slate-700 cursor-pointer hover:border-slate-300 hover:bg-slate-50 transition-colors active:scale-[0.99]',
       },
         e('input', {
           type: 'file', accept: 'application/json,.json',
@@ -137,7 +157,7 @@ export default function ClinicalCalculator() {
       ),
       view === 'results' && e('button', {
         type: 'button', onClick: handleDownload,
-        className: 'inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-sky-200 bg-sky-50 text-sm font-medium text-sky-700 hover:bg-sky-100 transition-colors',
+        className: 'inline-flex flex-1 min-w-[140px] sm:flex-initial justify-center sm:justify-start items-center gap-2 px-3 py-2.5 sm:py-2 rounded-xl border border-sky-200 bg-sky-50 text-sm font-medium text-sky-700 hover:bg-sky-100 transition-colors active:scale-[0.99]',
       },
         e('svg', { className: 'w-4 h-4', fill: 'none', viewBox: '0 0 24 24', stroke: 'currentColor', strokeWidth: 2 },
           e('path', { strokeLinecap: 'round', strokeLinejoin: 'round', d: 'M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4' })
@@ -151,8 +171,8 @@ export default function ClinicalCalculator() {
 
     view === 'form'
       ? e('div', {},
-          e('div', { className: 'mb-5' },
-            e('h1', { className: 'text-xl font-bold text-gray-900 mb-1' }, 'AS Risk Calculator'),
+          e('div', { className: 'mb-4 sm:mb-5' },
+            e('h1', { className: 'text-lg sm:text-xl font-bold text-gray-900 mb-1' }, 'AS Risk Calculator'),
             e('p', { className: 'text-sm text-gray-500 leading-relaxed' },
               'Multi-model assessment — Basic + PSAD · Genomic · PSMA · Intensive Monitoring. ' +
               'Calibrated to N=94 Mount Sinai referral cohort (Kadeer et al. 2025). ' +
