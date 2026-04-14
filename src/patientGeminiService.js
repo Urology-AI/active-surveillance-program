@@ -8,7 +8,8 @@
 import AS_OVERVIEW_KNOWLEDGE from './data/active_surveillance_overview_knowledge.txt?raw'
 import { resolveLocalEducationAnswer } from './patientAnswerResolver.js'
 
-const GEMINI_MODEL = 'gemini-2.0-flash'
+// gemini-2.0-flash often shows limit: 0 on the free tier; 2.5 Flash matches current AI Studio quotas.
+const GEMINI_MODEL = 'gemini-2.5-flash'
 
 const PII_PATTERNS = [
   /\b\d{3}-\d{2}-\d{4}\b/,
