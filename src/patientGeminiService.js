@@ -6,6 +6,7 @@
  * should use the local fallback matcher.
  */
 import AS_OVERVIEW_KNOWLEDGE from './data/active_surveillance_overview_knowledge.txt?raw'
+import { resolveLocalEducationAnswer } from './patientAnswerResolver.js'
 
 const GEMINI_MODEL = 'gemini-2.0-flash'
 
@@ -58,30 +59,91 @@ function buildSystemInstruction() {
 - Tone: supportive, clear, plain language (about 8th–10th grade). Short paragraphs or bullets when helpful.
 
 ## Knowledge grounding
-Ground answers primarily in the following patient handout text (Active Surveillance and Observation overview, aligned with NCCN, AUA, and EAU themes). If the handout does not cover a question, you may add careful, general educational context consistent with those guideline families, and note that protocols vary by institution.
+Ground answers primarily in the following patient handout text (Active Surveillance and Observation overview, aligned with NCCN, AUA, and EAU themes). Prefer paraphrasing or quoting concepts that appear in the handout; do not invent schedules, statistics, or institution-specific rules that are not supported by the text. If the handout does not clearly cover the question, say so briefly and suggest the patient discuss with their care team; you may add only cautious, general context that is typical of NCCN/AUA/EAU-style guidance and note that protocols vary by institution.
 
 ### Reference: Active Surveillance overview (patient guide text)
 ${AS_OVERVIEW_KNOWLEDGE.trim()}
 
 ## Closing habit
-When appropriate, briefly remind the user that this chat is educational and not a substitute for their own doctor's advice.`
+When appropriate, briefly remind the user that this chat is educational and not a substitute for their own doctor's advice.
+
+## Conversation
+If the patient sends follow-up messages, use earlier turns in this chat for context. Answer the latest question while staying consistent with what you already said when appropriate.`
+}
+
+const MAX_HISTORY_MESSAGES = 24
+
+function userPart(text) {
+  return {
+    role: 'user',
+    parts: [
+      {
+        text: `The patient asks (general education only; do not request identifiers):\n\n"""${text}"""`,
+      },
+    ],
+  }
+}
+
+/**
+ * @param {Array<{ role: string, text?: string, pending?: boolean }>} conversationHistory Prior turns only (exclude the new user message).
+ * @returns {Array<{ role: string, parts: Array<{ text: string }> }>}
+ */
+function buildGeminiContentsFromHistory(conversationHistory, newUserText) {
+  const contents = []
+  const slice = conversationHistory
+    .filter((m) => !(m.role === 'bot' && m.pending))
+    .slice(-MAX_HISTORY_MESSAGES)
+
+  for (const m of slice) {
+    if (m.role === 'user') {
+      const t = String(m.text || '').trim()
+      if (!t) continue
+      contents.push(userPart(t))
+    } else if (m.role === 'bot') {
+      const t = String(m.text || '').trim()
+      if (!t) continue
+      contents.push({ role: 'model', parts: [{ text: t }] })
+    }
+  }
+
+  contents.push(userPart(newUserText))
+  return contents
 }
 
 /**
  * @param {string} question
- * @param {{ getFallbackAnswer: (q: string) => string }} opts
- * @returns {Promise<{ text: string, usedGemini: boolean }>}
+ * @param {{ getFallbackAnswer: (q: string) => string, conversationHistory?: Array<{ role: string, text?: string, pending?: boolean }>, structuredQa?: Array<{ q: string, a: string }>, skipPii?: boolean, skipLocal?: boolean }} opts
+ * @returns {Promise<{ text: string, usedGemini: boolean, source?: string }>}
  */
-export async function answerPatientEducationQuestion(question, { getFallbackAnswer }) {
+export async function answerPatientEducationQuestion(question, opts) {
+  const {
+    getFallbackAnswer,
+    conversationHistory = [],
+    structuredQa = [],
+    skipPii = false,
+    skipLocal = false,
+  } = opts
   const trimmed = String(question || '').trim()
-  const pii = checkPatientMessageForPii(trimmed)
-  if (!pii.ok) {
-    return { text: pii.message, usedGemini: false }
+  if (!skipPii) {
+    const pii = checkPatientMessageForPii(trimmed)
+    if (!pii.ok) {
+      return { text: pii.message, usedGemini: false, source: 'privacy' }
+    }
+  }
+
+  if (!skipLocal) {
+    const hasPriorConversation = conversationHistory.some(
+      m => m.role === 'user' && String(m.text || '').trim()
+    )
+    const local = resolveLocalEducationAnswer(trimmed, structuredQa, { hasPriorConversation })
+    if (local) {
+      return { text: local.text, usedGemini: false, source: local.source }
+    }
   }
 
   const apiKey = import.meta.env.VITE_GEMINI_API_KEY
   if (!apiKey) {
-    return { text: getFallbackAnswer(trimmed), usedGemini: false }
+    return { text: getFallbackAnswer(trimmed), usedGemini: false, source: 'fallback' }
   }
 
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${encodeURIComponent(apiKey)}`
@@ -90,16 +152,7 @@ export async function answerPatientEducationQuestion(question, { getFallbackAnsw
     systemInstruction: {
       parts: [{ text: buildSystemInstruction() }],
     },
-    contents: [
-      {
-        role: 'user',
-        parts: [
-          {
-            text: `The patient asks (general education only; do not request identifiers):\n\n"""${trimmed}"""`,
-          },
-        ],
-      },
-    ],
+    contents: buildGeminiContentsFromHistory(conversationHistory, trimmed),
     generationConfig: {
       temperature: 0.35,
       maxOutputTokens: 1200,
@@ -116,8 +169,9 @@ export async function answerPatientEducationQuestion(question, { getFallbackAnsw
   if (!res.ok) {
     const err = data?.error?.message || res.statusText || 'Gemini request failed'
     return {
-      text: `${getFallbackAnswer(trimmed)}\n\n—\n_(The live assistant was unavailable: ${err}. The note above is from our offline topics.)_`,
+      text: `${getFallbackAnswer(trimmed)}\n\n—\n_(The live assistant was unavailable: ${err}.)_`,
       usedGemini: false,
+      source: 'fallback',
     }
   }
 
@@ -125,8 +179,8 @@ export async function answerPatientEducationQuestion(question, { getFallbackAnsw
     data?.candidates?.[0]?.content?.parts?.map((p) => p.text).filter(Boolean).join('\n') || ''
 
   if (!text.trim()) {
-    return { text: getFallbackAnswer(trimmed), usedGemini: false }
+    return { text: getFallbackAnswer(trimmed), usedGemini: false, source: 'fallback' }
   }
 
-  return { text: text.trim(), usedGemini: true }
+  return { text: text.trim(), usedGemini: true, source: 'gemini' }
 }
