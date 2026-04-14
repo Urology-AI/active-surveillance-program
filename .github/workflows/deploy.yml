@@ -37,7 +37,11 @@ jobs:
       - name: Install dependencies
         run: npm ci
       
+      # Vite bakes VITE_* into the client bundle at build time. The repo secret must
+      # be passed here; GitHub does not inject secrets into the shell automatically.
       - name: Build
+        env:
+          VITE_GEMINI_API_KEY: ${{ secrets.VITE_GEMINI_API_KEY }}
         run: npm run build
       
       - name: Setup Pages
