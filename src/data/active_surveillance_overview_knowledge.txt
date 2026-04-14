@@ -1,0 +1,301 @@
+===== PAGE as_overview_page-1.png =====
+Active Surveillance and Observation in Prostate Cancer
+
+A Patient Guide Based on NCCN, AUA, and EAU Guidelines
+
+What These Options Mean
+
+Active Surveillance (AS):
+
+A structured monitoring program for men with very-low or low-risk prostate cancer. The goal is to
+watch the cancer closely with tests and repeat biopsies, and only begin treatment if the disease
+shows signs of growth or change.
+
+Observation (Watchful Waiting):
+
+A less intensive approach, usually chosen by men with limited life expectancy or major health
+problems. The goal is to avoid unnecessary testing and treatments, focusing instead on comfort and
+quality of life. Treatment is only given if symptoms develop.
+
+Key Point: Neither AS nor observation is a guarantee. Tests can miss cancer or underestimate
+aggressiveness. These approaches balance benefits and risks but cannot eliminate risk entirely.
+
+Shared Decision-Making and Quality of Life
+What this means for you
+
+Choosing a treatment for prostate cancer is not just about the cancer itself. It's also about how each
+option could affect your everyday life. Shared decision-making means you and your doctor decide
+together, based on the cancer, your health, and what matters most to you.
+
+What we will talk about together
+
+1. How serious your cancer is
+We will explain your risk level and what that means for your care.
+
+2. Your overall health and life expectancy
+Age and other health conditions help guide whether treatment or careful monitoring makes more
+sense.
+
+3. Chances of cure and recurrence
+Tools like risk calculators can help estimate how likely treatment is to cure the cancer or whether
+the cancer might return.
+
+4. Possible side effects
+Every treatment can cause side effects, especially affecting urinary control, sexual function, and
+bowel health. These can be temporary or long-lasting.
+
+6. Your starting point
+Your current urinary, sexual, and bowel function is one of the best predictors of your recovery. We
+may use questionnaires (like SHIM, IPSS) to record this.
+
+6. Your preferences and goals
+What matters most to you, whether it’s keeping sexual function, avoiding incontinence, or limiting
+side effects, should guide the choice.
+
+===== PAGE as_overview_page-2.png =====
+Why this matters
+
+« All treatments for prostate cancer carry risks.
+
+* These risks must be balanced with how aggressive your cancer is, your overall health, and
+your personal values.
+
+« By combining medical facts with your preferences, we can choose the plan that best fits your
+life
+
+Psychological and Emotional Aspects
+
+A. Anxiety before the procedure
+
++ Many men feel nervous about the biopsy itself, the discomfort, and the possible results.
+«  Itis normal to feel worried about cancer, even when the biopsy is only being done as a
+precaution.
+
+B. Concerns about outcomes
+
++ Waiting for results can be stressful and may cause sleep problems, irritability, or constant
+worry.
+
+* Talking openly with your doctor about what the results could mean may help reduce fear of the
+unknown.
+
+C. Impact on self-image and intimacy
+
+» Some men worry about sexual function, masculinity, or how the biopsy might affect intimacy.
+e Itmay help to share these concerns with your partner and your healthcare team.
+
+D. Coping strategies
+
+« Stay informed: Ask your doctor to explain each step so you know what to expect.
+
+¢ Use support: Talk with loved ones, a counselor, or support groups for men facing prostate
+cancer evaluations.
+
+- Practice stress relief. Deep breathing, light exercise, or mindfulness can ease anxiety.
+
+
+===== PAGE as_overview_page-3.png =====
+Who May Be a Candidate
+
+Active Surveillance is generally considered when:
+
+Prostate cancer is very-low or low risk (Grade Group 1, PSA <10, only a few biopsy cores
+positive).
+Life expectancy is 10+ years.
+The patient is comfortable with frequent monitoring and possible later treatment.
+Sometimes considered in favorable intermediate-risk cases if:
+
+o Only a small amount of Gleason pattern 4 is present.
+
+o PSA density is low.
+
+o Tumor volume is low.
+
+o Genomic tests suggest low risk.
+
+Observation is considered when:
+
+Cancer is low- or intermediate-risk, but life expectancy is <5 years.
+The risks of ongoing testing and treatment outweigh the benefits.
+The focus of care is comfort and minimizing interventions.
+
+Note: Men with family history or known inherited mutations (e.g., BRCA2, HOXB13) may be less
+suitable for surveillance and often need closer follow-up.
+
+Special Pathologic Findings and Active Surveillance
+
+Certain biopsy findings may raise concern for higher-risk disease. While guidelines and literature
+often suggest these features should not be managed with active surveillance, there may be
+individualized situations where surveillance is still considered after a detailed discussion with your
+healthcare team:
+
+Cribriform carcinoma — often associated with higher rates of progression, metastasis, and
+mortality.
+
+Intraductal carcinoma of the prostate (IDC-P) — considered an adverse histologic finding,
+typically prompting definitive treatment.
+
+High-grade prostatic intraepithelial neoplasia (HGPIN) — not prostate cancer itself, but a
+marker of increased risk. Requires repeat biopsy rather than surveillance.
+
+Atypical small acinar proliferation (ASAP / ASIN) — an indeterminate finding with a high
+likelihood of underlying carcinoma. Repeat biopsy is recommended within 3-6 months.
+Other aggressive histologies — such as ductal adenocarcinoma, sarcomatoid carcinoma, or
+small cell/neuroendocrine carcinoma, are not candidates for surveillance.
+
+Note: Many clinical guidelines (NCCN, AUA, EAU) suggest that these features usually warrant
+treatment rather than surveillance because of their aggressive potential. However, management is
+individualized. In select cases, a patient and their doctor may still choose surveillance, but this
+requires careful monitoring and shared decision-making.
+
+
+===== PAGE as_overview_page-4.png =====
+Confirming Candidacy
+
+Because biopsies can underestimate cancer, confirmatory testing is strongly recommended before
+committing to AS:
+
+¢ Repeat biopsy (within 12-24 months of diagnosis).
+e MRI with PSA density to identify hidden higher-grade disease.
+« Genomic testing (Decipher, Oncotype DX, Prolaris, ConfirmMDx) may add information.
+
+Note: Even with these tests, aggressive cancer can sometimes remain undetected.
+
+What Active Surveillance Involves
+Typical monitoring schedule (may be individualized):
+
+PSA test: About every 6 months.
+
+Digital rectal exam (DRE): About once per year.
+
+Prostate biopsy: Every 2-5 years, but not more than once per year unless concerns arise.
+MRI: Sometimes repeated (not more than once per year) to guide biopsies, but cannot replace
+them.
+
+Surveillance continues until life expectancy is less than 10 years, at which point observation may be
+more appropriate.
+
+When Surveillance May Change to Treatment
+Curative treatment may be discussed if:
+
+Biopsy shows higher grade disease (Grade Group 22).
+
+Cancer volume increases significantly.
+
+PSA density rises in a concerning way.
+
+MRI shows new or suspicious lesions.
+
+The patient experiences significant anxiety or prefers treatment despite stable disease.
+
+Note: Sometimes cancer progresses despite stable tests, and sometimes PSA rises without
+progression. Decisions are individualized.
+
+Advantages of Active Surveillance
+
+° 50-68% of men avoid treatment for at least 10 years.
+¢ Preserves quality of life by delaying urinary, sexual, and bowel side effects.
+e Curative treatment is still available if disease changes.
+
+
+===== PAGE as_overview_page-5.png =====
+Limitations of Active Surveillance
+
+» 32-50% of men eventually need treatment within 10 years.
+« Small risk (<0.5%) of progression to advanced cancer during surveillance.
+* Some men experience anxiety about “living with cancer.”
+
+Disclaimer: Choosing surveillance means accepting both the benefits of avoiding overtreatment and
+the risks of possible disease progression.
+
+Observation (Watchful Waiting)
+
+Observation focuses on comfort, not routine testing. Usually chosen if life expectancy is <5 years or
+other health problems outweigh cancer risk.
+
+Follow-up:
+
+« Occasional clinic visits and physical exams (about once a year).
+¢ Treatment begins only if symptoms develop (e.g., urinary blockage, bone pain, weight loss).
+
+Note: With observation, cancer may cause symptoms without PSA warning. Promptly report new or
+conceming symptoms to your doctor.
+
+Role of Additional Tests
+
+« PSA: Can be influenced by non-cancer causes (infection, inflammation, recent ejaculation).
+Abnormal results should be confirmed.
+
+« MRI: Improves detection of higher-grade disease but can miss cancer. Radiologist skill matters.
+
+« PSMA PET: Very sensitive for detecting spread; sometimes used in higher-risk cases. Not a
+substitute for biopsy.
+
+« ExactVu Micro-Ultrasound: Provides high-resolution imaging and may help guide targeted
+biopsies. Not a replacement for surveillance biopsies.
+
++ Genomic Testing: Helps guide initial candidacy. Not usually repeated during AS.
+
+Survivorship and Long-Term Care
+
+Men on AS or observation benefit from:
+
+Regular follow-up to ensure safety.
+
+Lifestyle modifications (diet, exercise, smoking cessation) to reduce risk.
+
+Emotional support through counseling or support groups.
+
+Coordination of care among urologists, oncologists, primary care, and mental health providers.
+
+
+===== PAGE as_overview_page-6.png =====
+Bottom Line
+
+¢ Active surveillance is recommended for most men with very-low and low-risk prostate cancer and
+a life expectancy of 10 years or more.
+
+Observation is best for men with shorter life expectancy or significant comorbidities.
+
+Both strategies reduce unnecessary treatment but carry risks of missed or progressive disease.
+No approach guarantees cure, stability, or complete safety.
+
+The best choice depends on your risk level, overall health, and personal values, guided by a
+shared decision-making discussion with your doctor.
+
+References
+
+1. Eastham JA, Auffenberg GB, Barocas DA, et al. Clinically localized prostate cancer: AUA/ASTRO
+guideline, part |: introduction, risk assessment, staging, and risk-based management. J Urol.
+2022:208(1):10-18.
+
+2. Eastham JA, Auffenberg GB, Barocas DA, et al. Clinically localized prostate cancer: AUA/ASTRO
+guideline, part Il: principles of active surveillance, principles of surgery, and follow-up. J Urol.
+2022;208(1):19-25.
+
+3. Eastham JA, Auffenberg GB, Barocas DA, et al. Clinically localized prostate cancer: AUA/ASTRO
+guideline. Part Ill: principles of radiation and future directions. J Urol. 2022;208(1):26-33.
+
+4. Schaeffer EM, Srinivas S, Adra N, An Y, Bitting R, Chapin B, Cheng HH, D'Amico AV, Desai N,
+Dorff T, Eastham JA, Farrington TA, Gao X, Gupta S, Guzzo T, Ippolito JE, Karnes RJ, Kuettel MR,
+Lang JM, Lotan T, McKay RR, Morgan T, Pow-Sang JM, Reiter R, Roach M, Robin T, Rosenfeld S,
+Shabsigh A, Spratt D, Szmulewitz R, Teply BA, Tward J, Valicenti R, Wong JK, Snedeker J,
+Freedman-Cass DA. NCCN Guidelines® Insights: Prostate Cancer, Version 3.2024. J Natl Compr
+Canc Netw. 2024 Apr;22(3):140-150. doi: 10.6004/jnccn.2024.0019. PMID: 38626801.
+
+5, EAU-EANM-ESTRO-ESUR-ISUP-SIOG Guidelines on Prostate Cancer—2024 Update. Part I:
+Screening, Diagnosis, and Local Treatment with Curative Intent Cornford, Philip et al. European
+Urology, Volume 86, Issue 2, 148 - 163
+
+Disclaimer: This guide is for educational purposes only and does not replace medical advice,
+diagnosis, or treatment from your physician. Active surveillance and observation are quideline-based
+strategies to manage prostate cancer, but no schedule, test, or treatment guarantees safety or cure.
+Biopsies, MRIs, PSMA PET scans, and genomic tests can miss or underestimate cancer. PSA may
+rise for non-cancer reasons. Even with negative tests, progression can occur. Some men under
+surveillance eventually need treatment, while others remain stable. Observation carries a risk that
+cancer may cause symptoms before being detected by tests. Treatments for prostate cancer may
+involve urinary, sexual, or bowel side effects, which may be temporary or permanent. All care
+decisions must be individualized based on your cancer risk, health, and preferences, in consultation
+with your physician. Always follow the specific advice of your healthcare team and seek immediate
+care for new or conceming symptoms.
+

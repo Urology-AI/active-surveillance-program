@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react'
 import CareTeamModal from './components/CareTeamModal.js'
 import { Info } from 'lucide-react'
+import { answerPatientEducationQuestion } from './patientGeminiService.js'
 
 const e = React.createElement
 const PATIENT_CONSENT_KEY = 'as_patient_consent_accepted'
@@ -127,7 +128,7 @@ function getAnswer(question) {
 // Sub-components (all use createElement)
 // ─────────────────────────────────────────────────────────────────────────────
 
-function MessageBubble({ role, text }) {
+function MessageBubble({ role, text, pending }) {
   const isUser = role === 'user'
   return e('div', {
     className: `flex ${isUser ? 'justify-end' : 'justify-start'} mb-3`,
@@ -137,13 +138,14 @@ function MessageBubble({ role, text }) {
         ? 'max-w-xs lg:max-w-md px-4 py-2.5 rounded-2xl rounded-br-sm bg-[#00002D] text-white text-sm leading-relaxed'
         : 'max-w-xs lg:max-w-md px-4 py-2.5 rounded-2xl rounded-bl-sm bg-white border border-slate-200 text-slate-800 text-sm leading-relaxed shadow-sm',
     },
-      // Render newlines as line breaks
-      text.split('\n').map((line, i) =>
-        e(React.Fragment, { key: i },
-          line,
-          i < text.split('\n').length - 1 && e('br', {})
-        )
-      )
+      pending
+        ? e('span', { className: 'text-slate-500 text-sm animate-pulse' }, 'Preparing an answer…')
+        : text.split('\n').map((line, i) =>
+            e(React.Fragment, { key: i },
+              line,
+              i < text.split('\n').length - 1 && e('br', {})
+            )
+          )
     )
   )
 }
@@ -152,12 +154,12 @@ function WelcomeBanner() {
   return e('div', { className: 'mb-6 rounded-xl bg-sky-50 border border-sky-100 p-4' },
     e('p', { className: 'text-sm font-semibold text-sky-800 mb-1' }, 'Educational Resource'),
     e('p', { className: 'text-xs text-sky-700 leading-relaxed' },
-      'This tool answers common questions about Active Surveillance and Observation for prostate cancer, based on NCCN, AUA, and EAU guidelines. Select a question below or type your own.'
+      'This tool answers general questions about Active Surveillance and Observation for prostate cancer, using our patient overview (aligned with NCCN, AUA, and EAU themes) plus an optional online assistant when enabled. Do not enter personal or identifying information — ask questions in general terms only.'
     )
   )
 }
 
-function SuggestedQuestions({ onSelect }) {
+function SuggestedQuestions({ onSelect, disabled }) {
   const [openCategory, setOpenCategory] = useState(QA_TOPICS[0].category)
 
   return e('div', { className: 'mb-4' },
@@ -167,8 +169,9 @@ function SuggestedQuestions({ onSelect }) {
         e('div', { key: topic.category, className: 'rounded-lg border border-slate-200 bg-white overflow-hidden' },
           e('button', {
             type: 'button',
+            disabled: !!disabled,
             onClick: () => setOpenCategory(openCategory === topic.category ? null : topic.category),
-            className: 'w-full flex items-center justify-between px-3 py-2 text-left text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-colors',
+            className: 'w-full flex items-center justify-between px-3 py-2 text-left text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed',
           },
             e('span', {}, topic.category),
             e('svg', {
@@ -183,8 +186,9 @@ function SuggestedQuestions({ onSelect }) {
               e('button', {
                 key: qa.q,
                 type: 'button',
-                onClick: () => onSelect(qa.q),
-                className: 'w-full text-left px-3 py-2 text-xs text-slate-600 hover:bg-sky-50 hover:text-sky-800 transition-colors',
+                disabled: !!disabled,
+                onClick: () => { void onSelect(qa.q) },
+                className: 'w-full text-left px-3 py-2 text-xs text-slate-600 hover:bg-sky-50 hover:text-sky-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed',
               }, qa.q)
             )
           )
@@ -208,6 +212,7 @@ export default function PatientApp({ onBack }) {
   const [input, setInput]       = useState('')
   const [careOpen, setCareOpen] = useState(false)
   const [consentAccepted, setConsentAccepted] = useState(false)
+  const [chatLoading, setChatLoading] = useState(false)
   const bottomRef               = useRef(null)
 
   useEffect(() => {
@@ -228,21 +233,43 @@ export default function PatientApp({ onBack }) {
     }
   }, [messages])
 
-  function handleAsk(question) {
+  async function handleAsk(question) {
+    if (!consentAccepted) return
     const trimmed = question.trim()
-    if (!trimmed) return
-    const answer = getAnswer(trimmed)
-    setMessages(prev => [
-      ...prev,
-      { role: 'user', text: trimmed },
-      { role: 'bot',  text: answer },
-    ])
+    if (!trimmed || chatLoading) return
+    setChatLoading(true)
+    setMessages(prev => [...prev, { role: 'user', text: trimmed }, { role: 'bot', text: '', pending: true }])
     setInput('')
+    try {
+      const { text } = await answerPatientEducationQuestion(trimmed, { getFallbackAnswer: getAnswer })
+      setMessages(prev => {
+        const next = [...prev]
+        const last = next[next.length - 1]
+        if (last && last.role === 'bot' && last.pending) {
+          next[next.length - 1] = { role: 'bot', text }
+        }
+        return next
+      })
+    } catch (_) {
+      setMessages(prev => {
+        const next = [...prev]
+        const last = next[next.length - 1]
+        if (last && last.role === 'bot' && last.pending) {
+          next[next.length - 1] = {
+            role: 'bot',
+            text: `${getAnswer(trimmed)}\n\n_(Something went wrong; showing an offline answer.)_`,
+          }
+        }
+        return next
+      })
+    } finally {
+      setChatLoading(false)
+    }
   }
 
   function handleSubmit(ev) {
     ev.preventDefault()
-    handleAsk(input)
+    void handleAsk(input)
   }
 
   const hasMessages = messages.length > 0
@@ -283,7 +310,7 @@ export default function PatientApp({ onBack }) {
     // ── Body ──────────────────────────────────────────────────────────────
     e('div', { className: 'flex-1 max-w-2xl w-full mx-auto px-4 py-6 flex flex-col gap-0' },
 
-      !hasMessages && e(WelcomeBanner, {}),
+      consentAccepted && !hasMessages && e(WelcomeBanner, {}),
 
       !consentAccepted && e('div', {
         className: 'mb-4 rounded-xl border p-4',
@@ -295,6 +322,9 @@ export default function PatientApp({ onBack }) {
         ),
         e('p', { className: 'text-xs text-amber-800 leading-relaxed mt-1.5' },
           'By continuing, you acknowledge that treatment decisions should be made with your healthcare team.'
+        ),
+        e('p', { className: 'text-xs text-amber-800 leading-relaxed mt-1.5 font-medium' },
+          'Do not type personal details (name, phone, email, address, record numbers, date of birth, or test results). Ask general questions only.'
         ),
         e('label', { className: 'mt-3 flex items-start gap-2.5 cursor-pointer select-none' },
           e('input', {
@@ -309,34 +339,45 @@ export default function PatientApp({ onBack }) {
         )
       ),
 
-      // Chat messages
-      hasMessages && e('div', { className: 'flex-1 mb-4' },
-        messages.map((msg, i) => e(MessageBubble, { key: i, role: msg.role, text: msg.text })),
+      consentAccepted && hasMessages && e('div', { className: 'flex-1 mb-4' },
+        messages.map((msg, i) =>
+          e(MessageBubble, {
+            key: i,
+            role: msg.role,
+            text: msg.text,
+            pending: msg.pending,
+          })
+        ),
         e('div', { ref: bottomRef })
       ),
 
-      // Suggested questions (always visible)
-      consentAccepted && e(SuggestedQuestions, { onSelect: handleAsk }),
+      consentAccepted && e(SuggestedQuestions, { onSelect: handleAsk, disabled: chatLoading }),
 
-      // Input
-      e('form', { onSubmit: handleSubmit, className: 'mt-4 flex gap-2' },
-        e('input', {
-          type: 'text',
-          value: input,
-          onChange: ev => setInput(ev.target.value),
-          placeholder: 'Ask a question about Active Surveillance…',
-          disabled: !consentAccepted,
-          className: 'flex-1 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-800 placeholder-slate-400 shadow-sm focus:outline-none focus:ring-2 focus:ring-sky-400 focus:border-transparent',
-        }),
-        e('button', {
-          type: 'submit',
-          disabled: !consentAccepted || !input.trim(),
-          className: 'rounded-xl px-4 py-2.5 text-sm font-semibold text-white transition-colors disabled:opacity-40 disabled:cursor-not-allowed',
-          style: { background: '#00002D' },
-        }, 'Ask')
+      consentAccepted && e(React.Fragment, null,
+        e('p', { className: 'text-[11px] text-slate-500 leading-snug mt-2 mb-1' },
+          e('strong', { className: 'text-slate-600' }, 'Privacy: '),
+          'Ask general questions only. Do not include your name, contact information, medical record numbers, dates of birth, or your own lab or biopsy values.'
+        ),
+        e('form', { onSubmit: handleSubmit, className: 'mt-2 flex gap-2' },
+          e('input', {
+            type: 'text',
+            value: input,
+            onChange: ev => setInput(ev.target.value),
+            placeholder: 'e.g., What is active surveillance?',
+            disabled: chatLoading,
+            autoComplete: 'off',
+            className: 'flex-1 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-800 placeholder-slate-400 shadow-sm focus:outline-none focus:ring-2 focus:ring-sky-400 focus:border-transparent disabled:opacity-50',
+          }),
+          e('button', {
+            type: 'submit',
+            disabled: chatLoading || !input.trim(),
+            className: 'rounded-xl px-4 py-2.5 text-sm font-semibold text-white transition-colors disabled:opacity-40 disabled:cursor-not-allowed',
+            style: { background: '#00002D' },
+          }, chatLoading ? '…' : 'Ask')
+        )
       ),
 
-      e(Disclaimer, {})
+      consentAccepted && e(Disclaimer, {})
     )
   )
 }
