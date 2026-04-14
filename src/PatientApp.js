@@ -11,6 +11,45 @@ import {
 const e = React.createElement
 const PATIENT_CONSENT_KEY = 'as_patient_consent_accepted'
 
+/** Non-secret flag: key is embedded at build time (see vite.config.js define). Rebuild/deploy after setting VITE_GEMINI_API_KEY. */
+const GEMINI_KEY_CONFIGURED =
+  typeof __VITE_GEMINI_API_KEY_INJECTED__ === 'string' &&
+  __VITE_GEMINI_API_KEY_INJECTED__.trim().length > 0
+
+function PatientHeaderAiStatus() {
+  if (GEMINI_KEY_CONFIGURED) {
+    return e('div', {
+      className:
+        'flex items-center justify-center gap-2 px-4 py-2 border-t border-white/10 max-w-2xl mx-auto w-full',
+      title:
+        'Gemini is configured for this build (VITE_GEMINI_API_KEY). Rebuild the app after changing env vars.',
+    },
+      e('span', {
+        className:
+          'h-2 w-2 rounded-full bg-emerald-400 shrink-0 shadow-[0_0_8px_rgba(52,211,153,0.75)]',
+        'aria-hidden': true,
+      }),
+      e('span', { className: 'text-[10px] sm:text-[11px] text-emerald-100/95 font-medium' },
+        'Gemini AI connected'
+      )
+    )
+  }
+  return e('div', {
+    className:
+      'flex items-center justify-center gap-2 px-4 py-2 border-t border-white/10 max-w-2xl mx-auto w-full',
+    title:
+      'No VITE_GEMINI_API_KEY in this build. Answers use the patient handout and guideline topics only. Add the key and redeploy to enable Gemini.',
+  },
+    e('span', {
+      className: 'h-2 w-2 rounded-full bg-amber-400/90 shrink-0',
+      'aria-hidden': true,
+    }),
+    e('span', { className: 'text-[10px] sm:text-[11px] text-white/50' },
+      'AI assistant offline — handout & topics only'
+    )
+  )
+}
+
 const LOAD_CHECK = 'Checking your message…'
 const LOAD_HANDOUT = 'Searching patient handout & guideline topics…'
 const LOAD_AI = 'Asking Gemini AI (using your handout as context)…'
@@ -490,7 +529,8 @@ export default function PatientApp({ onBack }) {
           e(Info, { className: 'h-4 w-4' }),
           e('span', { className: 'hidden sm:inline text-[11px] font-semibold' }, 'Meet the Care Team')
         )
-      )
+      ),
+      e(PatientHeaderAiStatus, {})
     ),
 
     // ── Body ──────────────────────────────────────────────────────────────

@@ -141,7 +141,7 @@ export async function answerPatientEducationQuestion(question, opts) {
     }
   }
 
-  const apiKey = import.meta.env.VITE_GEMINI_API_KEY
+  const apiKey = __VITE_GEMINI_API_KEY_INJECTED__
   if (!apiKey) {
     return { text: getFallbackAnswer(trimmed), usedGemini: false, source: 'fallback' }
   }
