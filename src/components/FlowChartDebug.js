@@ -7,13 +7,12 @@ const SCALE_MIN = 0.4
 const SCALE_MAX = 2.0
 
 export default function FlowChartDebug({ currentStep, stepHistory, onStepClick }) {
-  const [isExpanded, setIsExpanded] = useState(true)
-  const [isMinimized, setIsMinimized] = useState(false)
+  const [isExpanded, setIsExpanded] = useState(false)
+  const [isMinimized, setIsMinimized] = useState(true)
   const [scale, setScale] = useState(1)
 
   useEffect(() => {
     if (typeof window !== 'undefined' && window.matchMedia('(max-width: 768px)').matches) {
-      setIsMinimized(true)
       setScale(0.8)
     }
   }, [])
@@ -62,7 +61,17 @@ export default function FlowChartDebug({ currentStep, stepHistory, onStepClick }
   if (isMinimized) {
     return React.createElement('div', {
       className: 'fixed-bottom-panel fixed right-4 z-50 bg-white rounded-lg shadow-sinai border-2 border-sinai-cerulean p-2 cursor-pointer print:hidden',
-      onClick: () => setIsMinimized(false)
+      onClick: () => { setIsMinimized(false); setIsExpanded(true) },
+      title: 'Open flow map',
+      role: 'button',
+      tabIndex: 0,
+      onKeyDown: (ev) => {
+        if (ev.key === 'Enter' || ev.key === ' ') {
+          ev.preventDefault()
+          setIsMinimized(false)
+          setIsExpanded(true)
+        }
+      },
     },
       React.createElement(MapPin, { className: 'w-5 h-5 text-sinai-cerulean' })
     )

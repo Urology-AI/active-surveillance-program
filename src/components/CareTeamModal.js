@@ -41,57 +41,63 @@ function getInitials(name) {
 
 function PersonCard({ person, avatarColor }) {
   return React.createElement('div', {
-    className: 'flex items-start gap-3 rounded-xl border p-3.5 shadow-sm',
-    style: { background: '#ffffff', borderColor: '#e2e8f0' },
+    className:
+      'group flex gap-3.5 rounded-xl border border-slate-200/90 bg-white p-4 shadow-sm transition-shadow hover:border-slate-300 hover:shadow-md sm:gap-4',
   },
     React.createElement('div', {
-      className: 'w-9 h-9 rounded-full flex items-center justify-center shrink-0 text-white font-bold',
-      style: { fontSize: '13px', background: avatarColor },
+      className:
+        'flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-[12px] font-bold text-white shadow-inner sm:h-11 sm:w-11 sm:text-[13px]',
+      style: { background: avatarColor },
     }, getInitials(person.name)),
 
-    React.createElement('div', { className: 'flex-1 min-w-0' },
-      React.createElement('p', {
-        className: 'text-sm font-semibold text-slate-800 leading-tight',
-      }, person.name + (person.creds ? `, ${person.creds}` : '')),
+    React.createElement('div', { className: 'min-w-0 flex-1' },
+      React.createElement('p', { className: 'text-[15px] font-semibold leading-snug tracking-tight text-slate-900' }, person.name),
+      person.creds &&
+        React.createElement('p', { className: 'mt-0.5 text-xs font-medium text-slate-500' }, person.creds),
 
-      person.phone && React.createElement('a', {
-        href: `tel:${String(person.phone).replace(/\D/g, '')}`,
-        className: 'flex items-center gap-1.5 mt-1 text-xs hover:underline',
-        style: { color: '#06ABEB' },
-      },
-        React.createElement(Phone, { className: 'w-3 h-3 shrink-0' }),
-        person.phone
-      ),
-
-      React.createElement('a', {
-        href: `mailto:${person.email}`,
-        className: 'flex items-center gap-1.5 mt-0.5 text-xs text-slate-500 hover:underline',
-        style: { minWidth: 0 },
-      },
-        React.createElement(Mail, { className: 'w-3 h-3 shrink-0 text-slate-400' }),
-        React.createElement('span', { className: 'truncate block' }, person.email)
+      React.createElement('div', { className: 'mt-3 space-y-2 border-t border-slate-100 pt-3' },
+        person.phone &&
+          React.createElement('a', {
+            href: `tel:${String(person.phone).replace(/\D/g, '')}`,
+            className:
+              'flex items-center gap-2 text-xs font-medium tabular-nums text-[#0596c7] transition-colors hover:text-[#212070]',
+          },
+            React.createElement(Phone, { className: 'h-3.5 w-3.5 shrink-0 opacity-70' }),
+            person.phone
+          ),
+        React.createElement('a', {
+          href: `mailto:${person.email}`,
+          className: 'flex items-start gap-2 text-xs text-slate-600 transition-colors hover:text-slate-900',
+          style: { minWidth: 0 },
+        },
+          React.createElement(Mail, { className: 'mt-0.5 h-3.5 w-3.5 shrink-0 text-slate-400' }),
+          React.createElement('span', { className: 'break-all leading-snug' }, person.email)
+        )
       )
     )
   )
 }
 
-function TeamSection({ title, members, avatarColor, accentColor }) {
+function TeamSection({ title, subtitle, members, accentColor }) {
   return React.createElement('section', {
-    className: 'mb-6 rounded-2xl border p-4 sm:p-5',
-    style: { borderColor: '#e2e8f0', background: '#f8fafc' },
+    className: 'scroll-mt-6',
+    'aria-label': title,
   },
-    React.createElement('div', {
-      className: 'flex items-center gap-2 mb-3',
-      style: { borderBottom: `2px solid ${accentColor}`, paddingBottom: '8px' },
-    },
-      React.createElement('p', {
-        className: 'text-xs font-bold uppercase tracking-wider',
-        style: { color: accentColor },
-      }, title)
+    React.createElement('div', { className: 'mb-4 flex items-start gap-3 sm:mb-5' },
+      React.createElement('div', {
+        className: 'mt-0.5 h-9 w-1 shrink-0 rounded-full sm:h-10',
+        style: { background: accentColor },
+      }),
+      React.createElement('div', { className: 'min-w-0 flex-1' },
+        React.createElement('h3', { className: 'text-base font-semibold tracking-tight text-slate-900 sm:text-[17px]' }, title),
+        React.createElement('p', { className: 'mt-0.5 text-xs text-slate-500' }, subtitle)
+      )
     ),
-    React.createElement('div', { className: 'grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-3' },
+    React.createElement('div', {
+      className: 'grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-3.5 xl:grid-cols-3',
+    },
       members.map((p, i) =>
-        React.createElement(PersonCard, { key: i, person: p, avatarColor })
+        React.createElement(PersonCard, { key: `${p.email}-${i}`, person: p, avatarColor: accentColor })
       )
     )
   )
@@ -120,109 +126,156 @@ export default function CareTeamModal({ open, onClose }) {
   if (!open) return null
 
   return React.createElement('div', {
-    className: 'fixed inset-0 z-[200] flex items-end justify-center p-0 sm:items-center sm:p-4',
+    className: 'fixed inset-0 z-[200] flex items-end justify-center p-0 sm:items-center sm:p-5',
     role: 'presentation',
   },
     React.createElement('div', {
-      className: 'absolute inset-0 bg-slate-900/55 backdrop-blur-[2px]',
+      className: 'absolute inset-0 bg-slate-950/50 backdrop-blur-sm',
       onClick: onClose,
       'aria-hidden': true,
     }),
     React.createElement('div', {
-      className: 'relative flex h-[94vh] w-full max-w-6xl flex-col rounded-t-2xl border border-slate-200 bg-white shadow-2xl sm:h-[92vh] sm:rounded-3xl',
+      className:
+        'relative flex h-[94vh] w-full max-w-6xl flex-col overflow-hidden rounded-t-2xl border border-slate-200/90 bg-white shadow-[0_25px_80px_-12px_rgba(15,23,42,0.35)] sm:h-[min(92vh,900px)] sm:rounded-2xl',
       role: 'dialog',
       'aria-modal': true,
       'aria-labelledby': 'care-team-modal-title',
+      'aria-describedby': 'care-team-modal-desc',
       onClick: (ev) => ev.stopPropagation(),
     },
-      React.createElement('div', {
-        className: 'relative flex shrink-0 items-start justify-between gap-3 border-b border-slate-100 px-4 py-4 sm:px-6',
-        style: { background: 'linear-gradient(135deg, #00002D 0%, #212070 55%, #06ABEB 140%)' },
+      // Header
+      React.createElement('header', {
+        className: 'relative shrink-0 border-b border-white/10 px-4 py-4 sm:px-7 sm:py-5',
+        style: { background: 'linear-gradient(118deg, #00002D 0%, #1a195c 42%, #212070 72%, #0d4f6e 100%)' },
       },
-        React.createElement('div', { className: 'min-w-0 pt-0.5' },
-          React.createElement('p', {
-            className: 'text-[10px] font-extrabold uppercase tracking-widest text-center sm:text-left',
-            style: { color: '#06ABEB' },
-          }, 'Mount Sinai · Urology'),
-          React.createElement('h2', {
-            id: 'care-team-modal-title',
-            className: 'text-lg font-bold leading-snug text-white text-center sm:text-left sm:text-xl',
-          }, 'Active Surveillance Care Team'),
-          React.createElement('p', {
-            className: 'mt-0.5 text-xs text-white/70 text-center sm:text-left',
-          }, `${MEMBER_COUNT} members`)
-        ),
-        React.createElement('button', {
-          type: 'button',
-          onClick: onClose,
-          className: 'flex shrink-0 items-center justify-center rounded-lg p-2 text-white/70 transition-colors hover:bg-white/10 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-white/40',
-          'aria-label': 'Close',
-        },
-          React.createElement(X, { className: 'h-5 w-5' })
+        React.createElement('div', {
+          className: 'pointer-events-none absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-white/25 to-transparent',
+        }),
+        React.createElement('div', { className: 'flex items-start justify-between gap-4' },
+          React.createElement('div', { className: 'min-w-0 flex-1' },
+            React.createElement('p', {
+              className: 'text-[10px] font-bold uppercase tracking-[0.2em] text-[#5ec8f5]',
+            }, 'Mount Sinai'),
+            React.createElement('p', {
+              className: '-mt-0.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-white/45',
+            }, 'Department of Urology'),
+            React.createElement('h2', {
+              id: 'care-team-modal-title',
+              className: 'mt-2 text-lg font-bold leading-tight text-white sm:text-xl',
+            }, 'Active Surveillance Care Team'),
+            React.createElement('div', { className: 'mt-3 flex flex-wrap items-center gap-2' },
+              React.createElement('span', {
+                className: 'inline-flex items-center rounded-md border border-white/15 bg-white/10 px-2 py-0.5 text-[11px] font-semibold text-white/95',
+              }, `${MEMBER_COUNT} members`),
+              React.createElement('span', {
+                className: 'hidden text-[11px] text-white/50 sm:inline',
+              }, '·'),
+              React.createElement('span', {
+                className: 'hidden text-[11px] text-white/55 sm:inline',
+              }, 'Directory for clinical coordination')
+            )
+          ),
+          React.createElement('button', {
+            type: 'button',
+            onClick: onClose,
+            className:
+              'flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-white/20 bg-white/5 text-white/80 transition-colors hover:bg-white/15 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-white/50 sm:h-10 sm:w-10',
+            'aria-label': 'Close',
+          },
+            React.createElement(X, { className: 'h-5 w-5' })
+          )
         )
       ),
 
+      // Body
       React.createElement('div', {
-        className: 'min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-4 sm:px-6 sm:py-5',
+        className: 'min-h-0 flex-1 overflow-y-auto overscroll-contain bg-slate-50/90',
       },
-        React.createElement('div', {
-          className: 'mb-5 rounded-xl border border-sky-100 bg-sky-50/70 px-4 py-3 text-center text-sm text-slate-700',
-        }, 'Meet the care team supporting the Active Surveillance pathway.'),
-        React.createElement(TeamSection, {
-          title: 'Physician Team',
-          members: PHYSICIAN_TEAM,
-          avatarColor: '#212070',
-          accentColor: '#212070',
-        }),
-        React.createElement(TeamSection, {
-          title: "Fellows, PA's & Nurses",
-          members: FELLOWS_PAS_NURSES,
-          avatarColor: '#06ABEB',
-          accentColor: '#06ABEB',
-        }),
-        React.createElement(TeamSection, {
-          title: 'Administrative Team',
-          members: ADMIN_TEAM,
-          avatarColor: '#DC298D',
-          accentColor: '#DC298D',
-        }),
-        React.createElement('div', {
-          className: 'rounded-2xl border p-4 sm:p-5',
-          style: { background: 'rgb(6 171 235 / 0.05)', border: '1px solid rgb(6 171 235 / 0.18)' },
-        },
-          React.createElement('p', {
-            className: 'mb-3 text-xs font-bold uppercase tracking-wider text-slate-400',
-          }, 'Office Information'),
-          React.createElement('div', { className: 'space-y-2' },
-            React.createElement('div', { className: 'flex items-center gap-2' },
-              React.createElement(Phone, { className: 'h-3.5 w-3.5 shrink-0 text-slate-400' }),
-              React.createElement('span', { className: 'text-xs text-slate-500' }, 'Main Office:'),
-              React.createElement('a', {
-                href: 'tel:2122419955',
-                className: 'text-xs font-medium hover:underline',
-                style: { color: '#06ABEB' },
-              }, '212-241-9955')
+        React.createElement('div', { className: 'px-4 py-5 sm:px-7 sm:py-6' },
+          React.createElement('div', {
+            id: 'care-team-modal-desc',
+            className:
+              'mb-7 rounded-lg border border-slate-200 bg-white px-4 py-3.5 shadow-sm sm:flex sm:items-center sm:gap-4 sm:px-5 sm:py-4',
+          },
+            React.createElement('div', {
+              className: 'hidden h-12 w-1 shrink-0 rounded-full bg-gradient-to-b from-[#06ABEB] to-[#212070] sm:block',
+            }),
+            React.createElement('p', {
+              className: 'text-sm leading-relaxed text-slate-600',
+            },
+              React.createElement('span', { className: 'font-medium text-slate-800' }, 'Clinical directory. '),
+              'Use the contacts below for pathway questions, scheduling, and administrative support.'
+            )
+          ),
+
+          React.createElement('div', { className: 'space-y-10 sm:space-y-12' },
+            React.createElement(TeamSection, {
+              title: 'Physician team',
+              subtitle: 'Urology faculty · clinical leadership',
+              members: PHYSICIAN_TEAM,
+              accentColor: '#212070',
+            }),
+            React.createElement(TeamSection, {
+              title: "Fellows, physician assistants & nursing",
+              subtitle: 'Clinical support and patient navigation',
+              members: FELLOWS_PAS_NURSES,
+              accentColor: '#06ABEB',
+            }),
+            React.createElement(TeamSection, {
+              title: 'Administrative team',
+              subtitle: 'Program coordination',
+              members: ADMIN_TEAM,
+              accentColor: '#DC298D',
+            })
+          ),
+
+          React.createElement('div', {
+            className: 'mt-10 rounded-xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6',
+          },
+            React.createElement('div', { className: 'mb-4 flex items-center gap-2' },
+              React.createElement('div', {
+                className: 'flex h-8 w-8 items-center justify-center rounded-lg bg-slate-100 text-slate-600',
+              }, React.createElement(MapPin, { className: 'h-4 w-4' })),
+              React.createElement('h3', {
+                className: 'text-sm font-semibold tracking-tight text-slate-900',
+              }, 'Office information')
             ),
-            React.createElement('div', { className: 'flex items-center gap-2' },
-              React.createElement(Phone, { className: 'h-3.5 w-3.5 shrink-0 text-slate-400' }),
-              React.createElement('span', { className: 'text-xs text-slate-500' }, 'Active Surveillance:'),
-              React.createElement('a', {
-                href: 'tel:9296973643',
-                className: 'text-xs font-medium hover:underline',
-                style: { color: '#06ABEB' },
-              }, '929-697-3643')
-            ),
-            React.createElement('div', { className: 'flex items-start gap-2' },
-              React.createElement(MapPin, { className: 'mt-0.5 h-3.5 w-3.5 shrink-0 text-slate-400' }),
-              React.createElement('span', { className: 'text-xs text-slate-500' },
-                '110 East 60th Street, 5th Floor, New York, NY 10022'
+            React.createElement('div', {
+              className: 'grid gap-4 sm:grid-cols-2',
+            },
+              React.createElement('div', { className: 'space-y-1' },
+                React.createElement('p', { className: 'text-[11px] font-semibold uppercase tracking-wide text-slate-400' }, 'Main office'),
+                React.createElement('a', {
+                  href: 'tel:2122419955',
+                  className: 'inline-flex items-center gap-2 text-sm font-semibold tabular-nums text-[#0596c7] hover:text-[#212070]',
+                },
+                  React.createElement(Phone, { className: 'h-4 w-4 opacity-70' }),
+                  '212-241-9955'
+                )
+              ),
+              React.createElement('div', { className: 'space-y-1' },
+                React.createElement('p', { className: 'text-[11px] font-semibold uppercase tracking-wide text-slate-400' }, 'Active surveillance line'),
+                React.createElement('a', {
+                  href: 'tel:9296973643',
+                  className: 'inline-flex items-center gap-2 text-sm font-semibold tabular-nums text-[#0596c7] hover:text-[#212070]',
+                },
+                  React.createElement(Phone, { className: 'h-4 w-4 opacity-70' }),
+                  '929-697-3643'
+                )
+              ),
+              React.createElement('div', { className: 'sm:col-span-2' },
+                React.createElement('p', { className: 'text-[11px] font-semibold uppercase tracking-wide text-slate-400' }, 'Address'),
+                React.createElement('p', { className: 'mt-1 text-sm leading-snug text-slate-600' },
+                  '110 East 60th Street, 5th Floor, New York, NY 10022'
+                )
               )
             )
-          )
-        ),
-        React.createElement('p', {
-          className: 'mt-4 text-center text-[11px] text-slate-400',
-        }, 'Clinical decision support only — does not replace clinical judgment.')
+          ),
+
+          React.createElement('p', {
+            className: 'mt-6 border-t border-slate-200/80 pt-5 text-center text-[11px] leading-relaxed text-slate-400',
+          }, 'Clinical decision support only — does not replace clinical judgment.')
+        )
       )
     )
   )

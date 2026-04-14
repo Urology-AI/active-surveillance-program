@@ -104,20 +104,6 @@ export default function StartScreen({ onStart }) {
         },
           'Begin Assessment',
           React.createElement(ChevronRight, { className: 'w-5 h-5' })
-        ),
-        React.createElement('div', {
-          className: 'mt-6 rounded-xl border p-4',
-          style: { background: 'rgb(6 171 235 / 0.06)', borderColor: 'rgb(6 171 235 / 0.22)' },
-        },
-          React.createElement('p', { className: 'text-xs font-bold uppercase tracking-wide text-sky-700 mb-1' }, 'Need Contact Info?'),
-          React.createElement('div', { className: 'flex items-center justify-between gap-3' },
-            React.createElement('p', { className: 'text-sm text-slate-600' }, 'Open the care team directory for names and phone numbers.'),
-            React.createElement('button', {
-              type: 'button',
-              onClick: () => setCareOpen(true),
-              className: 'inline-flex items-center gap-1 rounded-lg border border-sky-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-sky-700 hover:bg-sky-50',
-            }, 'Meet the Care Team')
-          )
         )
       )
     ),

@@ -32,7 +32,7 @@ export default {
         'sinai-lg': '0 10px 40px -10px rgba(33, 32, 112, 0.2)',
       },
       backgroundImage: {
-        'sinai-page': 'linear-gradient(180deg, #f0f9fc 0%, #f8fafc 100%)',
+        'sinai-page': 'linear-gradient(180deg, #eef6fb 0%, #f8fafc 45%, #f1f5f9 100%)',
       },
     },
   },

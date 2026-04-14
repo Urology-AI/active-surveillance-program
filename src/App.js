@@ -27,7 +27,6 @@ import EndStateContinueAS from './components/EndStateContinueAS.js'
 // UI
 import ProgressBar from './components/ProgressBar.js'
 import FlowChartDebug from './components/FlowChartDebug.js'
-import PasswordProtection from './components/PasswordProtection.js'
 import ChartPrintView from './components/ChartPrintView.js'
 import AppHeader from './components/AppHeader.js'
 
@@ -131,7 +130,6 @@ const STEP_ORDER = [
 ]
 
 function App() {
-  const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [currentStep, setCurrentStep] = useState(STEPS.START)
   const [stepHistory, setStepHistory] = useState([])
   const [forwardStack, setForwardStack] = useState([])
@@ -139,24 +137,18 @@ function App() {
   const [showChartForPrint, setShowChartForPrint] = useState(false)
 
   useEffect(() => {
-    const authStatus = sessionStorage.getItem('authenticated')
-    if (authStatus === 'true') setIsAuthenticated(true)
-  }, [])
-
-  useEffect(() => {
-    if (!isAuthenticated) return
     try {
       const raw = localStorage.getItem(STORAGE_KEY)
       if (!raw) return
       const { currentStep: s, stepHistory: h } = JSON.parse(raw)
       if ((s && s !== STEPS.START) || (h && h.length > 0)) setShowResumePrompt(true)
     } catch (_) {}
-  }, [isAuthenticated])
+  }, [])
 
   useEffect(() => {
-    if (!isAuthenticated || currentStep === STEPS.START) return
+    if (currentStep === STEPS.START) return
     localStorage.setItem(STORAGE_KEY, JSON.stringify({ currentStep, stepHistory }))
-  }, [isAuthenticated, currentStep, stepHistory])
+  }, [currentStep, stepHistory])
 
   useEffect(() => {
     const t = PAGE_TITLES[currentStep]
@@ -250,10 +242,6 @@ function App() {
     onPrintChart: () => setShowChartForPrint(true),
   }
 
-  if (!isAuthenticated) {
-    return React.createElement(PasswordProtection, { onAuthenticated: () => setIsAuthenticated(true) })
-  }
-
   return React.createElement('div', { className: 'min-h-screen bg-sinai-page' },
 
     // Sticky top header (shown for all non-start screens)
@@ -265,13 +253,14 @@ function App() {
     }),
 
     showResumePrompt && React.createElement('div', {
-      className: 'fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40'
+      className: 'fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/45 backdrop-blur-[2px]'
     },
-      React.createElement('div', { className: 'bg-white rounded-xl shadow-xl p-6 max-w-sm w-full border border-slate-200' },
-        React.createElement('p', { className: 'text-sinai-cetacean font-semibold mb-4' }, 'Resume where you left off?'),
+      React.createElement('div', { className: 'bg-white rounded-2xl shadow-sinai-lg p-6 max-w-sm w-full border border-slate-200/80' },
+        React.createElement('p', { className: 'text-sinai-cetacean font-semibold text-base mb-1' }, 'Resume where you left off?'),
+        React.createElement('p', { className: 'text-xs text-slate-500 mb-4' }, 'Continue your pathway or start fresh.'),
         React.createElement('div', { className: 'flex flex-col gap-2' },
-          React.createElement('button', { onClick: resumeProgress, className: 'w-full py-2.5 bg-sinai-cerulean text-white font-semibold rounded-xl hover:bg-sinai-cerulean-dark' }, 'Resume'),
-          React.createElement('button', { onClick: startOver, className: 'w-full py-2.5 border-2 border-slate-200 rounded-xl font-medium text-slate-700 hover:bg-slate-50' }, 'Start over')
+          React.createElement('button', { onClick: resumeProgress, className: 'w-full py-2.5 bg-sinai-cerulean text-white font-semibold rounded-xl hover:bg-sinai-cerulean-dark transition-colors' }, 'Resume'),
+          React.createElement('button', { onClick: startOver, className: 'w-full py-2.5 border border-slate-200 rounded-xl font-medium text-slate-700 hover:bg-slate-50 transition-colors' }, 'Start over')
         )
       )
     ),
@@ -438,9 +427,9 @@ function App() {
           }),
       ),
 
-      React.createElement('footer', { className: 'mt-10 pt-6 border-t border-slate-200 text-center text-xs text-slate-500' },
-        React.createElement('p', { className: 'mb-1' }, 'Clinical decision support only; does not replace clinical judgment.'),
-        React.createElement('p', null,
+      React.createElement('footer', { className: 'mt-10 pt-8 border-t border-slate-200/90 text-center text-xs text-slate-600 max-w-2xl mx-auto' },
+        React.createElement('p', { className: 'mb-2 leading-relaxed' }, 'Clinical decision support only; does not replace clinical judgment.'),
+        React.createElement('p', { className: 'leading-relaxed' },
           'Refer to institutional protocol or ',
           React.createElement('a', { href: 'https://www.auanet.org/guidelines/guidelines/prostate-cancer-clinically-localized-guideline', target: '_blank', rel: 'noopener noreferrer', className: 'text-sinai-cerulean hover:underline' }, 'AUA'),
           ' / ',

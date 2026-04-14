@@ -21,13 +21,17 @@ export default function ProgressBar({ progress, stepLabel, onBack, onForward, ca
 
       // Progress bar — takes all space
       React.createElement('div', { className: 'flex-1 min-w-0' },
-        React.createElement('div', { className: 'w-full bg-slate-200 rounded-full overflow-hidden', style: { height: '6px' } },
+        React.createElement('div', {
+          className: 'w-full rounded-full bg-slate-200/90 shadow-inner',
+          style: { height: '7px' },
+        },
           React.createElement('div', {
-            className: 'h-full rounded-full transition-all duration-500 ease-out',
+            className: 'h-full rounded-full transition-all duration-500 ease-out shadow-sm',
             style: {
               width: `${progress}%`,
-              background: 'linear-gradient(90deg, #06ABEB 0%, #212070 100%)'
-            }
+              minWidth: progress > 0 ? '4px' : 0,
+              background: 'linear-gradient(90deg, #06ABEB 0%, #1e6ba8 55%, #212070 100%)',
+            },
           })
         )
       ),
@@ -48,15 +52,16 @@ export default function ProgressBar({ progress, stepLabel, onBack, onForward, ca
             : 'text-slate-300 border-slate-100 bg-slate-50 cursor-not-allowed'
         }`
       },
-        'Fwd',
+        React.createElement('span', { className: 'hidden sm:inline' }, 'Forward'),
+        React.createElement('span', { className: 'sm:hidden' }, 'Fwd'),
         React.createElement(ArrowRight, { className: 'w-3.5 h-3.5' })
       )
     ),
 
     // Step label under bar
-    stepLabel && React.createElement('div', { className: 'text-center' },
+    stepLabel && React.createElement('div', { className: 'text-center px-1' },
       React.createElement('span', {
-        className: 'text-xs font-medium text-slate-500'
+        className: 'text-xs font-medium text-slate-600 tracking-tight'
       }, stepLabel)
     )
   )

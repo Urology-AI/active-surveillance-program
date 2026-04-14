@@ -45,7 +45,7 @@ export default function RoleSelector({ onSelectRole }) {
       // Patient card
       e('button', {
         onClick: () => onSelectRole('patient'),
-        className: 'group relative bg-white rounded-2xl p-8 text-left shadow-xl hover:shadow-2xl transition-all duration-200 hover:-translate-y-1 focus:outline-none focus-visible:ring-4 focus-visible:ring-white/40 border-t-4',
+        className: 'group relative bg-white rounded-2xl p-8 text-left shadow-lg shadow-slate-900/5 ring-1 ring-slate-900/[0.04] hover:shadow-xl hover:shadow-slate-900/8 transition-all duration-200 hover:-translate-y-0.5 focus:outline-none focus-visible:ring-4 focus-visible:ring-white/40 border-t-4',
         style: { borderTopColor: '#06ABEB' },
       },
         e('div', { className: 'flex items-start gap-4' },
@@ -70,7 +70,7 @@ export default function RoleSelector({ onSelectRole }) {
       // Clinician card
       e('button', {
         onClick: () => onSelectRole('clinician'),
-        className: 'group relative bg-white rounded-2xl p-8 text-left shadow-xl hover:shadow-2xl transition-all duration-200 hover:-translate-y-1 focus:outline-none focus-visible:ring-4 focus-visible:ring-white/40 border-t-4',
+        className: 'group relative bg-white rounded-2xl p-8 text-left shadow-lg shadow-slate-900/5 ring-1 ring-slate-900/[0.04] hover:shadow-xl hover:shadow-slate-900/8 transition-all duration-200 hover:-translate-y-0.5 focus:outline-none focus-visible:ring-4 focus-visible:ring-white/40 border-t-4',
         style: { borderTopColor: '#212070' },
       },
         e('div', { className: 'flex items-start gap-4' },
