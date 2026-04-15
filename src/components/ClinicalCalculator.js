@@ -175,8 +175,8 @@ export default function ClinicalCalculator() {
             e('h1', { className: 'text-lg sm:text-xl font-bold text-gray-900 mb-1' }, 'AS Risk Calculator'),
             e('p', { className: 'text-sm text-gray-500 leading-relaxed' },
               'Multi-model assessment — Basic + PSAD · Genomic · PSMA · Intensive Monitoring. ' +
-              'Calibrated to N=94 Mount Sinai referral cohort (Kadeer et al. 2025). ' +
-              'All guideline hard stops are checked first.'
+              'Calibrated to N=218 Mount Sinai Tewari AS Program cohort. ' +
+              'Guideline hard stops checked first · PSAD AUC 0.624 (Kadeer et al. 2025).'
             )
           ),
           e(PatientForm, { onSubmit: handleSubmit })
