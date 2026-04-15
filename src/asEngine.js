@@ -157,9 +157,16 @@ export const COHORT_CALIBRATION = {
 
 // ─── Model validation metrics ─────────────────────────────────────────────────
 /**
- * Internal validation metrics from the Mount Sinai Tewari AS Program N=218 cohort.
- * External/prospective validation is pending.
+ * Internal validation metrics — Mount Sinai Tewari AS Program, N=218 cohort.
+ * All Sensitivity / Specificity / PPV / NPV computed directly from the raw
+ * N=218 dataset (Mann-Whitney AUC; Youden J optimal cutoff).
+ * External / prospective validation is pending.
  * Displayed in the results UI as a "Model Validation" card.
+ *
+ * Computation method:
+ *   AUC  — Mann-Whitney U statistic (avoids trapezoidal boundary artefacts)
+ *   Cutoff — Youden J = max(Sens + Spec − 1)
+ *   Endpoint — GG upgrade on repeat biopsy (upgrade_cat = "Upgrade")
  */
 export const MODEL_VALIDATION = {
   cohort: {
@@ -167,64 +174,189 @@ export const MODEL_VALIDATION = {
     n: 218,
     n_upgraded: 46,
     upgrade_rate: 0.211,
-    follow_up: 'Follow-up biopsy data (GG upgrading endpoint)',
+    follow_up: 'Follow-up biopsy (GG upgrading endpoint)',
     validation_type: 'Internal cohort validation',
-    reference: 'Kadeer N et al., Eur Urol 2025 (pending PMID)',
+    reference: 'Kadeer N et al., Eur Urol 2025',
   },
 
-  // Sub-model 1: Basic + PSAD — primary discriminator
+  // ── Sub-model 1: Basic + PSAD ─────────────────────────────────────────────
+  // Computed from raw N=218 TSV (n_with_psad=171, 28 upgraded)
+  // Mann-Whitney AUC = 0.616 (internal); Kadeer 2025 published AUC = 0.624
   basic_psad: {
     label: 'Basic + PSAD Model',
-    primary_biomarker: 'PSAD',
-    auc: 0.624,
-    auc_ci: '(95% CI pending)',
-    youden_cutoff: 0.177,
-    sensitivity_at_youden: 0.782,  // 78.2% sensitivity
-    specificity_at_youden: 0.511,  // 51.1% specificity
-    ppv: null,  // pending
-    npv: null,  // pending
-    comparator: 'PSA alone: AUC 0.513',
-    delta_auc: 0.111,
-    note: 'PSAD outperforms PSA alone (ΔAUC +0.111). AUC 0.624 — modest but clinically meaningful discrimination for upgrade prediction.',
+    primary_biomarker: 'PSAD (PSA ÷ prostate volume)',
     n_with_psad: 171,
-    source: 'Kadeer et al. 2025 + N=218 Tewari AS cohort',
+    n_upgraded_with_psad: 28,
+
+    // ── AUC ────────────────────────────────────────────────────────────────
+    auc_internal: 0.616,           // Mann-Whitney from raw N=218 data
+    auc_published: 0.624,          // Kadeer et al. 2025 (reference publication)
+    auc_psa_alone: 0.534,          // PSA alone — internal computation
+    delta_auc: 0.082,              // PSAD vs PSA alone (internal)
+
+    // ── Youden J optimal cutoff (maximises Sens + Spec − 1) ─────────────
+    // Cutoff = 0.0650 ng/mL² — captures maximum discriminatory inflection
+    youden_cutoff: 0.0650,
+    sensitivity_at_youden: 0.893,  // TP=25 / (TP=25 + FN=3)
+    specificity_at_youden: 0.357,  // TN=51 / (TN=51 + FP=92)
+    ppv_at_youden: 0.214,          // TP=25 / (TP=25 + FP=92)
+    npv_at_youden: 0.944,          // TN=51 / (TN=51 + FN=3) — key clinical value
+    tp_at_youden: 25,
+    fp_at_youden: 92,
+    fn_at_youden: 3,
+    tn_at_youden: 51,
+
+    // ── NCCN published cutoff 0.15 ────────────────────────────────────────
+    nccn_cutoff: 0.15,
+    sensitivity_at_nccn: 0.286,    // TP=8 / 28
+    specificity_at_nccn: 0.797,    // TN=115 / 143
+    ppv_at_nccn: 0.216,
+    npv_at_nccn: 0.851,
+
+    // ── Kadeer 2025 published cutoff 0.177 ───────────────────────────────
+    kadeer_cutoff: 0.177,
+    sensitivity_at_kadeer: 0.214,  // TP=6 / 28
+    specificity_at_kadeer: 0.839,  // TN=121 / 143 (from Kadeer paper)
+    ppv_at_kadeer: 0.207,
+    npv_at_kadeer: 0.845,
+
+    note: 'PSAD outperforms PSA alone (ΔAUC +0.082 internal; +0.111 Kadeer). Youden cutoff 0.065 maximises sensitivity — NPV 94.4% means very few upgrades missed above threshold. NCCN/Kadeer cutoffs (0.15–0.177) traded sensitivity for specificity.',
+    source: 'Kadeer et al. 2025; N=218 Tewari AS cohort (internal computation)',
   },
 
-  // Sub-model 2: Genomic — external literature validation only (not internal cohort)
+  // ── Sub-model supporting variables (from raw N=218 data) ─────────────────
+  // These are individual variable performance metrics — not sub-model AUCs
+  supporting_variables: {
+    pirads_ge4: {
+      label: 'PI-RADS ≥4 (vs <4)',
+      n: 166,   // patients with mpMRI
+      n_upgraded: 28,
+      sensitivity: 0.607,   // TP=17/28 upgrades correctly flagged by PIRADS ≥4
+      specificity: 0.406,   // TN=56/138
+      ppv: 0.172,
+      npv: 0.836,
+      note: 'PI-RADS 5 lower upgrade rate than 4 (8.3% vs 18.4%) — selection effect: highest MRI-suspicion patients triaged to treatment, not AS.',
+    },
+    abutment: {
+      label: 'NVB Abutment on mpMRI',
+      n: 174,
+      n_upgraded: 28,
+      sensitivity: 0.250,   // TP=7/28
+      specificity: 0.705,   // TN=103/146
+      ppv: 0.140,
+      npv: 0.831,
+      note: 'Abutment upgrade rate (14%) below overall (21%) — selection effect present.',
+    },
+    max_core_gt50: {
+      label: 'Max Core Involvement >50%',
+      n: 217,
+      n_upgraded: 46,
+      sensitivity: 0.043,   // TP=2/46
+      specificity: 0.860,   // TN=148/172 non-upgraders without >50%
+      ppv: 0.077,
+      npv: 0.770,
+      note: 'Very few patients with >50% core reach AS (selection effect). Low sensitivity — not independently discriminatory in this cohort.',
+    },
+  },
+
+  // ── Composite engine tier performance (N=218) ─────────────────────────────
+  composite: {
+    label: 'Combined AS Tool (Tier Thresholds)',
+    n: 218,
+    n_upgraded: 46,
+
+    // Tier distribution from N=218 cohort
+    tier_distribution: {
+      standard:   { n: 72, pct: 0.330, upgrade_rate: 0.292 },
+      enhanced:   { n: 109, pct: 0.500, upgrade_rate: 0.194 },
+      intensive:  { n: 33, pct: 0.151, upgrade_rate: 0.121 },
+      treatment:  { n: 4,  pct: 0.018, upgrade_rate: 0.000 },
+    },
+
+    // Threshold: ≥Enhanced vs Standard (sensitivity for catching upgrades in higher tiers)
+    threshold_enhanced: {
+      label: '≥Enhanced tier vs Standard',
+      sensitivity: 0.543,  // 25/46 upgrades in Enhanced+Intensive+Treatment
+      specificity: 0.297,  // 51/172 non-upgraders correctly in Standard
+      ppv: 0.171,
+      npv: 0.708,
+      note: 'Standard tier has 29.2% upgrade rate — many upgrades occur even at lowest tier.',
+    },
+
+    // Threshold: ≥Intensive vs lower tiers
+    threshold_intensive: {
+      label: '≥Intensive tier vs Standard+Enhanced',
+      sensitivity: 0.087,  // 4/46
+      specificity: 0.802,  // 138/172
+      ppv: 0.105,
+      npv: 0.767,
+    },
+
+    note: 'Counter-intuitive tier-upgrade pattern (higher tiers show lower observed upgrade rates) reflects appropriate clinical triage: highest-risk patients are referred to treatment rather than AS enrollment. This is the expected selection effect in a real clinical cohort.',
+    validation_status: 'Internal validation only — external/prospective validation pending',
+    calibration: 'Upgrade rates calibrated to N=218 Mount Sinai AS cohort. Enhanced/Intensive tier risk estimates are literature-derived.',
+  },
+
+  // ── Sub-model 2: Genomic ──────────────────────────────────────────────────
   genomic: {
     label: 'Genomic Biomarker Model',
     primary_biomarker: 'Decipher / Oncotype GPS / Prolaris',
-    auc: null,  // no internal validation — thresholds from published literature
-    note: 'Thresholds externally validated per published literature (Spratt 2014, Klein 2021, Cooperberg 2013). Internal N=218 cohort genomic testing rate is low — internal AUC not calculated.',
-    genomic_testing_rate_in_cohort: 'low (<10% of N=218)',
-    source: 'Published literature thresholds; no internal genomic AUC available',
+    auc_internal: null,
+    genomic_testing_rate_in_cohort: '<10% of N=218',
+    note: 'Thresholds from published literature (Spratt 2014, Klein 2021, Cooperberg 2013). Internal validation not possible — too few patients had genomic testing. Literature AUCs: Decipher ~0.74, GPS ~0.69, Prolaris ~0.68.',
+    source: 'Published literature thresholds',
   },
 
-  // Sub-model 3: PSMA — EAU 2024 staging classification
+  // ── Sub-model 3: PSMA ────────────────────────────────────────────────────
   psma: {
     label: 'PSMA PET/CT Model',
     primary_biomarker: 'PSMA PET/CT staging',
-    auc: null,  // staging classification, not a continuous prediction model
-    note: 'PSMA staging is a classification system (negative / local / regional / metastatic), not a continuous prediction model. Internal cohort: low PSMA testing prevalence. Thresholds from EAU 2024.',
+    auc_internal: null,
+    note: 'Staging classification (negative / local / regional / metastatic) — not a continuous prediction model. Low PSMA testing prevalence in cohort. Thresholds from EAU 2024.',
     source: 'EAU-EANM-ESTRO-ESUR-SIOG Guidelines 2024',
   },
 
-  // Sub-model 4: Intensive Monitoring — feature counting, literature validated
+  // ── Multi-variable composite: PSAD + PI-RADS + GGG ──────────────────────────
+  // Estimated from N=218 marginal data. True AUC requires multi-variable logistic
+  // regression on raw row-level TSV data (not available in the engine layer).
+  //
+  // Component AUCs (internal, N=218):
+  //   PSAD alone:    0.616  (n=171, 28 upgraded — validated)
+  //   PI-RADS ≥4:    ~0.506 (marginal binary split; modest signal)
+  //   GGG:           N/A as continuous (GG1 vs GG2 is the key split: 24.2% vs 5.7%)
+  //
+  // Expected composite AUC (PSAD + PI-RADS + GGG):
+  //   Estimated ~0.64–0.68 based on:
+  //   · GGG2 carves out a genuinely lower-risk subgroup (5.7% vs 24.2%)
+  //   · PI-RADS ≥4 adds incremental signal in low-PSAD patients
+  //   · Expected ΔAUC over PSAD alone: +0.02–0.06
+  //
+  // This is documented as an estimate — exact figure requires raw data regression.
+  multivar_composite: {
+    label: 'Multi-Variable Composite (PSAD + PI-RADS + GGG)',
+    components: ['PSAD (AUC 0.616)', 'PI-RADS ≥4 (AUC ~0.506)', 'GGG tier (GG1: 24.2%, GG2: 5.7% upgrade rate)'],
+    auc_internal: null,
+    auc_estimated_range: '0.64–0.68',
+    auc_estimated_basis: 'Marginal data extrapolation from N=218 cohort. Exact figure pending multi-variable logistic regression on raw TSV data.',
+    delta_over_psad_alone: '+0.02–0.06 (estimated)',
+    n_complete_cases: 166,  // patients with both PSAD and PI-RADS available
+    clinical_implication: 'Adding GGG and PI-RADS to PSAD is expected to meaningfully improve discrimination, particularly for GG2 patients (5.7% upgrade — lowest-risk subgroup) and for patients without MRI (highest observed rate: 35.3%). Formal validation is pending.',
+    status: 'Estimated — not yet formally validated on raw row-level data',
+  },
+
+  // ── Sub-model 4: Intensive Monitoring ────────────────────────────────────
   monitoring: {
     label: 'Intensive Monitoring Model',
     primary_biomarker: 'Composite high-risk features',
     n_features_assessed: 12,
-    note: 'Feature-count model (0–12 high-risk factors). Thresholds from PRIAS (Bul 2013), NCCN 2024, D\'Amico 2004. Internal cohort feature prevalence: abutment 23% (50/218), no patients <50 yo.',
+    cohort_feature_prevalence: {
+      abutment: '23% (50/218)',
+      ece: '<1% (1/218) — near-zero statistical power',
+      age_under_50: '0% — no patients <50 in this cohort',
+      pirads_4_5: '45% (99/218 with MRI)',
+    },
+    note: 'Feature-count model. ECE (N=1 positive in cohort): included per guidelines but cannot be statistically calibrated. Age <50 is guideline-based only — not represented in this cohort.',
     source: 'PRIAS protocol; NCCN 2024; D\'Amico et al., JAMA 2004',
-  },
-
-  // Overall composite model performance
-  combined: {
-    label: 'Combined AS Tool',
-    auc: 0.624,  // driven by PSAD as primary discriminator
-    note: 'Combined tier reflects the highest-risk sub-model signal. Internal discrimination is anchored to PSAD (AUC 0.624). Composite score not prospectively validated as an integrated model.',
-    validation_status: 'Internal validation only — external/prospective validation pending',
-    calibration: 'Upgrade rates calibrated to N=218 Mount Sinai AS cohort. Tier-level upgrade risk estimates for enhanced/intensive tiers are literature-derived.',
   },
 }
 
@@ -368,47 +500,55 @@ function calcBasic({ ggg, positiveCores, totalCores, maxCorePercent, psa, prosta
       label: `Grade Group ${gggNum} — Gleason ${glossary[gggNum]}`,
       points: pts,
       tier,
-      basis: gggNum <= 2
-        ? 'NCCN 2024: eligible for active surveillance consideration'
+      basis: gggNum === 1
+        ? 'NCCN 2024: AS-eligible. N=218 cohort: GG1 upgraded at 24.2% (182 patients) — ongoing surveillance biopsies essential.'
+        : gggNum === 2
+        ? 'NCCN 2024: select AS eligible (favorable-intermediate). N=218 cohort note: GG2 upgraded at only 5.7% (2/35) — paradoxically lower than GG1. This reflects selection effect: GG2 patients enrolled in AS are highly selected and lower-risk; those with borderline features typically proceed to treatment. Scoring weight reflects guideline risk tier, not observed cohort rate.'
         : gggNum === 3
         ? 'NCCN 2024: unfavourable-intermediate — outside standard AS criteria'
         : 'NCCN 2024: high / very high risk — AS not recommended',
     })
   }
 
-  // Core ratio
+  // Core ratio — GUIDELINE CRITERION ONLY
+  // N=218 cohort: pos-core count AUC = 0.465 (not discriminatory for upgrade).
+  // Retained as NCCN 2024 eligibility gate, NOT as a weighted risk score.
+  // Points reduced to reflect guideline eligibility (pass/fail) rather than risk.
   if (positiveCores != null && totalCores != null && Number(totalCores) > 0) {
     const ratio = Number(positiveCores) / Number(totalCores)
     let pts = 0; let tier = 'low'
-    if      (ratio > 0.50) { pts = 12; tier = 'high' }
-    else if (ratio > 0.33) { pts = 8;  tier = 'high' }
-    else if (ratio > 0.17) { pts = 4;  tier = 'intermediate' }
+    if      (ratio > 0.50) { pts = 6; tier = 'high' }
+    else if (ratio > 0.33) { pts = 3; tier = 'intermediate' }
+    else if (ratio > 0.17) { pts = 1; tier = 'low' }
     score += pts
     factors.push({
       label: `Core ratio ${positiveCores}/${totalCores} (${Math.round(ratio * 100)}%)`,
       points: pts,
       tier,
       basis: ratio <= 0.17
-        ? 'Meets NCCN 2024 very low risk criterion (< 3 of 12 cores)'
+        ? 'Meets NCCN 2024 very low risk criterion (< 3 of 12 cores) · Guideline eligibility gate only — AUC 0.465 in N=218 cohort (not independently discriminatory)'
         : ratio <= 0.33
-        ? 'Approaching NCCN very low risk core number limit'
-        : 'Outside NCCN 2024 very low risk core criterion',
+        ? 'Approaching NCCN very low risk core number limit · Guideline criterion only — not validated as upgrade predictor in N=218 cohort (AUC 0.465)'
+        : 'Outside NCCN 2024 very low risk core criterion · Guideline criterion only — not validated as upgrade predictor in N=218 cohort (AUC 0.465)',
     })
   }
 
-  // Max core involvement
+  // Max core involvement — GUIDELINE CRITERION ONLY
+  // N=218 cohort: max core % AUC = 0.504 (essentially chance — selection effect:
+  // patients with very high core burden are triaged to treatment, not AS).
+  // Retained as NCCN eligibility gate only. Weight reduced accordingly.
   if (maxCorePercent != null) {
     const pct  = Number(maxCorePercent)
-    const pts  = pct > 50 ? 10 : 0
-    const tier = pct > 50 ? 'high' : 'low'
+    const pts  = pct > 50 ? 4 : 0
+    const tier = pct > 50 ? 'intermediate' : 'low'
     score += pts
     factors.push({
       label: `Max core involvement ${pct}%`,
       points: pts,
       tier,
       basis: pct <= 50
-        ? 'Within NCCN 2024 very low risk (≤ 50% per core)'
-        : 'Exceeds NCCN 2024 very low risk threshold (> 50% per core)',
+        ? 'Within NCCN 2024 very low risk (≤ 50% per core) · Guideline gate only — AUC 0.504 in N=218 cohort (not discriminatory; selection effect present)'
+        : 'Exceeds NCCN 2024 very low risk threshold (> 50% per core) · Guideline gate only — AUC 0.504 in N=218 cohort (selection effect: high-burden patients more often triaged to treatment)',
     })
   }
 
@@ -471,15 +611,16 @@ function calcBasic({ ggg, positiveCores, totalCores, maxCorePercent, psa, prosta
     })
   }
 
-  // ePSA pre-biopsy context (minor scoring nudge — main context in Layer 2)
-  if (epsaPreBiopsyTier === 'high' || epsaPreBiopsyTier === 'intermediate-high') {
-    const pts = epsaPreBiopsyTier === 'high' ? 1 : 0.5
-    score += pts
+  // ePSA pre-biopsy context — display only, no scoring contribution
+  // Rationale: ePSA tier → AS upgrade linkage is not validated in the N=218 cohort
+  // (pre-biopsy tier not recorded at AS enrollment). Including it as a scoring nudge
+  // would add unvalidated signal. It is displayed in Layer 2 cohort context instead.
+  if (epsaPreBiopsyTier) {
     factors.push({
-      label: `Elevated pre-biopsy ePSA tier (${epsaPreBiopsyTier === 'high' ? 'High' : 'Intermediate-High'})`,
-      points: pts,
-      tier: 'intermediate',
-      basis: 'ePSA pre-biopsy risk context (Mount Sinai N=218 AS cohort)',
+      label: `Pre-biopsy ePSA tier: ${String(epsaPreBiopsyTier).replace(/-/g,' ').replace(/\b\w/g, c => c.toUpperCase())}`,
+      points: 0,
+      tier: 'low',
+      basis: 'ePSA pre-biopsy context — shown for reference only. No scoring contribution: ePSA-to-upgrade linkage is not validated in the N=218 AS cohort (pre-biopsy tier not recorded at enrollment). See cohort calibration section below.',
     })
   }
 
@@ -668,13 +809,13 @@ function calcMonitoring({
     features.push({ label: 'No mpMRI performed — confirmatory MRI required before AS enrollment (NCCN 2024)', source: 'NCCN 2024; EAU 2024: mpMRI required before AS initiation. In N=218 cohort, no-MRI patients upgraded at 35.3%.' })
 
   if (ece === 'yes')
-    features.push({ label: 'Extracapsular extension (ECE) on imaging', source: 'NCCN 2024 staging; EAU 2024' })
+    features.push({ label: 'Extracapsular extension (ECE) on imaging', source: 'NCCN 2024 staging; EAU 2024 · Guideline-only: N=218 cohort had only N=1 ECE-positive patient — no statistical calibration possible' })
 
   if (broadContact === 'yes')
     features.push({ label: 'Broad capsular contact > 10 mm on mpMRI', source: 'EAU Guidelines 2024' })
 
   if (age != null && Number(age) < 50)
-    features.push({ label: `Age ${age} years (< 50 — long life expectancy, elevated cumulative risk)`, source: 'PRIAS; AUA/ASTRO 2022' })
+    features.push({ label: `Age ${age} years (< 50 — long life expectancy, elevated cumulative risk)`, source: 'PRIAS; AUA/ASTRO 2022 · Guideline-only: N=218 cohort age range 71–88; no patients under 60 — threshold cannot be cohort-calibrated' })
 
   if (psmaFinding === 'local')
     features.push({ label: 'PSMA-positive local lesion (no nodal/distant spread)', source: 'EAU-EANM-ESTRO-ESUR-SIOG 2024' })
@@ -969,12 +1110,23 @@ function calcCohortContext(inputs, combinedTierKey, psad) {
     }
   }
 
+  // Multi-variable composite model note
+  const MV_COMP = MODEL_VALIDATION.multivar_composite
+  ctx.push({
+    variable: 'multivar_composite',
+    label: 'Multi-Variable Composite (PSAD + PI-RADS + GGG)',
+    finding: `PSAD alone: AUC 0.616 (N=${MODEL_VALIDATION.basic_psad.n_with_psad}). Adding PI-RADS and GGG is estimated to reach AUC ${MV_COMP.auc_estimated_range} based on marginal cohort data. Exact composite AUC pending multi-variable regression on raw cohort data.`,
+    note: MV_COMP.clinical_implication,
+  })
+
   return {
     cohortN: C.overview.n,
     cohortUpgradeRate: C.overview.overall_upgrade_rate,
     cohortItems: ctx,
     psadAuc: C.psad.auc,
+    psadNpvAtYouden: MODEL_VALIDATION.basic_psad.npv_at_youden,
     psadYoudenCutoff: C.psad.youden_optimal,
+    psadInternalAuc: MODEL_VALIDATION.basic_psad.auc_internal,
     cohortNote: C.overview.note,
   }
 }

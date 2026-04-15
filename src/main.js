@@ -36,7 +36,7 @@ function ClinicianShell({ onChangeRole }) {
   return e(React.Fragment, null,
     e(ProgramHeaderBar, {
       currentPart: toolMode === 'pathway' ? pathwayMeta.currentPart : null,
-      stepLabel: toolMode === 'pathway' ? pathwayMeta.stepLabel : 'AS Risk Calculator',
+      stepLabel: toolMode === 'pathway' ? pathwayMeta.stepLabel : 'AI Surveillance Tool',
       onReset: () => pathwayResetRef.current?.(),
       showReset: clinicianConsentAccepted && toolMode === 'pathway' && pathwayMeta.showReset,
       changeRoleOnClick: onChangeRole,
@@ -48,7 +48,7 @@ function ClinicianShell({ onChangeRole }) {
           e('div', { className: 'max-w-2xl mx-auto rounded-2xl border p-5 sm:p-6 shadow-sm', style: { background: '#fff7ed', borderColor: '#fed7aa' } },
             e('h2', { className: 'text-base sm:text-lg font-bold text-amber-900 mb-2' }, 'Clinician Acknowledgment'),
             e('p', { className: 'text-sm text-amber-900/90 leading-relaxed' },
-              'This clinical pathway and AS risk calculator are decision-support tools for trained clinicians. They are educational aids and do not replace independent medical judgment, institutional protocol, or formal specialist consultation.'
+              'This clinical pathway and AI Surveillance Tool (AS Tool) are decision-support tools for trained clinicians. They are educational aids and do not replace independent medical judgment, institutional protocol, or formal specialist consultation.'
             ),
             e('p', { className: 'text-sm text-amber-900/90 leading-relaxed mt-2' },
               'By continuing, you acknowledge responsibility for final clinical decisions and patient-specific management.'

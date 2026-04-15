@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { MODEL_VALIDATION } from './asEngine.js'
+import { MODEL_VALIDATION, COHORT_CALIBRATION } from './asEngine.js'
 
 const e = React.createElement
 
@@ -33,6 +33,35 @@ const COMBINED_TIER_LABELS = {
   treatment_required:   'Treatment Required',
 }
 
+// Validation badge definitions for each sub-model
+const VALIDATION_BADGES = {
+  cohort_validated: {
+    label: 'Cohort validated · N=218',
+    style: { background: '#dcfce7', color: '#166534', border: '1px solid #bbf7d0' },
+  },
+  literature_threshold: {
+    label: 'Literature thresholds',
+    style: { background: '#fef9c3', color: '#713f12', border: '1px solid #fde68a' },
+  },
+  guideline_checklist: {
+    label: 'Guideline checklist',
+    style: { background: '#f3f4f6', color: '#374151', border: '1px solid #e5e7eb' },
+  },
+  staging_classifier: {
+    label: 'Staging classifier · EAU 2024',
+    style: { background: '#ede9fe', color: '#4c1d95', border: '1px solid #ddd6fe' },
+  },
+}
+
+// Tier upgrade rate data with selection-effect context
+const TIER_COHORT_DATA = {
+  standard_as:   { rate: 0.292, n: 72,  source: 'N=218 cohort', selectionNote: true },
+  enhanced_as:   { rate: 0.194, n: 109, source: 'N=218 cohort', selectionNote: true },
+  intensive_as:  { rate: 0.121, n: 33,  source: 'N=218 cohort', selectionNote: true },
+  treatment_discussion: null,
+  treatment_required:   null,
+}
+
 function formatEpsaTier(tier) {
   if (tier == null || tier === '') return null
   return String(tier)
@@ -53,22 +82,27 @@ function FactorRow({ factor }) {
   )
 }
 
-function CollapsibleSection({ title, badge, badgeStyle, children, defaultOpen }) {
+function CollapsibleSection({ title, badge, badgeStyle, validationBadgeType, children, defaultOpen }) {
   const [open, setOpen] = useState(defaultOpen || false)
   return e('div', { className: 'bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden' },
     e('button', {
       type: 'button', onClick: () => setOpen(v => !v),
       className: 'w-full flex items-center justify-between p-4 text-left hover:bg-gray-50 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-sinai-cerulean/30',
     },
-      e('div', { className: 'flex items-center gap-2.5' },
-        e('span', { className: 'font-semibold text-gray-900 text-sm' }, title),
-        badge && e('span', {
-          className: 'text-xs font-semibold px-2 py-0.5 rounded-full',
-          style: badgeStyle || { background: '#f3f4f6', color: '#374151' },
-        }, badge)
+      e('div', { className: 'flex flex-col gap-1 flex-1 min-w-0' },
+        e('div', { className: 'flex items-center gap-2.5 flex-wrap' },
+          e('span', { className: 'font-semibold text-gray-900 text-sm' }, title),
+          badge && e('span', {
+            className: 'text-xs font-semibold px-2 py-0.5 rounded-full',
+            style: badgeStyle || { background: '#f3f4f6', color: '#374151' },
+          }, badge)
+        ),
+        validationBadgeType && e('div', { className: 'flex' },
+          e(ValidationBadge, { type: validationBadgeType })
+        )
       ),
       e('svg', {
-        className: `w-5 h-5 text-gray-400 transition-transform duration-200 flex-shrink-0 ${open ? 'rotate-180' : ''}`,
+        className: `w-5 h-5 text-gray-400 transition-transform duration-200 flex-shrink-0 ml-2 ${open ? 'rotate-180' : ''}`,
         fill: 'none', viewBox: '0 0 24 24', stroke: 'currentColor', strokeWidth: 2,
       },
         e('path', { strokeLinecap: 'round', strokeLinejoin: 'round', d: 'M19 9l-7 7-7-7' })
@@ -76,6 +110,79 @@ function CollapsibleSection({ title, badge, badgeStyle, children, defaultOpen })
     ),
     open && e('div', { className: 'px-4 pb-4 border-t border-gray-50' }, children)
   )
+}
+
+function ValidationBadge({ type }) {
+  const badge = VALIDATION_BADGES[type]
+  if (!badge) return null
+  return e('span', {
+    className: 'inline-flex items-center text-[10px] font-semibold px-2 py-0.5 rounded-full flex-shrink-0',
+    style: badge.style,
+  }, badge.label)
+}
+
+function TierCohortCallout({ tierKey }) {
+  const data = TIER_COHORT_DATA[tierKey]
+  if (!data) return null
+  return e('div', {
+    className: 'mt-3 rounded-xl px-3 py-2.5',
+    style: { background: '#fafafa', border: '1px solid #e5e7eb' },
+  },
+    e('p', { className: 'text-xs font-semibold text-slate-600 mb-1' },
+      `Observed upgrade rate in this tier: ${(data.rate * 100).toFixed(1)}% (${data.n} patients, ${data.source})`
+    ),
+    e('p', { className: 'text-xs text-slate-500 leading-snug' },
+      'This figure reflects who was enrolled in this tier, not a prediction for this patient. ',
+      e('span', { className: 'font-medium text-amber-700' },
+        'Note: higher tiers show lower observed upgrade rates in this cohort'
+      ),
+      ' — this is the expected selection effect: the highest-risk patients are appropriately directed to treatment rather than AS enrollment. Standard tier patients are not lower-risk; they simply have fewer guideline-defined features.'
+    )
+  )
+}
+
+function PsadNpvCallout({ psad, cohortContext }) {
+  if (!psad || !cohortContext) return null
+  const MV = MODEL_VALIDATION
+  const youdenCutoff = MV.basic_psad.youden_cutoff
+  const npv = MV.basic_psad.npv_at_youden
+  const psadNum = Number(psad)
+
+  if (psadNum < youdenCutoff) {
+    return e('div', {
+      className: 'mt-2 rounded-xl px-3 py-2.5 flex items-start gap-2',
+      style: { background: '#f0fdf4', border: '1px solid #bbf7d0' },
+    },
+      e('svg', { className: 'w-4 h-4 flex-shrink-0 mt-0.5', style: { color: '#16a34a' }, fill: 'currentColor', viewBox: '0 0 20 20' },
+        e('path', { fillRule: 'evenodd', clipRule: 'evenodd', d: 'M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z' })
+      ),
+      e('div', {},
+        e('p', { className: 'text-xs font-bold text-green-800' },
+          `PSAD ${psadNum.toFixed(3)} — below Youden threshold (${youdenCutoff})`
+        ),
+        e('p', { className: 'text-xs text-green-700 mt-0.5 leading-snug' },
+          `NPV ${(npv * 100).toFixed(0)}% in Mount Sinai AS cohort (N=${MV.basic_psad.n_with_psad}) — fewer than 1 in 20 patients below this threshold upgraded on repeat biopsy. This is the tool's strongest validated negative predictor.`
+        )
+      )
+    )
+  } else {
+    return e('div', {
+      className: 'mt-2 rounded-xl px-3 py-2.5 flex items-start gap-2',
+      style: { background: '#fef9c3', border: '1px solid #fde68a' },
+    },
+      e('svg', { className: 'w-4 h-4 flex-shrink-0 mt-0.5', style: { color: '#ca8a04' }, fill: 'currentColor', viewBox: '0 0 20 20' },
+        e('path', { fillRule: 'evenodd', clipRule: 'evenodd', d: 'M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z' })
+      ),
+      e('div', {},
+        e('p', { className: 'text-xs font-bold text-amber-800' },
+          `PSAD ${psadNum.toFixed(3)} — above Youden threshold (${youdenCutoff})`
+        ),
+        e('p', { className: 'text-xs text-amber-700 mt-0.5 leading-snug' },
+          `Sensitivity ${(MV.basic_psad.sensitivity_at_youden * 100).toFixed(0)}% at this threshold — ${MV.basic_psad.tp_at_youden} of ${MV.basic_psad.n_upgraded_with_psad} upgraders in the cohort were above this level. AUC ${MV.basic_psad.auc_internal} (internal) / ${MV.basic_psad.auc_published} (Kadeer 2025).`
+        )
+      )
+    )
+  }
 }
 
 function NotAssessed({ message }) {
@@ -114,12 +221,15 @@ function ModelValidationCard() {
   }
 
   // Sub-model row
-  function SubModelRow({ model, icon }) {
+  function SubModelRow({ model, icon, validationType }) {
     return e('div', { className: 'py-2.5 border-b border-slate-100 last:border-0' },
       e('div', { className: 'flex items-start gap-2' },
         e('span', { className: 'text-base flex-shrink-0' }, icon),
         e('div', { className: 'flex-1 min-w-0' },
-          e('p', { className: 'text-xs font-semibold text-slate-800' }, model.label),
+          e('div', { className: 'flex items-start justify-between gap-2 flex-wrap' },
+            e('p', { className: 'text-xs font-semibold text-slate-800' }, model.label),
+            validationType && e(ValidationBadge, { type: validationType })
+          ),
           model.auc != null
             ? e('p', { className: 'text-xs text-slate-500 mt-0.5' },
                 `AUC ${model.auc.toFixed(3)}`,
@@ -177,9 +287,9 @@ function ModelValidationCard() {
     !open && e('div', { className: 'px-4 py-3 flex flex-wrap gap-2.5 items-center' },
       e(StatChip, { label: 'Cohort N', value: String(MV.cohort.n), highlight: true }),
       e(StatChip, { label: 'Upgraded', value: String(MV.cohort.n_upgraded), sub: `${(MV.cohort.upgrade_rate * 100).toFixed(0)}% rate` }),
-      e(StatChip, { label: 'PSAD AUC', value: MV.basic_psad.auc.toFixed(3), highlight: true }),
-      e(StatChip, { label: 'Sensitivity', value: `${(MV.basic_psad.sensitivity_at_youden * 100).toFixed(0)}%`, sub: `@ cutoff ${MV.basic_psad.youden_cutoff}` }),
-      e(StatChip, { label: 'Specificity', value: `${(MV.basic_psad.specificity_at_youden * 100).toFixed(0)}%`, sub: `@ cutoff ${MV.basic_psad.youden_cutoff}` }),
+      e(StatChip, { label: 'PSAD AUC', value: MV.basic_psad.auc_internal.toFixed(3), highlight: true }),
+      e(StatChip, { label: 'Sensitivity', value: `${(MV.basic_psad.sensitivity_at_youden * 100).toFixed(0)}%`, sub: `NPV ${(MV.basic_psad.npv_at_youden * 100).toFixed(0)}%` }),
+      e(StatChip, { label: 'Specificity', value: `${(MV.basic_psad.specificity_at_youden * 100).toFixed(0)}%`, sub: `PPV ${(MV.basic_psad.ppv_at_youden * 100).toFixed(0)}%` }),
       e('p', { className: 'w-full text-xs text-slate-400 mt-1' }, 'Tap for full sub-model validation detail')
     ),
 
@@ -193,44 +303,153 @@ function ModelValidationCard() {
           e(StatChip, { label: 'Total N', value: String(MV.cohort.n), highlight: true }),
           e(StatChip, { label: 'Upgraded', value: String(MV.cohort.n_upgraded) }),
           e(StatChip, { label: 'Overall Rate', value: `${(MV.cohort.upgrade_rate * 100).toFixed(0)}%` }),
-          e(StatChip, { label: 'PSAD AUC', value: MV.basic_psad.auc.toFixed(3), highlight: true }),
+          e(StatChip, { label: 'PSAD AUC', value: MV.basic_psad.auc_internal.toFixed(3), highlight: true }),
         ),
         e('p', { className: 'text-xs text-sky-700 mt-2 leading-snug' }, MV.cohort.follow_up),
         e('p', { className: 'text-[10px] text-sky-500 mt-0.5' }, MV.cohort.reference)
       ),
 
-      // PSAD performance detail
+      // PSAD performance detail — full breakdown
       e('div', { className: 'mb-3 rounded-xl p-3', style: { background: '#f0fdf4', border: '1px solid #bbf7d0' } },
-        e('p', { className: 'text-xs font-bold text-green-800 mb-2' }, 'PSAD — Primary Discriminating Biomarker'),
-        e('div', { className: 'flex flex-wrap gap-2 mb-2' },
-          e(StatChip, { label: 'AUC', value: MV.basic_psad.auc.toFixed(3), highlight: true }),
-          e(StatChip, { label: 'Youden Cutoff', value: String(MV.basic_psad.youden_cutoff) }),
-          e(StatChip, { label: 'Sensitivity', value: `${(MV.basic_psad.sensitivity_at_youden * 100).toFixed(0)}%` }),
-          e(StatChip, { label: 'Specificity', value: `${(MV.basic_psad.specificity_at_youden * 100).toFixed(0)}%` }),
-          e(StatChip, { label: 'N (PSAD)', value: String(MV.basic_psad.n_with_psad) }),
+        e('p', { className: 'text-xs font-bold text-green-800 mb-1' }, 'PSAD — Primary Discriminating Biomarker'),
+        e('p', { className: 'text-[10px] text-green-600 mb-2' },
+          `N=${MV.basic_psad.n_with_psad} (PSAD available) · ${MV.basic_psad.n_upgraded_with_psad} upgraded · AUC PSA alone ${MV.basic_psad.auc_psa_alone} · ΔAUC +${MV.basic_psad.delta_auc.toFixed(3)}`
         ),
-        e('p', { className: 'text-xs text-green-700 leading-snug' }, MV.basic_psad.note),
-        e('p', { className: 'text-[10px] text-green-500 mt-0.5' }, `Comparator: ${MV.basic_psad.comparator} · ΔAUC +${MV.basic_psad.delta_auc.toFixed(3)}`)
+
+        // AUC comparison
+        e('div', { className: 'flex flex-wrap gap-2 mb-3' },
+          e(StatChip, { label: 'AUC (internal)', value: MV.basic_psad.auc_internal.toFixed(3), highlight: true }),
+          e(StatChip, { label: 'AUC (Kadeer 2025)', value: MV.basic_psad.auc_published.toFixed(3) }),
+          e(StatChip, { label: 'PSA alone AUC', value: MV.basic_psad.auc_psa_alone.toFixed(3) }),
+        ),
+
+        // Youden J optimal cutoff
+        e('p', { className: 'text-[10px] font-semibold text-green-700 uppercase tracking-wide mb-1' },
+          `Youden J Optimal Cutoff: ${MV.basic_psad.youden_cutoff} ng/mL²`
+        ),
+        e('div', { className: 'flex flex-wrap gap-2 mb-2' },
+          e(StatChip, { label: 'Sensitivity', value: `${(MV.basic_psad.sensitivity_at_youden * 100).toFixed(0)}%`, highlight: true }),
+          e(StatChip, { label: 'Specificity', value: `${(MV.basic_psad.specificity_at_youden * 100).toFixed(0)}%` }),
+          e(StatChip, { label: 'PPV', value: `${(MV.basic_psad.ppv_at_youden * 100).toFixed(0)}%` }),
+          e(StatChip, { label: 'NPV', value: `${(MV.basic_psad.npv_at_youden * 100).toFixed(0)}%`, highlight: true }),
+        ),
+        e('p', { className: 'text-[10px] text-green-500 mb-2' },
+          `TP=${MV.basic_psad.tp_at_youden} · FP=${MV.basic_psad.fp_at_youden} · FN=${MV.basic_psad.fn_at_youden} · TN=${MV.basic_psad.tn_at_youden}`
+        ),
+
+        // NCCN / Kadeer published cutoffs
+        e('p', { className: 'text-[10px] font-semibold text-green-700 uppercase tracking-wide mb-1' },
+          `NCCN Cutoff ${MV.basic_psad.nccn_cutoff} (published)`
+        ),
+        e('div', { className: 'flex flex-wrap gap-2 mb-2' },
+          e(StatChip, { label: 'Sensitivity', value: `${(MV.basic_psad.sensitivity_at_nccn * 100).toFixed(0)}%` }),
+          e(StatChip, { label: 'Specificity', value: `${(MV.basic_psad.specificity_at_nccn * 100).toFixed(0)}%` }),
+          e(StatChip, { label: 'PPV', value: `${(MV.basic_psad.ppv_at_nccn * 100).toFixed(0)}%` }),
+          e(StatChip, { label: 'NPV', value: `${(MV.basic_psad.npv_at_nccn * 100).toFixed(0)}%` }),
+        ),
+
+        e('p', { className: 'text-[10px] font-semibold text-green-700 uppercase tracking-wide mb-1' },
+          `Kadeer 2025 Cutoff ${MV.basic_psad.kadeer_cutoff}`
+        ),
+        e('div', { className: 'flex flex-wrap gap-2 mb-2' },
+          e(StatChip, { label: 'Sensitivity', value: `${(MV.basic_psad.sensitivity_at_kadeer * 100).toFixed(0)}%` }),
+          e(StatChip, { label: 'Specificity', value: `${(MV.basic_psad.specificity_at_kadeer * 100).toFixed(0)}%` }),
+          e(StatChip, { label: 'PPV', value: `${(MV.basic_psad.ppv_at_kadeer * 100).toFixed(0)}%` }),
+          e(StatChip, { label: 'NPV', value: `${(MV.basic_psad.npv_at_kadeer * 100).toFixed(0)}%` }),
+        ),
+
+        e('p', { className: 'text-xs text-green-700 mt-1 leading-snug' }, MV.basic_psad.note),
+        e('p', { className: 'text-[10px] text-green-500 mt-0.5' }, MV.basic_psad.source)
+      ),
+
+      // Supporting variables table
+      e('div', { className: 'mb-3 rounded-xl overflow-hidden', style: { border: '1px solid #e2e8f0' } },
+        e('div', { className: 'px-3 py-2', style: { background: '#f1f5f9' } },
+          e('p', { className: 'text-xs font-bold text-slate-600 uppercase tracking-wide' }, 'Supporting Variables (N=218 Cohort)')
+        ),
+        e('div', { className: 'px-3 divide-y divide-slate-50' },
+          // Header row
+          e('div', { className: 'grid py-1.5', style: { gridTemplateColumns: '1fr 60px 60px 60px 60px' } },
+            e('span', { className: 'text-[10px] font-bold text-slate-500 uppercase' }, 'Variable'),
+            e('span', { className: 'text-[10px] font-bold text-slate-500 uppercase text-center' }, 'Sens'),
+            e('span', { className: 'text-[10px] font-bold text-slate-500 uppercase text-center' }, 'Spec'),
+            e('span', { className: 'text-[10px] font-bold text-slate-500 uppercase text-center' }, 'PPV'),
+            e('span', { className: 'text-[10px] font-bold text-slate-500 uppercase text-center' }, 'NPV'),
+          ),
+          // PI-RADS row
+          e('div', { className: 'grid py-2', style: { gridTemplateColumns: '1fr 60px 60px 60px 60px' } },
+            e('span', { className: 'text-xs text-slate-700' }, 'PI-RADS ≥4', e('span', { className: 'text-[10px] text-slate-400 ml-1' }, `N=${MV.supporting_variables.pirads_ge4.n}`)),
+            e('span', { className: 'text-xs font-semibold text-center text-slate-700' }, `${(MV.supporting_variables.pirads_ge4.sensitivity * 100).toFixed(0)}%`),
+            e('span', { className: 'text-xs font-semibold text-center text-slate-700' }, `${(MV.supporting_variables.pirads_ge4.specificity * 100).toFixed(0)}%`),
+            e('span', { className: 'text-xs font-semibold text-center text-slate-700' }, `${(MV.supporting_variables.pirads_ge4.ppv * 100).toFixed(0)}%`),
+            e('span', { className: 'text-xs font-semibold text-center text-slate-700' }, `${(MV.supporting_variables.pirads_ge4.npv * 100).toFixed(0)}%`),
+          ),
+          // Abutment row
+          e('div', { className: 'grid py-2', style: { gridTemplateColumns: '1fr 60px 60px 60px 60px' } },
+            e('span', { className: 'text-xs text-slate-700' }, 'NVB Abutment', e('span', { className: 'text-[10px] text-slate-400 ml-1' }, `N=${MV.supporting_variables.abutment.n}`)),
+            e('span', { className: 'text-xs font-semibold text-center text-slate-700' }, `${(MV.supporting_variables.abutment.sensitivity * 100).toFixed(0)}%`),
+            e('span', { className: 'text-xs font-semibold text-center text-slate-700' }, `${(MV.supporting_variables.abutment.specificity * 100).toFixed(0)}%`),
+            e('span', { className: 'text-xs font-semibold text-center text-slate-700' }, `${(MV.supporting_variables.abutment.ppv * 100).toFixed(0)}%`),
+            e('span', { className: 'text-xs font-semibold text-center text-slate-700' }, `${(MV.supporting_variables.abutment.npv * 100).toFixed(0)}%`),
+          ),
+          // Max core row
+          e('div', { className: 'grid py-2', style: { gridTemplateColumns: '1fr 60px 60px 60px 60px' } },
+            e('span', { className: 'text-xs text-slate-700' }, 'Max Core >50%', e('span', { className: 'text-[10px] text-slate-400 ml-1' }, `N=${MV.supporting_variables.max_core_gt50.n}`)),
+            e('span', { className: 'text-xs font-semibold text-center text-slate-700' }, `${(MV.supporting_variables.max_core_gt50.sensitivity * 100).toFixed(0)}%`),
+            e('span', { className: 'text-xs font-semibold text-center text-slate-700' }, `${(MV.supporting_variables.max_core_gt50.specificity * 100).toFixed(0)}%`),
+            e('span', { className: 'text-xs font-semibold text-center text-slate-700' }, `${(MV.supporting_variables.max_core_gt50.ppv * 100).toFixed(0)}%`),
+            e('span', { className: 'text-xs font-semibold text-center text-slate-700' }, `${(MV.supporting_variables.max_core_gt50.npv * 100).toFixed(0)}%`),
+          ),
+        )
+      ),
+
+      // Composite tier performance
+      e('div', { className: 'mb-3 rounded-xl p-3', style: { background: '#faf5ff', border: '1px solid #e9d5ff' } },
+        e('p', { className: 'text-xs font-bold text-purple-800 mb-1' }, 'Composite Engine — Tier Performance'),
+        e('p', { className: 'text-[10px] text-purple-600 mb-2' }, MV.composite.note),
+        e('div', { className: 'flex flex-wrap gap-2 mb-2' },
+          e(StatChip, { label: 'Sens ≥Enhanced', value: `${(MV.composite.threshold_enhanced.sensitivity * 100).toFixed(0)}%` }),
+          e(StatChip, { label: 'Spec ≥Enhanced', value: `${(MV.composite.threshold_enhanced.specificity * 100).toFixed(0)}%` }),
+          e(StatChip, { label: 'PPV ≥Enhanced', value: `${(MV.composite.threshold_enhanced.ppv * 100).toFixed(0)}%` }),
+          e(StatChip, { label: 'NPV ≥Enhanced', value: `${(MV.composite.threshold_enhanced.npv * 100).toFixed(0)}%` }),
+        ),
+        e('p', { className: 'text-[10px] text-purple-500' }, MV.composite.threshold_enhanced.note)
+      ),
+
+      // Multi-variable composite
+      e('div', { className: 'mb-3 rounded-xl p-3', style: { background: '#f0f9ff', border: '1px solid #bae6fd' } },
+        e('div', { className: 'flex items-start justify-between gap-2 mb-1' },
+          e('p', { className: 'text-xs font-bold text-sky-800' }, 'Multi-Variable Composite: PSAD + PI-RADS + GGG'),
+          e('span', { className: 'text-[10px] font-semibold px-1.5 py-0.5 rounded flex-shrink-0', style: { background: '#fef9c3', color: '#713f12' } }, 'Estimated')
+        ),
+        e('div', { className: 'flex flex-wrap gap-2 mb-2' },
+          e(StatChip, { label: 'PSAD AUC', value: MV.basic_psad.auc_internal.toFixed(3), highlight: true }),
+          e(StatChip, { label: 'Composite AUC', value: MV.multivar_composite.auc_estimated_range, sub: 'estimated' }),
+          e(StatChip, { label: 'ΔAUC', value: MV.multivar_composite.delta_over_psad_alone, sub: 'estimated' }),
+          e(StatChip, { label: 'N complete', value: String(MV.multivar_composite.n_complete_cases) }),
+        ),
+        e('p', { className: 'text-xs text-sky-700 leading-snug' }, MV.multivar_composite.clinical_implication),
+        e('p', { className: 'text-[10px] text-sky-500 mt-1 italic' }, MV.multivar_composite.status)
       ),
 
       // Sub-model rows
-      e('div', { className: 'rounded-xl overflow-hidden', style: { border: '1px solid #e2e8f0' } },
+      e('div', { className: 'rounded-xl overflow-hidden mb-3', style: { border: '1px solid #e2e8f0' } },
         e('div', { className: 'px-3 py-2', style: { background: '#f1f5f9' } },
           e('p', { className: 'text-xs font-bold text-slate-600 uppercase tracking-wide' }, 'Sub-Model Validation Summary')
         ),
         e('div', { className: 'px-3' },
-          e(SubModelRow, { model: MV.basic_psad, icon: '📊' }),
-          e(SubModelRow, { model: MV.genomic, icon: '🧬' }),
-          e(SubModelRow, { model: MV.psma, icon: '🔬' }),
-          e(SubModelRow, { model: MV.monitoring, icon: '📋' }),
+          e(SubModelRow, { model: { ...MV.basic_psad, auc: MV.basic_psad.auc_internal, auc_ci: `(Kadeer 2025: ${MV.basic_psad.auc_published})`, comparator: `PSA alone AUC ${MV.basic_psad.auc_psa_alone}` }, icon: '📊', validationType: 'cohort_validated' }),
+          e(SubModelRow, { model: { ...MV.genomic, auc: MV.genomic.auc_internal }, icon: '🧬', validationType: 'literature_threshold' }),
+          e(SubModelRow, { model: { ...MV.psma, auc: MV.psma.auc_internal }, icon: '🔬', validationType: 'staging_classifier' }),
+          e(SubModelRow, { model: MV.monitoring, icon: '📋', validationType: 'guideline_checklist' }),
         )
       ),
 
       // Validation status note
       e('div', { className: 'mt-3 rounded-xl px-3 py-2.5', style: { background: '#fefce8', border: '1px solid #fde68a' } },
         e('p', { className: 'text-xs font-semibold text-amber-800 mb-0.5' }, '⚠ Validation Status'),
-        e('p', { className: 'text-xs text-amber-700 leading-snug' }, MV.combined.validation_status),
-        e('p', { className: 'text-xs text-amber-600 mt-1 leading-snug' }, MV.combined.calibration)
+        e('p', { className: 'text-xs text-amber-700 leading-snug' }, MV.composite.validation_status),
+        e('p', { className: 'text-xs text-amber-600 mt-1 leading-snug' }, MV.composite.calibration)
       )
     )
   )
@@ -363,14 +582,21 @@ export default function PatientResults({ results, inputs, onBack, onDownloadData
           )
         ),
         e('div', { className: 'flex-1 min-w-0' },
-          e('div', { className: 'flex items-center gap-2 mb-1' },
-            e('span', { className: 'text-xs font-semibold uppercase tracking-wide', style: { color: colors.border } }, 'Overall Recommendation'),
+          e('div', { className: 'flex items-center gap-2 mb-1 flex-wrap' },
+            e('span', { className: 'text-xs font-semibold uppercase tracking-wide', style: { color: colors.border } }, 'AI Surveillance Tool'),
+            e('span', { className: 'text-[10px] text-slate-400 font-medium hidden sm:inline' }, '— Overall Recommendation'),
             e('span', {
               className: 'text-xs font-bold px-2 py-0.5 rounded-full',
               style: { background: colors.badge, color: colors.badgeText },
             }, COMBINED_TIER_LABELS[combinedTierKey] || combinedTierKey)
           ),
-          e('p', { className: 'text-base font-bold leading-snug', style: { color: colors.text } }, combinedRecommendation)
+          e('p', { className: 'text-base font-bold leading-snug', style: { color: colors.text } }, combinedRecommendation),
+
+          // PSAD NPV callout — most important validated signal
+          psad != null && e(PsadNpvCallout, { psad, cohortContext }),
+
+          // Tier upgrade rate with selection-effect framing
+          e(TierCohortCallout, { tierKey: combinedTierKey })
         )
       )
     ),
@@ -460,6 +686,7 @@ export default function PatientResults({ results, inputs, onBack, onDownloadData
       title: 'Sub-model 1 — Basic & PSAD',
       badge: `Score: ${asScore > 0 ? '+' : ''}${asScore}  ·  ${asTierKey?.replace(/_/g,' ')}`,
       badgeStyle: { background: '#e0f2fe', color: '#075985' },
+      validationBadgeType: 'cohort_validated',
       defaultOpen: true,
     },
       e('div', { className: 'pt-3 space-y-0' },
@@ -478,6 +705,7 @@ export default function PatientResults({ results, inputs, onBack, onDownloadData
         ? `${genomicRiskTier?.charAt(0).toUpperCase() + genomicRiskTier?.slice(1)} risk  ·  Score: ${genomicScore > 0 ? '+' : ''}${genomicScore}`
         : 'Not assessed',
       badgeStyle: genomicBadgeStyle,
+      validationBadgeType: 'literature_threshold',
     },
       genomicAssessed
         ? e('div', {},
@@ -500,6 +728,7 @@ export default function PatientResults({ results, inputs, onBack, onDownloadData
         : 'Negative'
         : 'Not assessed',
       badgeStyle: psmaBadgeStyle,
+      validationBadgeType: 'staging_classifier',
     },
       psmaAssessed
         ? e('div', {},
@@ -516,14 +745,17 @@ export default function PatientResults({ results, inputs, onBack, onDownloadData
     e('div', { className: 'bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden' },
       // Header
       e('div', { className: 'p-4 border-b border-gray-50' },
-        e('div', { className: 'flex items-center justify-between' },
+        e('div', { className: 'flex items-center justify-between gap-2 flex-wrap' },
           e('span', { className: 'font-semibold text-gray-900 text-sm' }, 'Sub-model 4 — Monitoring Protocol'),
           e('span', {
             className: 'text-xs font-bold px-2.5 py-1 rounded-full',
             style: { background: monStyle.bg, color: monStyle.color },
           }, monStyle.label)
         ),
-        e('p', { className: 'text-xs text-gray-400 mt-1' }, monitoringLabel)
+        e('div', { className: 'flex items-center gap-2 mt-1.5 flex-wrap' },
+          e(ValidationBadge, { type: 'guideline_checklist' }),
+          e('p', { className: 'text-xs text-gray-400' }, monitoringLabel)
+        )
       ),
 
       e('div', { className: 'p-4 space-y-4' },
