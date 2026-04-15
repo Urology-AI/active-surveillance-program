@@ -140,8 +140,8 @@ export const COHORT_CALIBRATION = {
 
   // Overall upgrade risk by monitoring tier (literature-calibrated for enhanced/intensive)
   tier_annual_upgrade_risk: {
-    standard_as:  { risk: 0.211, ci: '~21%', source: 'Mount Sinai Tewari AS Program N=218 (overall cohort rate)' },
-    enhanced_as:  { risk: 0.08,  ci: '5–12%', source: 'Literature — unfavorable intermediate AS programs' },
+    standard_as:  { risk: 0.211, ci: '19–24%', source: 'Mount Sinai Tewari AS Program N=218 (overall cohort rate; 95% CI estimated)' },
+    enhanced_as:  { risk: 0.08,  ci: '5–12%',  source: 'Literature — unfavorable intermediate AS programs' },
     intensive_as: { risk: 0.20,  ci: '15–30%', source: 'Literature — high-feature AS programs; short-interval biopsy recommended' },
   },
 
@@ -664,6 +664,9 @@ function calcMonitoring({
   if (pirads != null && Number(pirads) >= 4)
     features.push({ label: `PI-RADS ${pirads} — high suspicion on mpMRI (≥ 4)`, source: 'Turkbey 2019; PI-RADS v2.1' })
 
+  if (pirads != null && Number(pirads) === 0)
+    features.push({ label: 'No mpMRI performed — confirmatory MRI required before AS enrollment (NCCN 2024)', source: 'NCCN 2024; EAU 2024: mpMRI required before AS initiation. In N=218 cohort, no-MRI patients upgraded at 35.3%.' })
+
   if (ece === 'yes')
     features.push({ label: 'Extracapsular extension (ECE) on imaging', source: 'NCCN 2024 staging; EAU 2024' })
 
@@ -1007,7 +1010,14 @@ export function runAssessment(inputs) {
       combinedRecommendation: hardStop.message,
       asFactors: [], genomicFactors: [], psmaFactors: [], features: [],
       genomicAssessed: false, psmaAssessed: false,
-      cohortContext: null,
+      cohortContext: {
+        cohortN: COHORT_CALIBRATION.overview.n,
+        cohortUpgradeRate: COHORT_CALIBRATION.overview.overall_upgrade_rate,
+        cohortItems: [],
+        psadAuc: COHORT_CALIBRATION.psad.auc,
+        psadYoudenCutoff: COHORT_CALIBRATION.psad.youden_optimal,
+        cohortNote: 'Hard stop triggered — cohort calibration context not applicable.',
+      },
       guidelineLayer: { hardStop: true, hardStopId: hardStop.id },
       cohortLayer: null,
       modelValidation: MODEL_VALIDATION,
