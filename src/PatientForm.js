@@ -100,7 +100,54 @@ function YesNoButtons({ value, onChange, options }) {
   )
 }
 
-function SectionToggle({ title, subtitle, badge, open, onToggle }) {
+// ─── Info tooltip panel ───────────────────────────────────────────────────────
+function InfoPanel({ lines }) {
+  const [show, setShow] = useState(false)
+  return e('div', { className: 'relative flex-shrink-0', onClick: ev => ev.stopPropagation() },
+    e('button', {
+      type: 'button',
+      onClick: () => setShow(v => !v),
+      className: 'w-6 h-6 rounded-full flex items-center justify-center text-slate-400 hover:text-sinai-cerulean hover:bg-blue-50 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-sinai-cerulean',
+      title: 'Evidence & cohort reference',
+      'aria-label': 'Show model information',
+    },
+      e('svg', { className: 'w-4 h-4', fill: 'none', viewBox: '0 0 24 24', stroke: 'currentColor', strokeWidth: 2 },
+        e('path', { strokeLinecap: 'round', strokeLinejoin: 'round', d: 'M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z' })
+      )
+    ),
+    show && e('div', {
+      className: 'absolute right-0 top-8 z-50 w-72 rounded-2xl shadow-xl border border-slate-200 bg-white p-4 text-xs',
+      style: { maxWidth: 'min(288px, 90vw)' },
+    },
+      // Close button
+      e('button', {
+        type: 'button',
+        onClick: () => setShow(false),
+        className: 'absolute top-2.5 right-2.5 w-5 h-5 rounded-full flex items-center justify-center text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors',
+      },
+        e('svg', { className: 'w-3 h-3', fill: 'none', viewBox: '0 0 24 24', stroke: 'currentColor', strokeWidth: 2.5 },
+          e('path', { strokeLinecap: 'round', strokeLinejoin: 'round', d: 'M6 18L18 6M6 6l12 12' })
+        )
+      ),
+      lines.map((line, i) =>
+        e('div', { key: i, className: i > 0 ? 'mt-2.5 pt-2.5 border-t border-slate-100' : '' },
+          line.heading && e('p', { className: 'font-semibold text-slate-800 mb-1' }, line.heading),
+          line.cohort && e('div', { className: 'flex items-start gap-1.5 mb-1' },
+            e('span', { className: 'flex-shrink-0 px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide', style: { background: '#e0f2fe', color: '#075985' } }, 'Cohort'),
+            e('p', { className: 'text-slate-600 leading-snug' }, line.cohort)
+          ),
+          line.literature && e('div', { className: 'flex items-start gap-1.5' },
+            e('span', { className: 'flex-shrink-0 px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide', style: { background: '#fef9c3', color: '#854d0e' } }, 'Lit'),
+            e('p', { className: 'text-slate-600 leading-snug' }, line.literature)
+          ),
+          line.note && e('p', { className: 'text-slate-400 italic mt-1 leading-snug' }, line.note)
+        )
+      )
+    )
+  )
+}
+
+function SectionToggle({ title, subtitle, badge, open, onToggle, info }) {
   return e('button', {
     type: 'button', onClick: onToggle,
     className: 'w-full flex items-center justify-between p-4 text-left hover:bg-gray-50 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-sinai-cerulean/30',
@@ -113,6 +160,7 @@ function SectionToggle({ title, subtitle, badge, open, onToggle }) {
       badge && e('span', { className: 'text-xs px-2 py-0.5 rounded-full font-medium', style: { background: '#e0f2fe', color: '#075985' } }, badge)
     ),
     e('div', { className: 'flex items-center gap-2' },
+      info && e(InfoPanel, { lines: info }),
       e('span', { className: 'text-xs text-sinai-cerulean font-medium' }, open ? 'Collapse' : 'Expand'),
       e('svg', {
         className: `w-4 h-4 text-gray-400 transition-transform duration-200 flex-shrink-0 ${open ? 'rotate-180' : ''}`,
@@ -155,13 +203,18 @@ export default function PatientForm({ onSubmit, initialValues = {} }) {
   const [bannerDismissed, setBannerDismissed] = useState(false)
 
   useEffect(() => {
-    if (initialValues.psa != null) setPsa(String(initialValues.psa))
+    if (initialValues.psa            != null) setPsa(String(initialValues.psa))
+    if (initialValues.prostateVolume != null) setVolume(String(initialValues.prostateVolume))
+    if (initialValues.pirads         != null) setPirads(initialValues.pirads)
+    if (initialValues.age            != null) setAge(String(initialValues.age))
   }, [])
-  // Section visibility
+  // Section visibility — auto-expand MRI if PI-RADS pre-filled from ePSA
   const [showGenomic,    setShowGenomic]   = useState(false)
   const [showPSMA,       setShowPSMA]      = useState(false)
-  const [showMRI,        setShowMRI]       = useState(false)
-  const [showExtra,      setShowExtra]     = useState(false)
+  const [showMRI,        setShowMRI]       = useState(initialValues.pirads != null)
+  const [showExtra,      setShowExtra]     = useState(
+    initialValues.age != null || initialValues.epsaPreBiopsyTier != null
+  )
   // Genomic
   const [decipher,       setDecipher]      = useState('')
   const [gps,            setGps]           = useState('')
@@ -213,7 +266,8 @@ export default function PatientForm({ onSubmit, initialValues = {} }) {
       brca2:          brca2 || null,
       hoxb13:         hoxb13 || null,
     }
-    if (initialValues.source === 'epsa' && initialValues.epsaPreBiopsyTier) {
+    const isEpsa = initialValues.epsaContext?.source === 'epsa' || initialValues.source === 'epsa'
+    if (isEpsa && initialValues.epsaPreBiopsyTier) {
       base.epsaPreBiopsyTier = initialValues.epsaPreBiopsyTier
       base.epsaContext = {
         source: 'epsa',
@@ -236,8 +290,9 @@ export default function PatientForm({ onSubmit, initialValues = {} }) {
     onSubmit(buildInputs())
   }
 
+  const isEpsaHandoff = initialValues.epsaContext?.source === 'epsa' || initialValues.source === 'epsa'
   const showBanner = !bannerDismissed
-    && initialValues.source === 'epsa'
+    && isEpsaHandoff
     && initialValues.epsaPreBiopsyTier
 
   return e('form', { onSubmit: handleSubmit, noValidate: true, className: 'space-y-4' },
@@ -256,7 +311,7 @@ export default function PatientForm({ onSubmit, initialValues = {} }) {
             `Continuing from your ePSA assessment \u00b7 Pre-biopsy risk: ${initialValues.epsaPreBiopsyTier}`
           ),
           e('p', { className: 'text-xs mt-0.5', style: { color: '#3b82f6' } },
-            'Your PSA has been pre-filled. Complete the remaining fields below.'
+            'PSA, prostate volume, PI-RADS, and age have been pre-filled. Enter biopsy results (GGG, cores) to complete the assessment.'
           )
         )
       ),
@@ -279,7 +334,17 @@ export default function PatientForm({ onSubmit, initialValues = {} }) {
           e('div', { className: 'w-2 h-2 rounded-full flex-shrink-0', style: { background: '#06ABEB' } }),
           e('span', { className: 'font-semibold text-gray-900 text-sm' }, 'Biopsy & Clinical Data')
         ),
-        e('span', { className: 'text-xs text-red-400 font-medium' }, 'Required')
+        e('div', { className: 'flex items-center gap-2' },
+          e(InfoPanel, { lines: [
+            {
+              heading: 'Basic + PSAD Model',
+              cohort: 'N=218 Mount Sinai Tewari AS Program. PSAD: AUC 0.616 (Mann-Whitney), NPV 94.4% at Youden cutoff 0.065. GG1 upgrade rate 24.2%, GG2 5.7%. PSA alone AUC 0.534 — not discriminatory.',
+              literature: 'NCCN 2024 VLOW criteria. Kadeer et al., Eur Urol 2025 (PSAD AUC 0.624). Epstein JI et al., Eur Urol 2016 (ISUP grading).',
+              note: 'Core ratio & max core % are NCCN eligibility gates only — AUC 0.465 / 0.504 in cohort (not independently discriminatory).',
+            },
+          ]}),
+          e('span', { className: 'text-xs text-red-400 font-medium' }, 'Required')
+        )
       ),
 
       e('div', { className: 'p-4 space-y-5' },
@@ -414,6 +479,14 @@ export default function PatientForm({ onSubmit, initialValues = {} }) {
         subtitle: 'Increases precision when available',
         badge: 'Optional',
         open: showGenomic, onToggle: () => setShowGenomic(v => !v),
+        info: [
+          {
+            heading: 'Genomic Model',
+            cohort: 'N=218 cohort: genomic testing rate <10% — internal AUC cannot be computed. These thresholds are literature-only; no internal cohort calibration is available.',
+            literature: 'Decipher (Spratt DE et al., Lancet Oncol 2014; Nguyen PL et al. 2021): cutoffs 0.45 / 0.60. Oncotype GPS (Klein EA et al., Eur Urol 2021): cutoffs 20 / 40. Prolaris CCP (Cooperberg MR et al., Cancer 2013): cutoffs 1.5 / 2.1. ConfirmMDx (Stewart GD et al., J Urol 2013).',
+            note: 'Literature AUCs: Decipher ~0.74, GPS ~0.69, Prolaris ~0.68. Enter if available — results will update the tier accordingly.',
+          },
+        ],
       }),
       showGenomic && e('div', { className: 'px-4 pb-5 border-t border-gray-50' },
         e('p', { className: 'text-xs text-gray-400 mt-3 mb-3 leading-relaxed' },
@@ -442,6 +515,14 @@ export default function PatientForm({ onSubmit, initialValues = {} }) {
         subtitle: 'If performed — staging and local extent',
         badge: 'Optional',
         open: showPSMA, onToggle: () => setShowPSMA(v => !v),
+        info: [
+          {
+            heading: 'PSMA Model',
+            cohort: 'N=218 cohort: PSMA PET/CT testing prevalence too low for internal validation. No cohort-derived sensitivity/specificity available.',
+            literature: 'EAU-EANM-ESTRO-ESUR-SIOG Guidelines 2024. Staging classification: negative / local / regional / metastatic. Metastatic finding = hard contraindication to AS (also applies EAU 2024 systemic therapy indication). Regional nodal involvement triggers treatment discussion.',
+            note: 'Not a continuous prediction model — classification only. Hard stop fires automatically for metastatic disease.',
+          },
+        ],
       }),
       showPSMA && e('div', { className: 'px-4 pb-5 border-t border-gray-50' },
         e('p', { className: 'text-xs text-gray-400 mt-3 mb-3 leading-relaxed' },
@@ -487,6 +568,14 @@ export default function PatientForm({ onSubmit, initialValues = {} }) {
         subtitle: 'Extracapsular features on mpMRI',
         badge: 'Optional',
         open: showMRI, onToggle: () => setShowMRI(v => !v),
+        info: [
+          {
+            heading: 'Intensive Monitoring — MRI Features',
+            cohort: 'N=218 cohort: Abutment present in 23% (N=50), upgrade rate 14.0% (Sens 25%, Spec 71%, PPV 14%, NPV 83%). ECE: only N=1 positive — no statistical calibration possible. Broad capsular contact: not captured in dataset.',
+            literature: 'ECE & abutment: EAU Guidelines 2024 staging. Broad capsular contact >10 mm: EAU 2024. All three features increase monitoring intensity per NCCN 2024.',
+            note: 'ECE and broad capsular contact are guideline-only triggers in this tool — no internal cohort data to validate them.',
+          },
+        ],
       }),
       showMRI && e('div', { className: 'px-4 pb-5 border-t border-gray-50' },
         e('p', { className: 'text-xs text-gray-400 mt-3 mb-3 leading-relaxed' },
@@ -515,10 +604,18 @@ export default function PatientForm({ onSubmit, initialValues = {} }) {
     // ── Section 5: Additional ─────────────────────────────────────────────
     e('div', { className: 'bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden' },
       e(SectionToggle, {
-        title: 'Age & Family History',
+        title: 'Age, Family History & PSA Kinetics',
         subtitle: 'Germline risk factors and life expectancy context',
         badge: 'Optional',
         open: showExtra, onToggle: () => setShowExtra(v => !v),
+        info: [
+          {
+            heading: 'Intensive Monitoring — Patient Factors',
+            cohort: 'N=218 cohort age range: 71–88 (median 73). Zero patients under 60. Age <50 threshold is guideline-only — cannot be cohort-calibrated. Family history: FHx+ upgrade rate 14.3% vs FHx− 22.4% (inverse — likely surveillance bias). Age AUC 0.502 (not discriminatory in this cohort).',
+            literature: 'Age <50: PRIAS protocol; AUA/ASTRO 2022 (long life expectancy = elevated cumulative risk). PSA velocity ≥2 ng/mL/yr: D\'Amico AV et al., JAMA 2004. PSA doubling time <3 yr: Bul M et al. PRIAS, Eur Urol 2013. BRCA2/HOXB13: NCCN 2024 (enhanced monitoring or treatment preferred).',
+            note: 'PSA velocity and doubling time are not in the N=218 dataset — guideline thresholds only.',
+          },
+        ],
       }),
       showExtra && e('div', { className: 'px-4 pb-5 border-t border-gray-50' },
         e('div', { className: 'pt-3 space-y-3' },

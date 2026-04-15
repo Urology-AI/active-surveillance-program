@@ -21,6 +21,7 @@ export default function ClinicalCalculator() {
   const [results,      setResults]      = useState(null)
   const [uploadError,  setUploadError]  = useState('')
   const [uploadNotice, setUploadNotice] = useState('')
+  const [formKey,      setFormKey]      = useState(0)  // increment to remount form on new ePSA load
 
   // ── Submit ──────────────────────────────────────────────────────────────────
   function handleSubmit(formInputs) {
@@ -36,8 +37,105 @@ export default function ClinicalCalculator() {
   }
 
   // ── Upload / Download ───────────────────────────────────────────────────────
+
+  /**
+   * Detect whether a JSON payload is from the ePSA tool.
+   * ePSA exports have { part: 'complete', part1Data, part1Result, part2Data, part2Result }
+   * or { part: 'part1', part1Data, ... } for a Part 1-only export.
+   */
+  function isEpsaPayload(payload) {
+    return (
+      payload &&
+      typeof payload === 'object' &&
+      (payload.part === 'complete' || payload.part === 'part1' || payload.part === 'part2') &&
+      (payload.part1Data || payload.part2Data || payload.part1Result || payload.part2Result)
+    )
+  }
+
+  /**
+   * Extract pre-population fields from an ePSA JSON export.
+   * These fields will be pre-filled in the form — the clinician only needs to
+   * add post-biopsy data: GGG, positive cores, total cores, max core %.
+   *
+   * ePSA Part 1 result fields used:
+   *   part1Result.epsaTierKey  → epsaPreBiopsyTier (low / intermediate / elevated)
+   *   part1Data.age            → age
+   *   part1Result.isBlack      → race context (not a form field, stored in epsaContext)
+   *   part1Result.fhBinary     → family history context
+   *
+   * ePSA Part 2 data fields used (same variable names — shared format):
+   *   part2Data.psa            → psa
+   *   part2Data.prostateVolume → prostateVolume
+   *   part2Data.pirads + knowPirads → pirads (only if knowPirads=true)
+   *   part2Result.pathwayMode  → context (post_psa / post_mri)
+   *   part2Result.psadValue    → informational only (computed from psa/vol)
+   */
+  function extractEpsaFields(payload) {
+    const p1d = payload.part1Data   || {}
+    const p1r = payload.part1Result || {}
+    const p2d = payload.part2Data   || {}
+    const p2r = payload.part2Result || {}
+
+    const n = (v) => (v === null || v === undefined || v === '') ? null : Number(v)
+
+    // PSA — same field name in both tools
+    const psa = n(p2d.psa)
+
+    // Prostate volume — same field name
+    const prostateVolume = n(p2d.prostateVolume)
+
+    // PI-RADS — only carry over if the clinician actually entered it in ePSA
+    const piradsRaw = p2d.knowPirads === true || p2d.knowPirads === 'true'
+      ? n(p2d.pirads)
+      : null
+
+    // Age from Part 1
+    const age = n(p1d.age) ?? n(p1r.age)
+
+    // ePSA tier — this is the key handoff field
+    const epsaTierKey = p1r.epsaTierKey || p2r.epsaTierKey || null
+
+    // Build epsaContext for display in results
+    const epsaContext = {
+      source: 'epsa',
+      epsaTierKey,
+      epsaTierLabel: p1r.epsaTierLabel || p2r.epsaTierLabel || null,
+      pathwayMode:   p2r.pathwayMode   || p1r.pathwayMode   || null,
+      psadValue:     p2r.psadValue     || null,
+      psadFlag:      p2r.psadFlag      || false,
+      isBlack:       p1r.isBlack       || false,
+      fhBinary:      p1r.fhBinary      || 0,
+      brcaStatus:    p1r.brcaStatus    || null,
+      exportDate:    payload.exportDate || null,
+    }
+
+    return { psa, prostateVolume, pirads: piradsRaw, age, epsaTierKey, epsaContext }
+  }
+
   function normalizePayload(payload) {
     if (!payload || typeof payload !== 'object') throw new Error('File must contain a JSON object.')
+
+    const n = (v, fallback = null) =>
+      (v === null || v === undefined || v === '') ? fallback : Number(v)
+
+    // ── ePSA JSON format ─────────────────────────────────────────────────────
+    // ePSA exports don't have biopsy data yet — return pre-population fields only,
+    // skip the required-field check (biopsy fields will be entered in the form).
+    if (isEpsaPayload(payload)) {
+      const epsa = extractEpsaFields(payload)
+      const out = {}
+      if (epsa.psa           != null) out.psa            = epsa.psa
+      if (epsa.prostateVolume != null) out.prostateVolume = epsa.prostateVolume
+      if (epsa.pirads         != null) out.pirads         = epsa.pirads
+      if (epsa.age            != null) out.age            = epsa.age
+      if (epsa.epsaTierKey)            out.epsaPreBiopsyTier = epsa.epsaTierKey
+      out.epsaContext = epsa.epsaContext
+      // Return partial — form will be shown with these pre-filled, not results
+      out._epsaPreFill = true
+      return out
+    }
+
+    // ── AS Tool own JSON format ──────────────────────────────────────────────
     const candidate = payload.inputs && typeof payload.inputs === 'object' ? payload.inputs : payload
     const required  = ['ggg', 'positiveCores', 'totalCores', 'maxCorePercent', 'psa', 'pirads']
     for (const key of required) {
@@ -45,12 +143,10 @@ export default function ClinicalCalculator() {
         throw new Error(`Missing required field: ${key}`)
       }
     }
-    const n = (v, fallback = null) =>
-      (v === null || v === undefined || v === '') ? fallback : Number(v)
-    const epsaPreBiopsyTier =
-      candidate.epsaPreBiopsyTier ?? payload.epsaPreBiopsyTier ?? null
-    const sourceMeta = candidate.source ?? payload.source ?? null
-    const epsaContextRaw = candidate.epsaContext ?? payload.epsaContext ?? null
+
+    const epsaPreBiopsyTier = candidate.epsaPreBiopsyTier ?? payload.epsaPreBiopsyTier ?? null
+    const sourceMeta        = candidate.source ?? payload.source ?? null
+    const epsaContextRaw    = candidate.epsaContext ?? payload.epsaContext ?? null
 
     const out = {
       ggg:             n(candidate.ggg),
@@ -63,11 +159,11 @@ export default function ClinicalCalculator() {
       decipher:        n(candidate.decipher),
       gps:             n(candidate.gps),
       prolaris:        n(candidate.prolaris),
-      confirmMDx:      candidate.confirmMDx    || null,
-      psmaFinding:     candidate.psmaFinding   || null,
+      confirmMDx:      candidate.confirmMDx     || null,
+      psmaFinding:     candidate.psmaFinding    || null,
       lesionCount:     n(candidate.lesionCount),
-      hasECE:          candidate.hasECE        === true,
-      hasAbutment:     candidate.hasAbutment   === true,
+      hasECE:          candidate.hasECE         === true,
+      hasAbutment:     candidate.hasAbutment    === true,
       hasBroadContact: candidate.hasBroadContact === true,
       age:             n(candidate.age),
       germlineVariant: candidate.germlineVariant || null,
@@ -75,17 +171,11 @@ export default function ClinicalCalculator() {
       psaDoublingTime: n(candidate.psaDoublingTime),
     }
 
-    if (epsaPreBiopsyTier)
-      out.epsaPreBiopsyTier = epsaPreBiopsyTier
-    if (
-      sourceMeta === 'epsa' ||
-      epsaPreBiopsyTier ||
-      (epsaContextRaw && epsaContextRaw.source === 'epsa')
-    ) {
-      out.epsaContext =
-        typeof epsaContextRaw === 'object' && epsaContextRaw !== null
-          ? { source: 'epsa', ...epsaContextRaw }
-          : { source: 'epsa' }
+    if (epsaPreBiopsyTier) out.epsaPreBiopsyTier = epsaPreBiopsyTier
+    if (sourceMeta === 'epsa' || epsaPreBiopsyTier || (epsaContextRaw?.source === 'epsa')) {
+      out.epsaContext = typeof epsaContextRaw === 'object' && epsaContextRaw !== null
+        ? { source: 'epsa', ...epsaContextRaw }
+        : { source: 'epsa' }
     }
 
     return out
@@ -99,13 +189,27 @@ export default function ClinicalCalculator() {
     const reader = new FileReader()
     reader.onload = () => {
       try {
-        const parsed    = JSON.parse(String(reader.result || '{}'))
+        const parsed     = JSON.parse(String(reader.result || '{}'))
         const nextInputs = normalizePayload(parsed)
-        const assessment = runAssessment(nextInputs)
-        setInputs(nextInputs)
-        setResults(assessment)
-        setUploadNotice('Patient data loaded.')
-        setView('results')
+
+        if (nextInputs._epsaPreFill) {
+          // ePSA handoff — show pre-filled form, let clinician add biopsy data
+          const { _epsaPreFill: _, ...prefillValues } = nextInputs
+          setInputs(prefillValues)
+          setResults(null)
+          setFormKey(k => k + 1)  // remount PatientForm so useEffect fires with new values
+          setView('form')
+          const tierLabel = prefillValues.epsaContext?.epsaTierLabel
+            || prefillValues.epsaPreBiopsyTier
+            || 'see ePSA'
+          setUploadNotice(`ePSA data loaded \u00b7 Pre-biopsy tier: ${tierLabel} \u2014 enter biopsy results to complete assessment.`)
+        } else {
+          const assessment = runAssessment(nextInputs)
+          setInputs(nextInputs)
+          setResults(assessment)
+          setUploadNotice('Patient data loaded.')
+          setView('results')
+        }
         window.scrollTo({ top: 0, behavior: 'smooth' })
       } catch (err) {
         setUploadError(err instanceof Error ? err.message : 'Unable to parse file.')
@@ -172,14 +276,15 @@ export default function ClinicalCalculator() {
     view === 'form'
       ? e('div', {},
           e('div', { className: 'mb-4 sm:mb-5' },
-            e('h1', { className: 'text-lg sm:text-xl font-bold text-gray-900 mb-1' }, 'AS Risk Calculator'),
+            e('h1', { className: 'text-lg sm:text-xl font-bold text-gray-900 mb-0.5' }, 'AI Surveillance Tool'),
+            e('p', { className: 'text-xs font-medium text-slate-400 mb-1.5 tracking-wide uppercase' }, 'AS Tool — Active Surveillance Decision Support'),
             e('p', { className: 'text-sm text-gray-500 leading-relaxed' },
               'Multi-model assessment — Basic + PSAD · Genomic · PSMA · Intensive Monitoring. ' +
               'Calibrated to N=218 Mount Sinai Tewari AS Program cohort. ' +
-              'Guideline hard stops checked first · PSAD AUC 0.624 (Kadeer et al. 2025).'
+              'Guideline hard stops checked first · PSAD AUC 0.616 (internal) / 0.624 (Kadeer et al. 2025).'
             )
           ),
-          e(PatientForm, { onSubmit: handleSubmit })
+          e(PatientForm, { key: formKey, onSubmit: handleSubmit, initialValues: inputs || {} })
         )
       : e(PatientResults, {
           results,
