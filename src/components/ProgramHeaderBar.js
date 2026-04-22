@@ -72,8 +72,8 @@ export function MeetCareTeamHeaderButton({ onClick }) {
 function ClinicianToolToggle({ mode, onChange }) {
   const pill = (active) => ({
     color: active ? '#fff' : 'rgba(255,255,255,0.45)',
-    background: active ? 'rgba(6,171,235,0.35)' : 'transparent',
-    border: `1px solid ${active ? 'rgba(6,171,235,0.55)' : 'rgba(255,255,255,0.12)'}`,
+    background: active ? '#06ABEB' : 'transparent',
+    border: `1px solid ${active ? 'rgba(6,171,235,0.7)' : 'rgba(255,255,255,0.12)'}`,
   })
   return React.createElement('div', {
     className: 'flex items-center rounded-full p-0.5 shrink-0',
@@ -130,7 +130,7 @@ export default function ProgramHeaderBar({
       style: PROGRAM_HEADER_SHELL_STYLE,
     },
       React.createElement('div', {
-        className: 'max-w-4xl mx-auto px-3 sm:px-4 flex flex-wrap items-center gap-x-2 gap-y-2 min-h-[52px] py-2 sm:py-0 sm:h-[52px]',
+        className: 'max-w-4xl mx-auto px-3 sm:px-4 flex flex-wrap items-center gap-x-2 gap-y-2 min-h-[48px] py-2 sm:py-0 sm:h-[48px]',
       },
 
         changeRoleOnClick && React.createElement('button', {

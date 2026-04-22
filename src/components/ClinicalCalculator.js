@@ -16,12 +16,13 @@ const e = React.createElement
 const EXPORT_VERSION = 1
 
 export default function ClinicalCalculator() {
-  const [view,         setView]         = useState('form') // 'form' | 'results'
-  const [inputs,       setInputs]       = useState(null)
-  const [results,      setResults]      = useState(null)
-  const [uploadError,  setUploadError]  = useState('')
-  const [uploadNotice, setUploadNotice] = useState('')
-  const [formKey,      setFormKey]      = useState(0)  // increment to remount form on new ePSA load
+  const [view,              setView]              = useState('form') // 'form' | 'results'
+  const [inputs,            setInputs]            = useState(null)
+  const [results,           setResults]           = useState(null)
+  const [uploadError,       setUploadError]       = useState('')
+  const [uploadNotice,      setUploadNotice]      = useState('')
+  const [epsaBannerDismissed, setEpsaBannerDismissed] = useState(false)
+  const [formKey,           setFormKey]           = useState(0)
 
   // ── Submit ──────────────────────────────────────────────────────────────────
   function handleSubmit(formInputs) {
@@ -242,50 +243,128 @@ export default function ClinicalCalculator() {
   }
 
   // ── Render ───────────────────────────────────────────────────────────────────
-  return e('div', { className: 'max-w-2xl w-full mx-auto px-3 sm:px-4 py-4 sm:py-6 pb-8' },
+  const MAGENTA  = '#DC298D'
+  const CERULEAN = '#06ABEB'
+  const CETACEAN = '#00002D'
+  const isEpsaNotice = uploadNotice.startsWith('ePSA data loaded')
 
-    // Upload / Download toolbar
-    e('div', { className: 'no-print mb-4 flex flex-wrap items-stretch sm:items-center gap-2' },
-      e('label', {
-        className: 'inline-flex flex-1 min-w-[140px] sm:flex-initial justify-center sm:justify-start items-center gap-2 px-3 py-2.5 sm:py-2 rounded-xl border border-slate-200 bg-white text-sm font-medium text-slate-700 cursor-pointer hover:border-slate-300 hover:bg-slate-50 transition-colors active:scale-[0.99]',
+  return e('div', {
+    style: {
+      maxWidth: 880, width: '100%', margin: '0 auto',
+      padding: '18px 20px 40px',
+    },
+  },
+
+    // ── Title row ──────────────────────────────────────────────────────────────
+    e('div', {
+      style: {
+        display: 'flex', alignItems: 'flex-start', gap: 12,
+        marginBottom: 14,
       },
-        e('input', {
-          type: 'file', accept: 'application/json,.json',
-          onChange: handleUpload,
-          className: 'hidden',
-        }),
-        e('svg', { className: 'w-4 h-4 text-slate-500', fill: 'none', viewBox: '0 0 24 24', stroke: 'currentColor', strokeWidth: 2 },
-          e('path', { strokeLinecap: 'round', strokeLinejoin: 'round', d: 'M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12' })
-        ),
-        'Load Patient JSON'
+    },
+      e('div', { style: { flex: 1, minWidth: 0 } },
+        e('h1', {
+          style: {
+            fontSize: 20, fontWeight: 700, color: CETACEAN,
+            margin: 0, letterSpacing: '-0.01em',
+          },
+        }, 'AI Surveillance Tool'),
+        e('p', {
+          style: { fontSize: 11.5, color: '#64748b', margin: '2px 0 0' },
+        }, 'Multi-model AS assessment · Calibrated to N=218 Tewari Cohort')
       ),
-      view === 'results' && e('button', {
-        type: 'button', onClick: handleDownload,
-        className: 'inline-flex flex-1 min-w-[140px] sm:flex-initial justify-center sm:justify-start items-center gap-2 px-3 py-2.5 sm:py-2 rounded-xl border border-sky-200 bg-sky-50 text-sm font-medium text-sky-700 hover:bg-sky-100 transition-colors active:scale-[0.99]',
-      },
-        e('svg', { className: 'w-4 h-4', fill: 'none', viewBox: '0 0 24 24', stroke: 'currentColor', strokeWidth: 2 },
-          e('path', { strokeLinecap: 'round', strokeLinejoin: 'round', d: 'M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4' })
-        ),
-        'Download JSON'
-      ),
+      // Load JSON button
+      view === 'results'
+        ? e('button', {
+            type: 'button', onClick: handleDownload,
+            style: {
+              padding: '7px 12px', borderRadius: 8,
+              background: '#fff', border: '1px solid #e2e8f0',
+              fontSize: 12, fontWeight: 600, color: '#212070',
+              display: 'flex', alignItems: 'center', gap: 5, cursor: 'pointer',
+            },
+          },
+            e('svg', { width: 14, height: 14, fill: 'none', viewBox: '0 0 24 24', stroke: 'currentColor', strokeWidth: 2 },
+              e('path', { strokeLinecap: 'round', strokeLinejoin: 'round', d: 'M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4' })
+            ),
+            'Download JSON'
+          )
+        : e('label', {
+            style: {
+              padding: '7px 12px', borderRadius: 8,
+              background: '#fff', border: '1px solid #e2e8f0',
+              fontSize: 12, fontWeight: 600, color: '#212070',
+              display: 'flex', alignItems: 'center', gap: 5, cursor: 'pointer',
+            },
+          },
+            e('input', {
+              type: 'file', accept: 'application/json,.json',
+              onChange: handleUpload, style: { display: 'none' },
+            }),
+            e('svg', { width: 14, height: 14, fill: 'none', viewBox: '0 0 24 24', stroke: 'currentColor', strokeWidth: 2 },
+              e('path', { strokeLinecap: 'round', strokeLinejoin: 'round', d: 'M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12' })
+            ),
+            'Load JSON'
+          )
     ),
 
-    uploadNotice && e('p', { className: 'mb-3 text-xs text-emerald-600 font-medium' }, uploadNotice),
-    uploadError  && e('p', { className: 'mb-3 text-xs text-red-600'     }, uploadError),
+    // ── ePSA banner ────────────────────────────────────────────────────────────
+    isEpsaNotice && !epsaBannerDismissed && e('div', {
+      style: {
+        display: 'flex', alignItems: 'center', gap: 10,
+        padding: '10px 14px',
+        background: `${MAGENTA}0d`,
+        border: `1px solid ${MAGENTA}44`,
+        borderLeft: `4px solid ${MAGENTA}`,
+        borderRadius: 10, marginBottom: 14,
+      },
+    },
+      e('div', {
+        style: {
+          width: 24, height: 24, borderRadius: 6, flexShrink: 0,
+          background: `${MAGENTA}22`,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          color: MAGENTA, fontSize: 11, fontWeight: 800,
+        },
+      }, 'ε'),
+      e('div', { style: { flex: 1, minWidth: 0 } },
+        e('div', {
+          style: { fontSize: 12, fontWeight: 700, color: CETACEAN },
+        }, uploadNotice.split(' — ')[0] || uploadNotice),
+        e('div', {
+          style: { fontSize: 11, color: '#64748b', marginTop: 1 },
+        }, 'PSA, volume, PI-RADS and age pre-filled · Enter biopsy results to complete.')
+      ),
+      e('button', {
+        type: 'button',
+        onClick: () => setEpsaBannerDismissed(true),
+        style: {
+          fontSize: 11, color: MAGENTA, background: 'transparent',
+          border: 'none', fontWeight: 600, cursor: 'pointer', padding: '2px 6px',
+          flexShrink: 0,
+        },
+      }, 'Dismiss')
+    ),
 
+    // Non-ePSA notice
+    !isEpsaNotice && uploadNotice && e('div', {
+      style: {
+        padding: '8px 12px', background: '#f0fdf4', border: '1px solid #bbf7d0',
+        borderRadius: 8, fontSize: 12, color: '#166534', marginBottom: 14,
+      },
+    }, uploadNotice),
+
+    // Error
+    uploadError && e('div', {
+      style: {
+        padding: '8px 12px', background: '#fff1f2', border: '1px solid #fecdd3',
+        borderRadius: 8, fontSize: 12, color: '#be123c', marginBottom: 14,
+      },
+    }, uploadError),
+
+    // ── Form / Results ─────────────────────────────────────────────────────────
     view === 'form'
-      ? e('div', {},
-          e('div', { className: 'mb-4 sm:mb-5' },
-            e('h1', { className: 'text-lg sm:text-xl font-bold text-gray-900 mb-0.5' }, 'AI Surveillance Tool'),
-            e('p', { className: 'text-xs font-medium text-slate-400 mb-1.5 tracking-wide uppercase' }, 'AS Tool — Active Surveillance Decision Support'),
-            e('p', { className: 'text-sm text-gray-500 leading-relaxed' },
-              'Multi-model assessment — Basic + PSAD · Genomic · PSMA · Intensive Monitoring. ' +
-              'Calibrated to N=218 Mount Sinai Tewari AS Program cohort. ' +
-              'Guideline hard stops checked first · PSAD AUC 0.616 (internal) / 0.624 (Kadeer et al. 2025).'
-            )
-          ),
-          e(PatientForm, { key: formKey, onSubmit: handleSubmit, initialValues: inputs || {} })
-        )
+      ? e(PatientForm, { key: formKey, onSubmit: handleSubmit, initialValues: inputs || {} })
       : e(PatientResults, {
           results,
           inputs,

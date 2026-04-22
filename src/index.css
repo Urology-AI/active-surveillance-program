@@ -154,6 +154,52 @@ html {
   outline-offset: 2px;
 }
 
+/* ── Clinician three-column pathway grid ──────────────────────────────────── */
+.pathway-grid {
+  display: flex;
+  flex-direction: column;
+}
+.pathway-grid-minimap,
+.pathway-grid-flowchart {
+  display: none;
+}
+.pathway-grid-center {
+  flex: 1;
+  padding: 16px;
+  background: #f8fafc;
+}
+@media (min-width: 1024px) {
+  .pathway-grid {
+    display: grid;
+    grid-template-columns: 220px 1fr 260px;
+    align-items: start;
+    min-height: calc(100vh - 48px);
+  }
+  .pathway-grid-minimap {
+    display: block;
+    position: sticky;
+    top: 48px;
+    max-height: calc(100vh - 48px);
+    overflow-y: auto;
+    background: #fff;
+    border-right: 1px solid #e2e8f0;
+  }
+  .pathway-grid-flowchart {
+    display: flex;
+    flex-direction: column;
+    position: sticky;
+    top: 48px;
+    max-height: calc(100vh - 48px);
+    overflow-y: auto;
+    background: #fff;
+    border-left: 1px solid #e2e8f0;
+  }
+  .pathway-grid-center {
+    padding: 18px 22px;
+    min-height: calc(100vh - 48px);
+  }
+}
+
 @media print {
   body { background: #fff; }
   .no-print { display: none !important; }

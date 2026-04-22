@@ -1,87 +1,232 @@
-import React from 'react'
-import ProgramHeaderBar from './components/ProgramHeaderBar.js'
+import React, { useState } from 'react'
+import { Activity, User } from 'lucide-react'
+import CareTeamModal from './components/CareTeamModal.js'
 
 const e = React.createElement
 
-export default function RoleSelector({ onSelectRole }) {
-  return e('div', { className: 'min-h-screen flex flex-col', style: { background: 'linear-gradient(135deg, #00002D 0%, #212070 60%, #06ABEB 100%)' } },
+const C = {
+  cetacean: '#00002D',
+  navy: '#212070',
+  cerulean: '#06ABEB',
+  ceruleanDark: '#0596c7',
+}
 
-    // Same program header as clinical pathway (brand + Meet the Care Team; no part/step/reset)
-    e('div', { className: 'no-print shrink-0' },
-      e(ProgramHeaderBar, {
-        currentPart: null,
-        stepLabel: null,
-        showReset: false,
-      })
-    ),
-
-    e('div', { className: 'flex flex-1 flex-col items-center justify-center p-6' },
-
-    // Logo / wordmark
-    e('div', { className: 'mb-10 text-center' },
-      e('div', { className: 'text-white text-2xl font-bold tracking-wide mb-1' }, 'MOUNT SINAI'),
-      e('div', { className: 'text-white/70 text-sm tracking-widest uppercase' }, 'Tewari Active Surveillance Program'),
-      e('div', { className: 'mt-3 w-16 h-0.5 mx-auto', style: { background: '#06ABEB' } })
-    ),
-
-    // Cards
-    e('div', { className: 'w-full max-w-2xl grid grid-cols-1 sm:grid-cols-2 gap-5' },
-
-      // Patient card
-      e('button', {
-        onClick: () => onSelectRole('patient'),
-        className: 'group relative bg-white rounded-2xl p-8 text-left shadow-lg shadow-slate-900/5 ring-1 ring-slate-900/[0.04] hover:shadow-xl hover:shadow-slate-900/8 transition-all duration-200 hover:-translate-y-0.5 focus:outline-none focus-visible:ring-4 focus-visible:ring-white/40 border-t-4',
-        style: { borderTopColor: '#06ABEB' },
+function BrandMark() {
+  return e('div', { style: { display: 'flex', alignItems: 'center', gap: 10 } },
+    e('div', {
+      style: {
+        width: 32, height: 32, borderRadius: 8, flexShrink: 0,
+        background: `linear-gradient(135deg, ${C.cerulean} 0%, ${C.ceruleanDark} 100%)`,
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
       },
-        e('div', { className: 'flex items-start gap-4' },
-          e('div', { className: 'flex-shrink-0 w-12 h-12 rounded-xl flex items-center justify-center', style: { background: 'rgb(6 171 235 / 0.12)' } },
-            e('svg', { className: 'w-6 h-6', style: { color: '#06ABEB' }, fill: 'none', viewBox: '0 0 24 24', stroke: 'currentColor', strokeWidth: 2 },
-              e('path', { strokeLinecap: 'round', strokeLinejoin: 'round', d: 'M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z' })
-            )
-          ),
-          e('div', {},
-            e('h2', { className: 'text-lg font-bold text-gray-900 mb-1' }, 'I am a Patient'),
-            e('p', { className: 'text-sm text-gray-500 leading-relaxed' }, 'Get a personalised active surveillance assessment based on your biopsy results and diagnostic data.')
-          )
-        ),
-        e('div', { className: 'mt-5 flex items-center gap-1 text-sm font-medium transition-all duration-150 group-hover:gap-2', style: { color: '#06ABEB' } },
-          'Begin assessment',
-          e('svg', { className: 'w-4 h-4', fill: 'none', viewBox: '0 0 24 24', stroke: 'currentColor', strokeWidth: 2 },
-            e('path', { strokeLinecap: 'round', strokeLinejoin: 'round', d: 'M9 5l7 7-7 7' })
-          )
-        )
+    },
+      e(Activity, { style: { width: 16, height: 16, color: '#fff' } })
+    ),
+    e('div', { style: { lineHeight: 1 } },
+      e('div', {
+        style: {
+          fontSize: 9, fontWeight: 800, letterSpacing: '0.14em',
+          color: C.cerulean, textTransform: 'uppercase',
+        },
+      }, 'Mount Sinai'),
+      e('div', {
+        style: { fontSize: 13, fontWeight: 700, color: '#fff', marginTop: 2 },
+      }, 'Tewari AS Program')
+    )
+  )
+}
+
+// Inline stethoscope SVG (lucide Stethoscope path)
+function StethIcon() {
+  return e('svg', {
+    width: 18, height: 18, viewBox: '0 0 24 24', fill: 'none',
+    stroke: '#fff', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round',
+  },
+    e('path', { d: 'M4.8 2.3A.3.3 0 1 0 5 2H4a2 2 0 0 0-2 2v5a6 6 0 0 0 6 6v0a6 6 0 0 0 6-6V4a2 2 0 0 0-2-2h-1a.2.2 0 1 0 .3.3' }),
+    e('path', { d: 'M8 15v1a6 6 0 0 0 6 6v0a6 6 0 0 0 6-6v-4' }),
+    e('circle', { cx: 20, cy: 10, r: 2 })
+  )
+}
+
+function ChevronRightIcon() {
+  return e('svg', {
+    width: 16, height: 16, viewBox: '0 0 24 24', fill: 'none',
+    stroke: 'rgba(255,255,255,0.5)', strokeWidth: 2,
+    strokeLinecap: 'round', strokeLinejoin: 'round',
+  },
+    e('polyline', { points: '9 18 15 12 9 6' })
+  )
+}
+
+function InfoIcon() {
+  return e('svg', {
+    width: 12, height: 12, viewBox: '0 0 24 24', fill: 'none',
+    stroke: 'currentColor', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round',
+  },
+    e('circle', { cx: 12, cy: 12, r: 10 }),
+    e('line', { x1: 12, y1: 16, x2: 12, y2: 12 }),
+    e('line', { x1: 12, y1: 8, x2: '12.01', y2: 8 })
+  )
+}
+
+const ROLES = [
+  {
+    key: 'patient',
+    title: 'I am a Patient',
+    desc: 'Educational resources and guideline topics for your care.',
+    icon: () => e(User, { style: { width: 18, height: 18, color: C.cerulean } }),
+    tileStyle: {
+      background: `${C.cerulean}22`,
+      border: `1px solid ${C.cerulean}44`,
+    },
+  },
+  {
+    key: 'clinician',
+    title: 'I am a Clinician',
+    desc: 'Clinical pathway and AS decision-support calculator.',
+    icon: StethIcon,
+    tileStyle: {
+      background: 'rgba(255,255,255,0.08)',
+      border: '1px solid rgba(255,255,255,0.18)',
+    },
+  },
+]
+
+export default function RoleSelector({ onSelectRole }) {
+  const [careOpen, setCareOpen] = useState(false)
+
+  return e('div', {
+    style: {
+      minHeight: '100vh',
+      display: 'flex',
+      flexDirection: 'column',
+      background: `linear-gradient(165deg, ${C.cetacean} 0%, ${C.navy} 70%, ${C.cerulean} 150%)`,
+    },
+  },
+    e(CareTeamModal, { open: careOpen, onClose: () => setCareOpen(false) }),
+
+    // Top strip
+    e('div', {
+      style: {
+        padding: '14px 18px',
+        borderBottom: '1px solid rgba(255,255,255,0.08)',
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        flexShrink: 0,
+      },
+    },
+      e(BrandMark),
+      e('button', {
+        type: 'button',
+        onClick: () => setCareOpen(true),
+        style: {
+          background: 'transparent',
+          border: '1px solid rgba(255,255,255,0.18)',
+          color: 'rgba(255,255,255,0.8)',
+          padding: '5px 10px', borderRadius: 999,
+          fontSize: 11, fontWeight: 600,
+          display: 'flex', alignItems: 'center', gap: 5,
+          cursor: 'pointer',
+        },
+      },
+        e(InfoIcon),
+        'Care Team'
+      )
+    ),
+
+    // Centered main content
+    e('div', {
+      style: {
+        flex: 1,
+        display: 'flex', flexDirection: 'column', justifyContent: 'center',
+        padding: '0 28px',
+      },
+    },
+
+      // Eyebrow + title + divider
+      e('div', { style: { textAlign: 'center', marginBottom: 32 } },
+        e('p', {
+          style: {
+            fontSize: 10, fontWeight: 800, letterSpacing: '0.22em',
+            color: C.cerulean, textTransform: 'uppercase',
+            margin: 0, marginBottom: 8,
+          },
+        }, 'Mount Sinai · Urology'),
+        e('h1', {
+          style: {
+            color: '#fff', fontSize: 26, fontWeight: 700,
+            margin: 0, lineHeight: 1.15, letterSpacing: '-0.01em',
+          },
+        }, 'Tewari Active', e('br'), 'Surveillance Program'),
+        e('div', {
+          style: {
+            width: 40, height: 2,
+            background: C.cerulean,
+            margin: '14px auto 0',
+          },
+        })
       ),
 
-      // Clinician card
-      e('button', {
-        onClick: () => onSelectRole('clinician'),
-        className: 'group relative bg-white rounded-2xl p-8 text-left shadow-lg shadow-slate-900/5 ring-1 ring-slate-900/[0.04] hover:shadow-xl hover:shadow-slate-900/8 transition-all duration-200 hover:-translate-y-0.5 focus:outline-none focus-visible:ring-4 focus-visible:ring-white/40 border-t-4',
-        style: { borderTopColor: '#212070' },
-      },
-        e('div', { className: 'flex items-start gap-4' },
-          e('div', { className: 'flex-shrink-0 w-12 h-12 rounded-xl flex items-center justify-center', style: { background: 'rgb(33 32 112 / 0.1)' } },
-            e('svg', { className: 'w-6 h-6', style: { color: '#212070' }, fill: 'none', viewBox: '0 0 24 24', stroke: 'currentColor', strokeWidth: 2 },
-              e('path', { strokeLinecap: 'round', strokeLinejoin: 'round', d: 'M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z' })
-            )
-          ),
-          e('div', {},
-            e('h2', { className: 'text-lg font-bold text-gray-900 mb-1' }, 'I am a Clinician'),
-            e('p', { className: 'text-sm text-gray-500 leading-relaxed' }, 'Access the clinical decision support tool for guided pathway navigation and shared decision-making.')
-          )
-        ),
-        e('div', { className: 'mt-5 flex items-center gap-1 text-sm font-medium transition-all duration-150 group-hover:gap-2', style: { color: '#212070' } },
-          'Enter clinical tool',
-          e('svg', { className: 'w-4 h-4', fill: 'none', viewBox: '0 0 24 24', stroke: 'currentColor', strokeWidth: 2 },
-            e('path', { strokeLinecap: 'round', strokeLinejoin: 'round', d: 'M9 5l7 7-7 7' })
+      // "Choose your role" label
+      e('p', {
+        style: {
+          fontSize: 11, fontWeight: 700, letterSpacing: '0.18em',
+          color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase',
+          textAlign: 'center', margin: '0 0 14px',
+        },
+      }, 'Choose your role'),
+
+      // Role buttons
+      e('div', { style: { display: 'flex', flexDirection: 'column', gap: 10 } },
+        ROLES.map(r =>
+          e('button', {
+            key: r.key,
+            type: 'button',
+            onClick: () => onSelectRole(r.key),
+            style: {
+              background: 'rgba(255,255,255,0.06)',
+              border: '1px solid rgba(255,255,255,0.14)',
+              borderRadius: 12, padding: '14px 16px',
+              display: 'flex', alignItems: 'center', gap: 14,
+              textAlign: 'left', cursor: 'pointer', width: '100%',
+              transition: 'background 0.15s, border-color 0.15s',
+            },
+            onMouseEnter: ev => {
+              ev.currentTarget.style.background = 'rgba(255,255,255,0.10)'
+              ev.currentTarget.style.borderColor = 'rgba(255,255,255,0.25)'
+            },
+            onMouseLeave: ev => {
+              ev.currentTarget.style.background = 'rgba(255,255,255,0.06)'
+              ev.currentTarget.style.borderColor = 'rgba(255,255,255,0.14)'
+            },
+          },
+            // Icon tile
+            e('div', {
+              style: {
+                width: 38, height: 38, borderRadius: 10, flexShrink: 0,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                ...r.tileStyle,
+              },
+            },
+              e(r.icon)
+            ),
+            // Text
+            e('div', { style: { flex: 1, minWidth: 0 } },
+              e('div', { style: { color: '#fff', fontSize: 15, fontWeight: 700, marginBottom: 2 } }, r.title),
+              e('div', { style: { color: 'rgba(255,255,255,0.55)', fontSize: 12, lineHeight: 1.35 } }, r.desc)
+            ),
+            e(ChevronRightIcon)
           )
         )
       )
     ),
 
-    // Footer
-    e('p', { className: 'mt-10 text-white/40 text-xs text-center max-w-sm' },
-      'For educational and clinical decision-support purposes only. Not a substitute for professional medical advice.'
-    )
-    )
+    // Footer disclaimer
+    e('p', {
+      style: {
+        textAlign: 'center', fontSize: 10,
+        color: 'rgba(255,255,255,0.4)',
+        padding: '18px 40px', lineHeight: 1.5, margin: 0, flexShrink: 0,
+      },
+    }, 'For educational and clinical decision-support purposes only. Not a substitute for professional medical advice.')
   )
 }
