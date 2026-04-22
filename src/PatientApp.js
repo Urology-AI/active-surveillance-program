@@ -467,7 +467,7 @@ export default function PatientApp({ onBack }) {
       QA_TOPICS.map((t, i) =>
         e('button', {
           key: i, type: 'button',
-          onClick: () => setActiveTopic(i),
+          onClick: () => { setActiveTopic(i); setMessages([]) },
           style: {
             padding: '6px 11px', borderRadius: 999, whiteSpace: 'nowrap',
             fontSize: 11.5, fontWeight: 600, cursor: 'pointer', flexShrink: 0,
