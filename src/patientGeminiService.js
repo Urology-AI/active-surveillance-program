@@ -11,6 +11,87 @@ import { resolveLocalEducationAnswer } from './patientAnswerResolver.js'
 // gemini-2.0-flash often shows limit: 0 on the free tier; 2.5 Flash matches current AI Studio quotas.
 const GEMINI_MODEL = 'gemini-2.5-flash'
 
+// ---------------------------------------------------------------------------
+// Topic guardrails — pre-filter applied BEFORE calling the Gemini API.
+// Two-layer strategy:
+//   Layer 1 (this file): cheap keyword scan rejects obviously off-topic input.
+//   Layer 2 (system prompt): LLM is instructed to refuse anything outside scope.
+// ---------------------------------------------------------------------------
+
+// Any of these signals suggest the message is prostate/AS-related → allow.
+const ON_TOPIC_SIGNALS = [
+  /\bprostate\b/i,
+  /\bcancer\b/i,
+  /\bpsa\b/i,
+  /\bbiopsy(?:ies)?\b/i,
+  /\bgleason\b/i,
+  /\bgrade\s*group\b/i,
+  /\bactive\s+surveillance\b/i,
+  /\bsurveillance\b/i,
+  /\bobservation\b/i,
+  /\bwatchful\s+waiting\b/i,
+  /\bprostatectomy\b/i,
+  /\bradiation\b/i,
+  /\b(?:mp)?mri\b/i,
+  /\bpsma\b/i,
+  /\bgenomic\b/i,
+  /\boncologist\b/i,
+  /\burologist\b/i,
+  /\bnccn\b/i,
+  /\b(?:urinary|erectile|sexual function|testosterone|hormone)\b/i,
+  /\b(?:exercise|diet|lifestyle|nutrition)\b/i,
+  /\b(?:anxiety|anxious|worry|worried|stress|fear|cope|coping)\b/i,
+  /\btreatment\b/i,
+  /\bmonitoring\b/i,
+  /\bside\s+effect\b/i,
+  /\bsymptom\b/i,
+  /\bcare\s+team\b/i,
+  /\bclinician\b/i,
+]
+
+// These patterns clearly signal off-topic requests — reject without API call.
+const CLEAR_OFF_TOPIC_PATTERNS = [
+  /\b(?:recipe|cooking\s+tip|restaurant|cuisine|what\s+should\s+i\s+(?:eat|cook|order))\b/i,
+  /\b(?:travel|hotel|flight|vacation|trip|destination|where\s+should\s+i\s+go)\b/i,
+  /\b(?:weather|forecast|temperature|climate)\b/i,
+  /\b(?:stock\s+market|cryptocurrency|bitcoin|ethereum|nft|invest(?:ing|ment))\b/i,
+  /\b(?:football|soccer|basketball|baseball|nfl|nba|mlb|nhl|sport(?:s)?\s+team|match\s+score)\b/i,
+  /\b(?:politics|election|president|congress|senate|democrat|republican|vote)\b/i,
+  /\b(?:movie|film|tv\s+show|netflix|streaming|celebrity|music\s+(?:song|album|artist)|playlist)\b/i,
+  /\b(?:tell\s+me\s+a\s+joke|riddle|trivia|quiz|crossword|word\s+game)\b/i,
+  /\b(?:relationship\s+advice|dating|romantic|love\s+life|breakup)\b/i,
+  /\b(?:write\s+(?:me\s+)?(?:an?\s+)?(?:essay|poem|story|code|program|script))\b/i,
+]
+
+// Short conversational turns are always allowed (follow-up context, greetings, thanks).
+const CONVERSATIONAL_RE =
+  /^(?:hi|hello|hey|thanks?|thank\s+you|ok(?:ay)?|yes|no|sure|got\s+it|i\s+see|makes?\s+sense|understood|great|good|please\s+(?:continue|elaborate|go\s+on)|tell\s+me\s+more|can\s+you\s+(?:explain|clarify)|what\s+do\s+you\s+mean|how\s+(?:do\s+you\s+)?(?:mean|so)|[\w\s]{1,25})[?!.]*$/i
+
+const OFF_TOPIC_RESPONSE =
+  "I\u2019m here specifically to answer questions about prostate cancer and active surveillance. For other topics, please speak with your care team or primary doctor."
+
+/**
+ * Returns { offTopic: false } if the message seems in-scope,
+ * or { offTopic: true, message: string } if it should be rejected immediately.
+ */
+export function checkIfOffTopic(text) {
+  const t = String(text || '').trim()
+  if (!t || t.length < 20 || CONVERSATIONAL_RE.test(t)) return { offTopic: false }
+
+  // If any on-topic signal is present, let the full pipeline handle it.
+  for (const re of ON_TOPIC_SIGNALS) {
+    if (re.test(t)) return { offTopic: false }
+  }
+
+  // No on-topic signal found — check for a clear off-topic signal.
+  for (const re of CLEAR_OFF_TOPIC_PATTERNS) {
+    if (re.test(t)) return { offTopic: true, message: OFF_TOPIC_RESPONSE }
+  }
+
+  // Ambiguous — pass through; the system prompt instructs the LLM to decline.
+  return { offTopic: false }
+}
+
 const PII_PATTERNS = [
   /\b\d{3}-\d{2}-\d{4}\b/,
   /\b\d{3}[-.\s]?\d{3}[-.\s]?\d{4}\b/,
@@ -56,7 +137,7 @@ function buildSystemInstruction() {
 - If the user describes possible emergencies or severe symptoms (e.g., inability to urinate, new weakness or numbness, high fever with urinary symptoms, crushing chest pain, sudden confusion), tell them to call emergency services or go to the nearest ER immediately.
 - Never ask the user to paste or confirm protected health information (PHI) such as full name, MRN, SSN, phone, email, full address, or exact dates of birth.
 - If they ask what they personally should do based on their biopsy, PSA, imaging, or genetics, explain general concepts and direct them to their clinician for individualized decisions.
-- Stay on topic: localized prostate cancer, AS, observation, testing cadence, side effects, anxiety/coping, and shared decision-making. Politely decline unrelated medical or non-medical topics.
+- STRICT SCOPE — you ONLY answer questions about: prostate cancer, active surveillance (AS), observation/watchful waiting, PSA testing, prostate biopsy, Gleason score / Grade Groups, treatment options for prostate cancer (surgery, radiation, focal therapy), urinary/sexual side effects of prostate treatment, anxiety and emotional coping with a prostate cancer diagnosis, and diet/exercise/lifestyle for prostate cancer patients. If a question falls outside this scope — including other diseases, unrelated health topics, cooking, travel, weather, finance, sports, politics, entertainment, writing tasks, or any non-medical topic — respond ONLY with this exact sentence and nothing else: "I'm here specifically to answer questions about prostate cancer and active surveillance. For other topics, please speak with your care team or primary doctor."
 - Tone: supportive, clear, plain language (about 8th–10th grade). Short paragraphs or bullets when helpful.
 
 ## Knowledge grounding
@@ -130,6 +211,11 @@ export async function answerPatientEducationQuestion(question, opts) {
     if (!pii.ok) {
       return { text: pii.message, usedGemini: false, source: 'privacy' }
     }
+  }
+
+  const topicCheck = checkIfOffTopic(trimmed)
+  if (topicCheck.offTopic) {
+    return { text: topicCheck.message, usedGemini: false, source: 'off-topic' }
   }
 
   if (!skipLocal) {
