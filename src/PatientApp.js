@@ -84,8 +84,26 @@ const QA_TOPICS = [
     railLabel: 'Emotional',
     questions: [
       { q: 'How might I feel emotionally during Active Surveillance?', a: 'It is completely normal to experience anxiety and emotional challenges. Common concerns include anxiety before biopsies or while waiting for results, concerns about sexual function, and uncertainty about "living with cancer." Coping strategies include staying informed, using support (loved ones, counselor, support groups), and practicing stress relief through exercise or mindfulness.' },
-      { q: 'What does long-term care look like?', a: 'Men on Active Surveillance or Observation benefit from: regular follow-up to ensure safety; lifestyle modifications (diet, exercise, smoking cessation); emotional support through counseling or support groups; coordination of care among urologists, oncologists, primary care, and mental health providers.' },
+      { q: 'What does long-term care look like?', a: 'Men on Active Surveillance or Observation benefit from: regular follow-up to ensure safety; lifestyle modifications (diet, exercise, smoking cessation) — see the "Exercise & Lifestyle" topic for specific advice; emotional support through counseling or support groups; coordination of care among urologists, oncologists, primary care, and mental health providers.' },
       { q: 'What is shared decision-making?', a: 'Shared decision-making means you and your doctor decide together, based on the cancer, your health, and what matters most to you. Topics include: how serious your cancer is, your overall health and life expectancy, chances of cure and recurrence, possible side effects, and your preferences and goals.' },
+    ],
+  },
+  {
+    category: 'Exercise & Lifestyle',
+    railLabel: 'Lifestyle',
+    questions: [
+      {
+        q: 'What exercise is recommended during Active Surveillance?',
+        a: 'Regular physical activity is strongly encouraged during Active Surveillance. General guidelines suggest:\n\n• Aerobic exercise: aim for at least 150 minutes of moderate-intensity activity per week (e.g., brisk walking, swimming, cycling) or 75 minutes of vigorous activity (e.g., jogging, tennis).\n• Resistance/strength training: 2–3 sessions per week helps maintain muscle mass, bone health, and overall energy.\n• Even light daily activity — such as walking 30 minutes a day — is beneficial.\n\nExercise has been shown to reduce cardiovascular risk, improve mood and sleep, lower fatigue, and may help slow prostate cancer progression. Always check with your care team before starting a new exercise program, especially if you have other health conditions.',
+      },
+      {
+        q: 'Are there dietary changes that may help during Active Surveillance?',
+        a: 'A healthy, balanced diet is an important part of long-term care. Evidence-based dietary guidance for men on Active Surveillance includes:\n\n• Follow a Mediterranean or plant-forward diet — rich in vegetables, fruits, whole grains, legumes, and healthy fats (such as olive oil and nuts).\n• Limit red and processed meats (e.g., sausage, bacon, deli meats), which are associated with higher cancer risk.\n• Reduce saturated fat and avoid trans fats.\n• Eat more cruciferous vegetables (broccoli, cauliflower, kale) and tomatoes/tomato products (a source of lycopene), which have shown potential benefit in prostate health research.\n• Limit alcohol — no more than 1–2 drinks per day, and less is better.\n• Maintain a healthy weight — obesity is associated with more aggressive prostate cancer.\n• Stay well hydrated with water rather than sugary beverages.\n\nNo single food or supplement has been proven to cure prostate cancer. Always discuss major diet changes with your care team.',
+      },
+      {
+        q: 'What other lifestyle changes are recommended?',
+        a: 'Beyond exercise and diet, several lifestyle habits are recommended for men on Active Surveillance:\n\n• Quit smoking: Smoking is linked to more aggressive prostate cancer and worse outcomes. Your care team can connect you with cessation programs.\n• Manage your weight: A healthy body weight reduces cancer risk and improves overall health.\n• Prioritize sleep: Aim for 7–8 hours per night. Poor sleep affects immune function and mood.\n• Reduce stress: Chronic stress can affect overall health. Mindfulness, meditation, yoga, or talking with a counselor can help.\n• Limit alcohol: Excessive drinking is associated with increased cancer risk and interferes with healthy sleep and recovery.\n• Stay connected: Social support — from family, friends, or prostate cancer support groups — significantly improves quality of life during surveillance.\n• Keep all follow-up appointments: Lifestyle changes complement — but do not replace — your regular monitoring schedule.\n\nThink of Active Surveillance as an opportunity to invest in your overall health.',
+      },
     ],
   },
 ]
