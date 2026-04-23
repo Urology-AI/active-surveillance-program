@@ -35,6 +35,9 @@ const SOURCE_BADGE = {
   privacy: {
     dot: '#94a3b8', label: 'Privacy notice',
   },
+  'off-topic': {
+    dot: '#94a3b8', label: 'Out of scope',
+  },
 }
 
 function sleep(ms) {
