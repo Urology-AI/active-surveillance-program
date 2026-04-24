@@ -92,6 +92,80 @@ const QA_TOPICS = [
     ],
   },
   {
+    category: 'Imaging & Additional Tests',
+    railLabel: 'Tests & Imaging',
+    questions: [
+      {
+        q: 'What is the role of MRI in Active Surveillance?',
+        a: 'MRI improves the detection of higher-grade disease and can help guide targeted biopsies. However, MRI can miss cancer, and the quality of the reading depends on the radiologist\'s experience. MRI is not a substitute for biopsy — it is a complementary tool used to identify areas of concern. During Active Surveillance, MRI may be repeated (not more than once per year) to guide decisions.',
+      },
+      {
+        q: 'What is a PSMA PET scan?',
+        a: 'PSMA PET is a highly sensitive imaging test used to detect whether prostate cancer has spread beyond the prostate. It is sometimes used in higher-risk cases. PSMA PET is not a substitute for biopsy and is not routinely used for men on standard Active Surveillance. It may be considered if MRI cannot be performed or when there is concern about spread.',
+      },
+      {
+        q: 'What is ExactVu Micro-Ultrasound?',
+        a: 'ExactVu Micro-Ultrasound is a high-resolution imaging technology that provides detailed images of the prostate and may help guide targeted biopsies. It is used at Mount Sinai as part of the Active Surveillance monitoring program. Like MRI, it is not a replacement for surveillance biopsies — it is used alongside them to improve targeting.',
+      },
+      {
+        q: 'Why might my PSA go up without cancer progression?',
+        a: 'PSA can be influenced by non-cancer causes, including: urinary tract infection or prostate infection (prostatitis), inflammation, and recent ejaculation. If your PSA rises, your doctor will likely confirm the result with a repeat test before drawing conclusions. Abnormal PSA results should always be interpreted in context with other findings.',
+      },
+      {
+        q: 'What is genomic testing and when is it used?',
+        a: 'Genomic tests (such as Decipher, Oncotype DX/GPS, Prolaris, and ConfirmMDx) analyze the genetic profile of prostate cancer cells to estimate aggressiveness and the likelihood of progression. They are most useful at the time of initial diagnosis to help confirm whether Active Surveillance is appropriate. Genomic testing is generally not repeated during Active Surveillance once the initial decision has been made.',
+      },
+    ],
+  },
+  {
+    category: 'Special Biopsy Findings',
+    railLabel: 'Biopsy Findings',
+    questions: [
+      {
+        q: 'What is cribriform carcinoma?',
+        a: 'Cribriform carcinoma is a pattern of prostate cancer growth that is often associated with higher rates of progression, spread (metastasis), and mortality. When cribriform carcinoma is found on biopsy, guidelines generally suggest that Active Surveillance may not be appropriate. Your doctor will discuss the findings with you, and in most cases definitive treatment is recommended. However, management is individualized and depends on shared decision-making.',
+      },
+      {
+        q: 'What is intraductal carcinoma of the prostate (IDC-P)?',
+        a: 'Intraductal carcinoma of the prostate (IDC-P) is considered an adverse histologic finding — it means the cancer has grown in a specific, more aggressive pattern inside the prostate ducts. IDC-P typically prompts definitive treatment rather than surveillance. If IDC-P is found on your biopsy, your care team will explain what this means for your treatment plan.',
+      },
+      {
+        q: 'What is HGPIN (High-grade Prostatic Intraepithelial Neoplasia)?',
+        a: 'HGPIN is not prostate cancer itself, but it is considered a marker of increased cancer risk — abnormal cells in the lining of the prostate glands. When HGPIN is found on biopsy, a repeat biopsy is recommended rather than simply continuing surveillance, because there is a meaningful chance that cancer is present nearby but was missed. Your doctor will guide the timing of the follow-up biopsy.',
+      },
+      {
+        q: 'What is ASAP or ASIN?',
+        a: 'ASAP (Atypical Small Acinar Proliferation), also called ASIN, is an indeterminate biopsy finding — it means the pathologist saw cells that look suspicious but are not definitively cancer. There is a high likelihood of underlying carcinoma. A repeat biopsy is strongly recommended, typically within 3–6 months of the original biopsy. Your care team will monitor this closely.',
+      },
+      {
+        q: 'What are other aggressive histologies that affect Active Surveillance?',
+        a: 'Certain rare, aggressive forms of prostate cancer — such as ductal adenocarcinoma, sarcomatoid carcinoma, and small cell/neuroendocrine carcinoma — are not suitable candidates for Active Surveillance. These histologies behave very differently from typical prostate cancer and almost always require immediate definitive treatment. If your biopsy shows any of these patterns, your oncology team will discuss the appropriate next steps.',
+      },
+    ],
+  },
+  {
+    category: 'Family History & Genetics',
+    railLabel: 'Genetics',
+    questions: [
+      {
+        q: 'Does family history of prostate cancer affect Active Surveillance?',
+        a: 'Yes. Men with a family history of prostate cancer — especially a father or brother diagnosed at a young age — may be at higher risk of aggressive disease. This does not automatically disqualify someone from Active Surveillance, but it does mean closer follow-up and more careful monitoring is often recommended. Be sure to tell your doctor about any family history of prostate, breast, ovarian, or pancreatic cancer.',
+      },
+      {
+        q: 'What is BRCA2 and how does it relate to prostate cancer?',
+        a: 'BRCA2 is a gene that, when mutated, is associated with a significantly higher risk of aggressive prostate cancer, as well as breast and ovarian cancer in family members. Men with a known BRCA2 mutation are generally considered less suitable for Active Surveillance because their cancer may behave more aggressively. If you have a known BRCA2 mutation, your care team will likely recommend a more intensive approach and possibly definitive treatment.',
+      },
+      {
+        q: 'What is HOXB13 and why does it matter?',
+        a: 'HOXB13 is another inherited gene mutation linked to an increased risk of hereditary prostate cancer, particularly in families with multiple affected relatives. Like BRCA2, men with HOXB13 mutations often need closer follow-up and may be less suitable candidates for standard Active Surveillance. Genetic counseling may be recommended to assess your risk and your family members\' risk.',
+      },
+      {
+        q: 'Should I consider genetic testing for prostate cancer?',
+        a: 'Genetic testing (germline testing) may be recommended if you have a strong family history of prostate cancer, a family history of BRCA-related cancers (breast, ovarian, pancreatic), or if your cancer has certain high-risk features. The results can affect your own monitoring plan and may have implications for your children and siblings. Ask your urologist or oncologist whether genetic counseling is right for you.',
+      },
+    ],
+  },
+  {
     category: 'Exercise & Lifestyle',
     railLabel: 'Lifestyle',
     questions: [
@@ -397,8 +471,6 @@ export default function PatientApp({ onBack }) {
     void handleAsk(input)
   }
 
-  const hasMessages = messages.length > 0
-
   return e('div', {
     style: { minHeight: '100vh', display: 'flex', flexDirection: 'column', background: '#f8fafc' },
   },
@@ -488,10 +560,13 @@ export default function PatientApp({ onBack }) {
       QA_TOPICS.map((t, i) =>
         e('button', {
           key: i, type: 'button',
+          disabled: chatLoading,
           onClick: () => { setActiveTopic(i); setMessages([]) },
           style: {
             padding: '6px 11px', borderRadius: 999, whiteSpace: 'nowrap',
-            fontSize: 11.5, fontWeight: 600, cursor: 'pointer', flexShrink: 0,
+            fontSize: 11.5, fontWeight: 600, flexShrink: 0,
+            cursor: chatLoading ? 'not-allowed' : 'pointer',
+            opacity: chatLoading ? 0.5 : 1,
             background: i === activeTopic ? '#06ABEB14' : '#f8fafc',
             border: `1px solid ${i === activeTopic ? '#06ABEB44' : '#e2e8f0'}`,
             color: i === activeTopic ? '#212070' : '#475569',
@@ -514,23 +589,21 @@ export default function PatientApp({ onBack }) {
         ? e(ConsentCard, { onAccept: () => setConsentAccepted(true) })
         : e(React.Fragment, null,
 
-            // Topic intro card (always visible when no messages, or above messages)
-            !hasMessages && e(TopicIntroCard, {
+            // Topic intro card — always visible above the conversation
+            e(TopicIntroCard, {
               topic: QA_TOPICS[activeTopic],
               onSelectQuestion: handleAsk,
               disabled: chatLoading,
             }),
 
             // Chat messages
-            hasMessages && e(React.Fragment, null,
-              messages.map((msg, i) =>
-                e(MessageBubble, {
-                  key: i, role: msg.role, text: msg.text,
-                  pending: msg.pending, loadingLabel: msg.loadingLabel, source: msg.source,
-                })
-              ),
-              e('div', { ref: bottomRef })
+            messages.map((msg, i) =>
+              e(MessageBubble, {
+                key: i, role: msg.role, text: msg.text,
+                pending: msg.pending, loadingLabel: msg.loadingLabel, source: msg.source,
+              })
             ),
+            e('div', { ref: bottomRef }),
           )
     ),
 
