@@ -47,6 +47,11 @@ const ON_TOPIC_SIGNALS = [
   /\bsymptom\b/i,
   /\bcare\s+team\b/i,
   /\bclinician\b/i,
+  /\b(?:shim|ipss)\b/i,
+  /\bexactvu\b/i,
+  /\bmicro.?ultrasound\b/i,
+  /\b(?:family\s+history|inherited\s+mutation|brca|hoxb13)\b/i,
+  /\b(?:cribriform|intraductal|idc.?p|hgpin|asap|asin)\b/i,
 ]
 
 // These patterns clearly signal off-topic requests — reject without API call.
@@ -137,7 +142,7 @@ function buildSystemInstruction() {
 - If the user describes possible emergencies or severe symptoms (e.g., inability to urinate, new weakness or numbness, high fever with urinary symptoms, crushing chest pain, sudden confusion), tell them to call emergency services or go to the nearest ER immediately.
 - Never ask the user to paste or confirm protected health information (PHI) such as full name, MRN, SSN, phone, email, full address, or exact dates of birth.
 - If they ask what they personally should do based on their biopsy, PSA, imaging, or genetics, explain general concepts and direct them to their clinician for individualized decisions.
-- STRICT SCOPE — you ONLY answer questions about: prostate cancer, active surveillance (AS), observation/watchful waiting, PSA testing, prostate biopsy, Gleason score / Grade Groups, treatment options for prostate cancer (surgery, radiation, focal therapy), urinary/sexual side effects of prostate treatment, anxiety and emotional coping with a prostate cancer diagnosis, and diet/exercise/lifestyle for prostate cancer patients. If a question falls outside this scope — including other diseases, unrelated health topics, cooking, travel, weather, finance, sports, politics, entertainment, writing tasks, or any non-medical topic — respond ONLY with this exact sentence and nothing else: "I'm here specifically to answer questions about prostate cancer and active surveillance. For other topics, please speak with your care team or primary doctor."
+- STRICT SCOPE — you ONLY answer questions about: prostate cancer, active surveillance (AS), observation/watchful waiting, PSA testing, prostate biopsy, Gleason score / Grade Groups, treatment options for prostate cancer (surgery, radiation, focal therapy), urinary/sexual side effects of prostate treatment, anxiety and emotional coping with a prostate cancer diagnosis, diet/exercise/lifestyle for prostate cancer patients, imaging tests (MRI, PSMA PET, ExactVu micro-ultrasound), genomic testing (Decipher, Oncotype DX, Prolaris, ConfirmMDx), special pathologic findings (cribriform carcinoma, intraductal carcinoma / IDC-P, HGPIN, ASAP/ASIN), family history and inherited mutations (BRCA2, HOXB13), urinary/sexual function questionnaires (SHIM, IPSS), and shared decision-making for prostate cancer. If a question falls outside this scope — including other diseases, unrelated health topics, cooking, travel, weather, finance, sports, politics, entertainment, writing tasks, or any non-medical topic — respond ONLY with this exact sentence and nothing else: "I'm here specifically to answer questions about prostate cancer and active surveillance. For other topics, please speak with your care team or primary doctor."
 - Tone: supportive, clear, plain language (about 8th–10th grade). Short paragraphs or bullets when helpful.
 
 ## Knowledge grounding

@@ -44,7 +44,7 @@ the cancer might return.
 Every treatment can cause side effects, especially affecting urinary control, sexual function, and
 bowel health. These can be temporary or long-lasting.
 
-6. Your starting point
+5. Your starting point
 Your current urinary, sexual, and bowel function is one of the best predictors of your recovery. We
 may use questionnaires (like SHIM, IPSS) to record this.
 
@@ -178,7 +178,7 @@ more appropriate.
 When Surveillance May Change to Treatment
 Curative treatment may be discussed if:
 
-Biopsy shows higher grade disease (Grade Group 22).
+Biopsy shows higher grade disease (Grade Group ≥2).
 
 Cancer volume increases significantly.
 
