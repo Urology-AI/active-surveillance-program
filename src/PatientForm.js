@@ -338,7 +338,7 @@ export default function PatientForm({ onSubmit, initialValues = {} }) {
           e(InfoPanel, { lines: [
             {
               heading: 'Basic + PSAD Model',
-              cohort: 'N=218 Mount Sinai Tewari AS Program. PSAD: AUC 0.616 (Mann-Whitney), NPV 94.4% at Youden cutoff 0.065. GG1 upgrade rate 24.2%, GG2 5.7%. PSA alone AUC 0.534 — not discriminatory.',
+              cohort: 'N=1,213 Mount Sinai Tewari AS Program. PSAD: AUC 0.609 (Mann-Whitney, GG1 N=704 subset), NPV 94.4% at Youden cutoff 0.065. GG1 upgrade rate 26.7%, GG2 8.0%. PSA alone AUC 0.534 — not discriminatory.',
               literature: 'NCCN 2024 VLOW criteria. Kadeer et al., Eur Urol 2025 (PSAD AUC 0.624). Epstein JI et al., Eur Urol 2016 (ISUP grading).',
               note: 'Core ratio & max core % are NCCN eligibility gates only — AUC 0.465 / 0.504 in cohort (not independently discriminatory).',
             },
@@ -482,7 +482,7 @@ export default function PatientForm({ onSubmit, initialValues = {} }) {
         info: [
           {
             heading: 'Genomic Model',
-            cohort: 'N=218 cohort: genomic testing rate <10% — internal AUC cannot be computed. These thresholds are literature-only; no internal cohort calibration is available.',
+            cohort: 'N=1,213 cohort: genomic testing rate <10% — internal AUC cannot be computed. These thresholds are literature-only; no internal cohort calibration is available.',
             literature: 'Decipher (Spratt DE et al., Lancet Oncol 2014; Nguyen PL et al. 2021): cutoffs 0.45 / 0.60. Oncotype GPS (Klein EA et al., Eur Urol 2021): cutoffs 20 / 40. Prolaris CCP (Cooperberg MR et al., Cancer 2013): cutoffs 1.5 / 2.1. ConfirmMDx (Stewart GD et al., J Urol 2013).',
             note: 'Literature AUCs: Decipher ~0.74, GPS ~0.69, Prolaris ~0.68. Enter if available — results will update the tier accordingly.',
           },
@@ -518,7 +518,7 @@ export default function PatientForm({ onSubmit, initialValues = {} }) {
         info: [
           {
             heading: 'PSMA Model',
-            cohort: 'N=218 cohort: PSMA PET/CT testing prevalence too low for internal validation. No cohort-derived sensitivity/specificity available.',
+            cohort: 'N=1,213 cohort: PSMA PET/CT testing prevalence too low for internal validation. No cohort-derived sensitivity/specificity available.',
             literature: 'EAU-EANM-ESTRO-ESUR-SIOG Guidelines 2024. Staging classification: negative / local / regional / metastatic. Metastatic finding = hard contraindication to AS (also applies EAU 2024 systemic therapy indication). Regional nodal involvement triggers treatment discussion.',
             note: 'Not a continuous prediction model — classification only. Hard stop fires automatically for metastatic disease.',
           },
@@ -571,7 +571,7 @@ export default function PatientForm({ onSubmit, initialValues = {} }) {
         info: [
           {
             heading: 'Intensive Monitoring — MRI Features',
-            cohort: 'N=218 cohort: Abutment present in 23% (N=50), upgrade rate 14.0% (Sens 25%, Spec 71%, PPV 14%, NPV 83%). ECE: only N=1 positive — no statistical calibration possible. Broad capsular contact: not captured in dataset.',
+            cohort: 'Internal validation sub-cohort (N=218): Abutment present in 23% (N=50), upgrade rate 14.0% (Sens 25%, Spec 71%, PPV 14%, NPV 83%). ECE: only N=1 positive — no statistical calibration possible. Broad capsular contact: not captured in dataset. Full N=1,213 MRI feature re-analysis pending.',
             literature: 'ECE & abutment: EAU Guidelines 2024 staging. Broad capsular contact >10 mm: EAU 2024. All three features increase monitoring intensity per NCCN 2024.',
             note: 'ECE and broad capsular contact are guideline-only triggers in this tool — no internal cohort data to validate them.',
           },
@@ -611,9 +611,9 @@ export default function PatientForm({ onSubmit, initialValues = {} }) {
         info: [
           {
             heading: 'Intensive Monitoring — Patient Factors',
-            cohort: 'N=218 cohort age range: 71–88 (median 73). Zero patients under 60. Age <50 threshold is guideline-only — cannot be cohort-calibrated. Family history: FHx+ upgrade rate 14.3% vs FHx− 22.4% (inverse — likely surveillance bias). Age AUC 0.502 (not discriminatory in this cohort).',
+            cohort: 'N=1,213 cohort age tiers: under 50 (N=50, upgrade 30.0%, progression 46.0% — highest of any age group), 50–59 (N=304, 27.6%), 60–69 (N=526, 25.3%), 70+ (N=231, 28.1%). Family history: FHx+ upgrade rate 14.3% vs FHx− 22.4% in internal validation sub-cohort (inverse — likely surveillance bias). Age AUC 0.502 (not discriminatory).',
             literature: 'Age <50: PRIAS protocol; AUA/ASTRO 2022 (long life expectancy = elevated cumulative risk). PSA velocity ≥2 ng/mL/yr: D\'Amico AV et al., JAMA 2004. PSA doubling time <3 yr: Bul M et al. PRIAS, Eur Urol 2013. BRCA2/HOXB13: NCCN 2024 (enhanced monitoring or treatment preferred).',
-            note: 'PSA velocity and doubling time are not in the N=218 dataset — guideline thresholds only.',
+            note: 'PSA velocity and doubling time are not in the N=1,213 dataset — guideline thresholds only.',
           },
         ],
       }),

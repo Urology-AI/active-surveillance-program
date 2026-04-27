@@ -271,7 +271,7 @@ export default function ClinicalCalculator() {
         }, 'AI Surveillance Tool'),
         e('p', {
           style: { fontSize: 11.5, color: '#64748b', margin: '2px 0 0' },
-        }, 'Multi-model AS assessment · Calibrated to N=218 Tewari Cohort')
+        }, 'Multi-model AS assessment · Calibrated to N=1,213 Tewari Cohort')
       ),
       // Load JSON button
       view === 'results'

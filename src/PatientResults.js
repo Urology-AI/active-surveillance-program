@@ -55,9 +55,9 @@ const VALIDATION_BADGES = {
 
 // Tier upgrade rate data with selection-effect context
 const TIER_COHORT_DATA = {
-  standard_as:   { rate: 0.292, n: 72,  source: 'N=218 cohort', selectionNote: true },
-  enhanced_as:   { rate: 0.194, n: 109, source: 'N=218 cohort', selectionNote: true },
-  intensive_as:  { rate: 0.121, n: 33,  source: 'N=218 cohort', selectionNote: true },
+  standard_as:   { rate: 0.292, n: 72,  source: 'N=218 internal validation sub-cohort', selectionNote: true },
+  enhanced_as:   { rate: 0.194, n: 109, source: 'N=218 internal validation sub-cohort', selectionNote: true },
+  intensive_as:  { rate: 0.121, n: 33,  source: 'N=218 internal validation sub-cohort', selectionNote: true },
   treatment_discussion: null,
   treatment_required:   null,
 }
@@ -593,7 +593,7 @@ function ModelValidationCard() {
       // Supporting variables table
       e('div', { className: 'mb-3 rounded-xl overflow-hidden', style: { border: '1px solid #e2e8f0' } },
         e('div', { className: 'px-3 py-2', style: { background: '#f1f5f9' } },
-          e('p', { className: 'text-xs font-bold text-slate-600 uppercase tracking-wide' }, 'Supporting Variables (N=218 Cohort)')
+          e('p', { className: 'text-xs font-bold text-slate-600 uppercase tracking-wide' }, 'Supporting Variables (N=1,213 Cohort)')
         ),
         e('div', { className: 'px-3 divide-y divide-slate-50' },
           // Header row

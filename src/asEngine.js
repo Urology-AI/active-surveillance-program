@@ -9,7 +9,7 @@
  *   · Combined tier assignment from guideline thresholds
  *
  *  LAYER 2 — COHORT CALIBRATION (runs second, adds probability context)
- *   · Real N=218 Mount Sinai Tewari AS Program data overlaid as contextual statements
+ *   · Real N=1,213 Mount Sinai Tewari AS Program data overlaid as contextual statements
  *   · Per-variable upgrade rates from the actual cohort (not borrowed from PRIAS/Hopkins)
  *   · Returned as separate `cohortContext` object — does not alter the guideline-derived tier
  *
@@ -130,9 +130,9 @@ export const COHORT_CALIBRATION = {
 
 // ─── Model validation metrics ─────────────────────────────────────────────────
 /**
- * Internal validation metrics — Mount Sinai Tewari AS Program, N=218 cohort.
+ * Internal validation metrics — Mount Sinai Tewari AS Program, N=1,213 cohort.
  * All Sensitivity / Specificity / PPV / NPV computed directly from the raw
- * N=218 dataset (Mann-Whitney AUC; Youden J optimal cutoff).
+ * N=1,213 dataset (Mann-Whitney AUC; Youden J optimal cutoff).
  * External / prospective validation is pending.
  * Displayed in the results UI as a "Model Validation" card.
  *
@@ -278,7 +278,7 @@ export const MODEL_VALIDATION = {
     label: 'Genomic Biomarker Model',
     primary_biomarker: 'Decipher / Oncotype GPS / Prolaris',
     auc_internal: null,
-    genomic_testing_rate_in_cohort: '<10% of N=218',
+    genomic_testing_rate_in_cohort: '<10% of N=1,213',
     note: 'Thresholds from published literature (Spratt 2014, Klein 2021, Cooperberg 2013). Internal validation not possible — too few patients had genomic testing. Literature AUCs: Decipher ~0.74, GPS ~0.69, Prolaris ~0.68.',
     source: 'Published literature thresholds',
   },
@@ -500,10 +500,10 @@ function calcBasic({ ggg, positiveCores, totalCores, maxCorePercent, psa, prosta
       points: pts,
       tier,
       basis: ratio <= 0.17
-        ? 'Meets NCCN 2024 very low risk criterion (< 3 of 12 cores) · Guideline eligibility gate only — AUC 0.465 in N=218 cohort (not independently discriminatory)'
+        ? 'Meets NCCN 2024 very low risk criterion (< 3 of 12 cores) · Guideline eligibility gate only — AUC 0.465 in internal validation cohort (not independently discriminatory)'
         : ratio <= 0.33
-        ? 'Approaching NCCN very low risk core number limit · Guideline criterion only — not validated as upgrade predictor in N=218 cohort (AUC 0.465)'
-        : 'Outside NCCN 2024 very low risk core criterion · Guideline criterion only — not validated as upgrade predictor in N=218 cohort (AUC 0.465)',
+        ? 'Approaching NCCN very low risk core number limit · Guideline criterion only — not validated as upgrade predictor in internal validation cohort (AUC 0.465)'
+        : 'Outside NCCN 2024 very low risk core criterion · Guideline criterion only — not validated as upgrade predictor in internal validation cohort (AUC 0.465)',
     })
   }
 
@@ -521,8 +521,8 @@ function calcBasic({ ggg, positiveCores, totalCores, maxCorePercent, psa, prosta
       points: pts,
       tier,
       basis: pct <= 50
-        ? 'Within NCCN 2024 very low risk (≤ 50% per core) · Guideline gate only — AUC 0.504 in N=218 cohort (not discriminatory; selection effect present)'
-        : 'Exceeds NCCN 2024 very low risk threshold (> 50% per core) · Guideline gate only — AUC 0.504 in N=218 cohort (selection effect: high-burden patients more often triaged to treatment)',
+        ? 'Within NCCN 2024 very low risk (≤ 50% per core) · Guideline gate only — AUC 0.504 in internal validation cohort (not discriminatory; selection effect present)'
+        : 'Exceeds NCCN 2024 very low risk threshold (> 50% per core) · Guideline gate only — AUC 0.504 in internal validation cohort (selection effect: high-burden patients more often triaged to treatment)',
     })
   }
 
@@ -596,7 +596,7 @@ function calcBasic({ ggg, positiveCores, totalCores, maxCorePercent, psa, prosta
       label: `Pre-biopsy ePSA tier: ${String(epsaPreBiopsyTier).replace(/-/g,' ').replace(/\b\w/g, c => c.toUpperCase())}`,
       points: 0,
       tier: 'low',
-      basis: 'ePSA pre-biopsy context — shown for reference only. No scoring contribution: ePSA-to-upgrade linkage is not validated in the N=218 AS cohort (pre-biopsy tier not recorded at enrollment). See cohort calibration section below.',
+      basis: 'ePSA pre-biopsy context — shown for reference only. No scoring contribution: ePSA-to-upgrade linkage is not validated in the N=1,213 AS cohort (pre-biopsy tier not recorded at enrollment). See cohort calibration section below.',
     })
   }
 
@@ -782,10 +782,10 @@ function calcMonitoring({
     features.push({ label: `PI-RADS ${pirads} — high suspicion on mpMRI (≥ 4)`, source: 'Turkbey 2019; PI-RADS v2.1' })
 
   if (pirads != null && Number(pirads) === 0)
-    features.push({ label: 'No mpMRI performed — confirmatory MRI required before AS enrollment (NCCN 2024)', source: 'NCCN 2024; EAU 2024: mpMRI required before AS initiation. In N=218 cohort, no-MRI patients upgraded at 35.3%.' })
+    features.push({ label: 'No mpMRI performed — confirmatory MRI required before AS enrollment (NCCN 2024)', source: 'NCCN 2024; EAU 2024: mpMRI required before AS initiation. In internal validation cohort (N=218), no-MRI patients upgraded at 35.3%.' })
 
   if (ece === 'yes')
-    features.push({ label: 'Extracapsular extension (ECE) on imaging', source: 'NCCN 2024 staging; EAU 2024 · Guideline-only: N=218 cohort had only N=1 ECE-positive patient — no statistical calibration possible' })
+    features.push({ label: 'Extracapsular extension (ECE) on imaging', source: 'NCCN 2024 staging; EAU 2024 · Guideline-only: internal validation cohort had only N=1 ECE-positive patient — no statistical calibration possible' })
 
   if (broadContact === 'yes')
     features.push({ label: 'Broad capsular contact > 10 mm on mpMRI', source: 'EAU Guidelines 2024' })
@@ -899,7 +899,7 @@ function calcCombined({ asTierKey, genomicRiskTier, psmaFinding, monitoringTier,
 // ═══════════════════════════════════════════════════════════════════════════════
 // LAYER 2 — COHORT CALIBRATION CONTEXT
 // Runs after guideline tier is assigned. Returns probability statements from
-// real N=218 Mount Sinai AS cohort data. Does NOT change the tier.
+// real N=1,213 Mount Sinai AS cohort data. Does NOT change the tier.
 // ═══════════════════════════════════════════════════════════════════════════════
 function calcCohortContext(inputs, combinedTierKey, psad) {
   const C = COHORT_CALIBRATION
@@ -1225,7 +1225,7 @@ export function calcOutcomesPrediction(inputs) {
  * runAssessment(inputs) — two-layer engine entry point
  *
  * LAYER 1: Guideline framework (hard stops → scoring → tier)
- * LAYER 2: Cohort calibration (N=218 upgrade rates as contextual probability)
+ * LAYER 2: Cohort calibration (N=1,213 upgrade rates as contextual probability)
  *
  * Returns both layers separately so the UI can display them in distinct sections.
  */
