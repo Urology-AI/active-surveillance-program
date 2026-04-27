@@ -1093,6 +1093,30 @@ function calcCohortContext(inputs, combinedTierKey, psad) {
     note: MV_COMP.clinical_implication,
   })
 
+  // Chips for inline cohort context display
+  const gggNum2 = Number(inputs.ggg)
+  const gggChipRate = gggNum2 && C.by_ggg[gggNum2] ? C.by_ggg[gggNum2].upgrade_rate : null
+
+  let psadChipRate = null
+  let psadChipLabel = null
+  if (psad != null) {
+    const tiers2 = C.psad.tiers
+    if      (psad < 0.065) { psadChipRate = tiers2.very_low.upgrade_rate;     psadChipLabel = 'PSAD tier upgrade rate' }
+    else if (psad < 0.15)  { psadChipRate = tiers2.intermediate.upgrade_rate; psadChipLabel = 'PSAD tier upgrade rate' }
+    else if (psad < 0.177) { psadChipRate = tiers2.nccn_zone.upgrade_rate;    psadChipLabel = 'PSAD tier upgrade rate' }
+    else                   { psadChipRate = tiers2.high.upgrade_rate;          psadChipLabel = 'PSAD tier upgrade rate' }
+  }
+
+  let piradsChipRate = null
+  let piradsChipLabel = null
+  if (psad == null && inputs.pirads != null) {
+    const piradsKey = inputs.pirads === 0 ? 'none' : inputs.pirads
+    if (C.pirads[piradsKey]) {
+      piradsChipRate = C.pirads[piradsKey].upgrade_rate
+      piradsChipLabel = inputs.pirads === 0 ? 'No MRI upgrade rate' : `PI-RADS ${inputs.pirads} upgrade rate`
+    }
+  }
+
   return {
     cohortN: C.overview.n,
     cohortUpgradeRate: C.overview.overall_upgrade_rate,
@@ -1103,6 +1127,15 @@ function calcCohortContext(inputs, combinedTierKey, psad) {
     psadInternalAuc: MODEL_VALIDATION.basic_psad.auc_internal,
     cohortNote: C.overview.note,
     interventionData: C.intervention,
+    chips: {
+      ggg_rate: gggChipRate,
+      ggg_label: gggNum2 ? `GG${gggNum2} upgrade rate` : 'GGG upgrade rate',
+      psad_tier_rate: psadChipRate,
+      psad_tier_label: psadChipLabel,
+      pirads_rate: piradsChipRate,
+      pirads_label: piradsChipLabel,
+      cohort_n: C.overview.n,
+    },
   }
 }
 

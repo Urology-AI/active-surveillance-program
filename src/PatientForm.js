@@ -63,14 +63,13 @@ function FieldError({ msg }) {
   )
 }
 
-function NumInput({ label, value, onChange, min, max, step, unit, hint, required, error, description }) {
+function NumInput({ label, value, onChange, min, max, step, unit, hint, required, error }) {
   return e('div', {},
     e('label', { className: 'block text-xs font-medium text-gray-700 mb-0.5' },
       label,
       required && e('span', { className: 'text-red-400 ml-0.5' }, ' *'),
       unit && e('span', { className: 'font-normal text-gray-400 ml-1' }, `(${unit})`)
     ),
-    description && e('p', { className: 'text-xs text-gray-400 mb-1 leading-snug' }, description),
     e('input', {
       type: 'number', value, min, max, step: step || 'any',
       onChange: ev => onChange(ev.target.value),
@@ -100,85 +99,39 @@ function YesNoButtons({ value, onChange, options }) {
   )
 }
 
-// ─── Info tooltip panel ───────────────────────────────────────────────────────
-function InfoPanel({ lines }) {
-  const [show, setShow] = useState(false)
-  return e('div', { className: 'relative flex-shrink-0', onClick: ev => ev.stopPropagation() },
+function SectionToggle({ title, badge, open, onToggle, mutedText }) {
+  return e('div', {},
     e('button', {
-      type: 'button',
-      onClick: () => setShow(v => !v),
-      className: 'w-6 h-6 rounded-full flex items-center justify-center text-slate-400 hover:text-sinai-cerulean hover:bg-blue-50 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-sinai-cerulean',
-      title: 'Evidence & cohort reference',
-      'aria-label': 'Show model information',
+      type: 'button', onClick: onToggle,
+      className: 'w-full flex items-center justify-between p-4 text-left hover:bg-gray-50 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-sinai-cerulean/30',
     },
-      e('svg', { className: 'w-4 h-4', fill: 'none', viewBox: '0 0 24 24', stroke: 'currentColor', strokeWidth: 2 },
-        e('path', { strokeLinecap: 'round', strokeLinejoin: 'round', d: 'M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z' })
-      )
-    ),
-    show && e('div', {
-      className: 'absolute right-0 top-8 z-50 w-72 rounded-2xl shadow-xl border border-slate-200 bg-white p-4 text-xs',
-      style: { maxWidth: 'min(288px, 90vw)' },
-    },
-      // Close button
-      e('button', {
-        type: 'button',
-        onClick: () => setShow(false),
-        className: 'absolute top-2.5 right-2.5 w-5 h-5 rounded-full flex items-center justify-center text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors',
-      },
-        e('svg', { className: 'w-3 h-3', fill: 'none', viewBox: '0 0 24 24', stroke: 'currentColor', strokeWidth: 2.5 },
-          e('path', { strokeLinecap: 'round', strokeLinejoin: 'round', d: 'M6 18L18 6M6 6l12 12' })
-        )
+      e('div', { className: 'flex items-center gap-3' },
+        e('div', {},
+          e('div', { className: 'font-semibold text-gray-900 text-sm' }, title)
+        ),
+        badge && e('span', { className: 'text-xs px-2 py-0.5 rounded-full font-medium', style: { background: '#e0f2fe', color: '#075985' } }, badge)
       ),
-      lines.map((line, i) =>
-        e('div', { key: i, className: i > 0 ? 'mt-2.5 pt-2.5 border-t border-slate-100' : '' },
-          line.heading && e('p', { className: 'font-semibold text-slate-800 mb-1' }, line.heading),
-          line.cohort && e('div', { className: 'flex items-start gap-1.5 mb-1' },
-            e('span', { className: 'flex-shrink-0 px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide', style: { background: '#e0f2fe', color: '#075985' } }, 'Cohort'),
-            e('p', { className: 'text-slate-600 leading-snug' }, line.cohort)
-          ),
-          line.literature && e('div', { className: 'flex items-start gap-1.5' },
-            e('span', { className: 'flex-shrink-0 px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide', style: { background: '#fef9c3', color: '#854d0e' } }, 'Lit'),
-            e('p', { className: 'text-slate-600 leading-snug' }, line.literature)
-          ),
-          line.note && e('p', { className: 'text-slate-400 italic mt-1 leading-snug' }, line.note)
+      e('div', { className: 'flex items-center gap-2' },
+        e('span', { className: 'text-xs text-sinai-cerulean font-medium' }, open ? 'Collapse' : 'Expand'),
+        e('svg', {
+          className: `w-4 h-4 text-gray-400 transition-transform duration-200 flex-shrink-0 ${open ? 'rotate-180' : ''}`,
+          fill: 'none', viewBox: '0 0 24 24', stroke: 'currentColor', strokeWidth: 2,
+        },
+          e('path', { strokeLinecap: 'round', strokeLinejoin: 'round', d: 'M19 9l-7 7-7-7' })
         )
       )
-    )
-  )
-}
-
-function SectionToggle({ title, subtitle, badge, open, onToggle, info }) {
-  return e('button', {
-    type: 'button', onClick: onToggle,
-    className: 'w-full flex items-center justify-between p-4 text-left hover:bg-gray-50 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-sinai-cerulean/30',
-  },
-    e('div', { className: 'flex items-center gap-3' },
-      e('div', {},
-        e('div', { className: 'font-semibold text-gray-900 text-sm' }, title),
-        subtitle && e('div', { className: 'text-xs text-gray-400 mt-0.5' }, subtitle)
-      ),
-      badge && e('span', { className: 'text-xs px-2 py-0.5 rounded-full font-medium', style: { background: '#e0f2fe', color: '#075985' } }, badge)
     ),
-    e('div', { className: 'flex items-center gap-2' },
-      info && e(InfoPanel, { lines: info }),
-      e('span', { className: 'text-xs text-sinai-cerulean font-medium' }, open ? 'Collapse' : 'Expand'),
-      e('svg', {
-        className: `w-4 h-4 text-gray-400 transition-transform duration-200 flex-shrink-0 ${open ? 'rotate-180' : ''}`,
-        fill: 'none', viewBox: '0 0 24 24', stroke: 'currentColor', strokeWidth: 2,
-      },
-        e('path', { strokeLinecap: 'round', strokeLinejoin: 'round', d: 'M19 9l-7 7-7-7' })
-      )
-    )
+    mutedText && e('p', { className: 'px-4 pb-2 text-xs text-gray-400' }, mutedText)
   )
 }
 
 // ─── Static data ──────────────────────────────────────────────────────────────
 const GGG_OPTIONS = [
-  { value: 1, label: 'GG 1', sub: '3+3=6', color: '#10b981', bg: '#f0fdf4', note: 'AS eligible' },
-  { value: 2, label: 'GG 2', sub: '3+4=7', color: '#84cc16', bg: '#f7fee7', note: 'Select AS' },
-  { value: 3, label: 'GG 3', sub: '4+3=7', color: '#f59e0b', bg: '#fffbeb', note: 'Unfav-int' },
-  { value: 4, label: 'GG 4', sub: '4+4=8', color: '#f97316', bg: '#fff7ed', note: 'High risk' },
-  { value: 5, label: 'GG 5', sub: '9–10',  color: '#ef4444', bg: '#fef2f2', note: 'Very high' },
+  { value: 1, label: 'GG 1', sub: '3+3=6', color: '#10b981', bg: '#f0fdf4', note: 'AS eligible',  outside: false },
+  { value: 2, label: 'GG 2', sub: '3+4=7', color: '#84cc16', bg: '#f7fee7', note: 'Select AS',    outside: false },
+  { value: 3, label: 'GG 3', sub: '4+3=7', color: '#f59e0b', bg: '#fffbeb', note: 'Unfav-int',    outside: true },
+  { value: 4, label: 'GG 4', sub: '4+4=8', color: '#f97316', bg: '#fff7ed', note: 'High risk',    outside: true },
+  { value: 5, label: 'GG 5', sub: '9–10',  color: '#ef4444', bg: '#fef2f2', note: 'Very high',    outside: true },
 ]
 
 const PIRADS_OPTIONS = [
@@ -208,6 +161,7 @@ export default function PatientForm({ onSubmit, initialValues = {} }) {
     if (initialValues.pirads         != null) setPirads(initialValues.pirads)
     if (initialValues.age            != null) setAge(String(initialValues.age))
   }, [])
+
   // Section visibility — auto-expand MRI if PI-RADS pre-filled from ePSA
   const [showGenomic,    setShowGenomic]   = useState(false)
   const [showPSMA,       setShowPSMA]      = useState(false)
@@ -215,6 +169,7 @@ export default function PatientForm({ onSubmit, initialValues = {} }) {
   const [showExtra,      setShowExtra]     = useState(
     initialValues.age != null || initialValues.epsaPreBiopsyTier != null
   )
+
   // Genomic
   const [decipher,       setDecipher]      = useState('')
   const [gps,            setGps]           = useState('')
@@ -229,7 +184,6 @@ export default function PatientForm({ onSubmit, initialValues = {} }) {
   const [broadContact,   setBroadContact]  = useState('')
   // Additional
   const [age,            setAge]           = useState('')
-  const [familyHistory,  setFamilyHistory] = useState('')
   const [brca2,          setBrca2]         = useState('')
   const [hoxb13,         setHoxb13]        = useState('')
   // Validation
@@ -262,7 +216,6 @@ export default function PatientForm({ onSubmit, initialValues = {} }) {
       abutment:       abutment || null,
       broadContact:   broadContact || null,
       age:            age !== '' ? Number(age) : null,
-      familyHistory:  familyHistory || null,
       brca2:          brca2 || null,
       hoxb13:         hoxb13 || null,
     }
@@ -282,7 +235,6 @@ export default function PatientForm({ onSubmit, initialValues = {} }) {
     setAttempted(true)
     const errs = validate({ ggg, positiveCores, totalCores, maxCorePercent, psa, prostateVolume, pirads, decipher, gps, prolaris, age })
     if (Object.keys(errs).length > 0) {
-      // Scroll to first error
       const el = document.querySelector('[data-error-anchor]')
       if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' })
       return
@@ -297,7 +249,7 @@ export default function PatientForm({ onSubmit, initialValues = {} }) {
 
   return e('form', { onSubmit: handleSubmit, noValidate: true, className: 'space-y-4' },
 
-    // ── ePSA handoff banner (only when arriving from ePSA with tier param) ─
+    // ── ePSA handoff banner ────────────────────────────────────────────────
     showBanner && e('div', {
       className: 'flex items-start justify-between gap-3 px-4 py-3 rounded-xl border',
       style: { background: '#eff6ff', borderColor: '#bfdbfe' },
@@ -308,7 +260,7 @@ export default function PatientForm({ onSubmit, initialValues = {} }) {
         ),
         e('div', {},
           e('p', { className: 'text-xs font-semibold', style: { color: '#1d4ed8' } },
-            `Continuing from your ePSA assessment \u00b7 Pre-biopsy risk: ${initialValues.epsaPreBiopsyTier}`
+            `Continuing from your ePSA assessment · Pre-biopsy risk: ${initialValues.epsaPreBiopsyTier}`
           ),
           e('p', { className: 'text-xs mt-0.5', style: { color: '#3b82f6' } },
             'PSA, prostate volume, PI-RADS, and age have been pre-filled. Enter biopsy results (GGG, cores) to complete the assessment.'
@@ -334,17 +286,7 @@ export default function PatientForm({ onSubmit, initialValues = {} }) {
           e('div', { className: 'w-2 h-2 rounded-full flex-shrink-0', style: { background: '#06ABEB' } }),
           e('span', { className: 'font-semibold text-gray-900 text-sm' }, 'Biopsy & Clinical Data')
         ),
-        e('div', { className: 'flex items-center gap-2' },
-          e(InfoPanel, { lines: [
-            {
-              heading: 'Basic + PSAD Model',
-              cohort: 'N=1,213 Mount Sinai Tewari AS Program. PSAD: AUC 0.609 (Mann-Whitney, GG1 N=704 subset), NPV 94.4% at Youden cutoff 0.065. GG1 upgrade rate 26.7%, GG2 8.0%. PSA alone AUC 0.534 — not discriminatory.',
-              literature: 'NCCN 2024 VLOW criteria. Kadeer et al., Eur Urol 2025 (PSAD AUC 0.624). Epstein JI et al., Eur Urol 2016 (ISUP grading).',
-              note: 'Core ratio & max core % are NCCN eligibility gates only — AUC 0.465 / 0.504 in cohort (not independently discriminatory).',
-            },
-          ]}),
-          e('span', { className: 'text-xs text-red-400 font-medium' }, 'Required')
-        )
+        e('span', { className: 'text-xs text-red-400 font-medium' }, 'Required')
       ),
 
       e('div', { className: 'p-4 space-y-5' },
@@ -364,9 +306,9 @@ export default function PatientForm({ onSubmit, initialValues = {} }) {
                 onClick: () => setGgg(opt.value),
                 className: `rounded-xl p-2 text-center border-2 transition-all duration-150 focus:outline-none focus-visible:ring-2 ${
                   ggg === opt.value ? 'shadow-md' : 'border-gray-200 bg-white hover:border-gray-300 hover:shadow-sm'
-                }`,
+                } ${opt.outside && ggg !== opt.value ? 'opacity-40' : ''}`,
                 style: ggg === opt.value ? { borderColor: opt.color, background: opt.bg } : {},
-                title: opt.note,
+                title: opt.outside ? 'Outside AS criteria' : opt.note,
               },
                 e('div', { className: 'text-sm font-bold leading-tight', style: { color: ggg === opt.value ? opt.color : '#374151' } }, opt.label),
                 e('div', { className: 'text-xs mt-0.5 leading-tight', style: { color: ggg === opt.value ? opt.color : '#9ca3af' } }, opt.sub),
@@ -388,19 +330,16 @@ export default function PatientForm({ onSubmit, initialValues = {} }) {
             label: 'Positive cores', value: positiveCores, onChange: setPositiveCores,
             min: 0, max: 60, step: '1', hint: 'e.g. 3', required: true,
             error: errors.positiveCores,
-            description: 'Cores with cancer',
           }),
           e(NumInput, {
             label: 'Total cores', value: totalCores, onChange: setTotalCores,
             min: 1, max: 60, step: '1', hint: 'e.g. 12', required: true,
             error: errors.totalCores,
-            description: 'Cores sampled',
           }),
           e(NumInput, {
             label: 'Max core involvement', value: maxCorePercent, onChange: setMaxCorePct,
             min: 0, max: 100, hint: 'e.g. 40', required: true, unit: '%',
             error: errors.maxCorePercent,
-            description: 'Highest % in single core',
           })
         ),
 
@@ -416,7 +355,6 @@ export default function PatientForm({ onSubmit, initialValues = {} }) {
               label: 'Prostate volume', value: prostateVolume, onChange: setVolume,
               min: 1, max: 500, step: '0.1', hint: 'e.g. 40', unit: 'cc',
               error: errors.prostateVolume,
-              description: 'Enables PSAD calculation',
             }),
             psadPreview && e('div', {
               className: 'mt-1.5 flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold',
@@ -472,33 +410,21 @@ export default function PatientForm({ onSubmit, initialValues = {} }) {
       )
     ),
 
-    // ── Section 2: Genomic Biomarkers ─────────────────────────────────────
+    // ── Section 2: Genomic ────────────────────────────────────────────────
     e('div', { className: 'bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden' },
       e(SectionToggle, {
-        title: 'Genomic Biomarkers',
-        subtitle: 'Increases precision when available',
+        title: 'Genomic',
         badge: 'Optional',
         open: showGenomic, onToggle: () => setShowGenomic(v => !v),
-        info: [
-          {
-            heading: 'Genomic Model',
-            cohort: 'N=1,213 cohort: genomic testing rate <10% — internal AUC cannot be computed. These thresholds are literature-only; no internal cohort calibration is available.',
-            literature: 'Decipher (Spratt DE et al., Lancet Oncol 2014; Nguyen PL et al. 2021): cutoffs 0.45 / 0.60. Oncotype GPS (Klein EA et al., Eur Urol 2021): cutoffs 20 / 40. Prolaris CCP (Cooperberg MR et al., Cancer 2013): cutoffs 1.5 / 2.1. ConfirmMDx (Stewart GD et al., J Urol 2013).',
-            note: 'Literature AUCs: Decipher ~0.74, GPS ~0.69, Prolaris ~0.68. Enter if available — results will update the tier accordingly.',
-          },
-        ],
+        mutedText: 'Literature thresholds · <10% of AS patients',
       }),
       showGenomic && e('div', { className: 'px-4 pb-5 border-t border-gray-50' },
-        e('p', { className: 'text-xs text-gray-400 mt-3 mb-3 leading-relaxed' },
-          'Thresholds derived from published validation studies: Decipher (Spratt 2014), Oncotype GPS (Klein 2021), Prolaris CCP (Cooperberg 2013), ConfirmMDx (Stewart 2013).'
-        ),
-        e('div', { className: 'grid grid-cols-2 gap-3' },
-          e(NumInput, { label: 'Decipher score', value: decipher, onChange: setDecipher, min: 0, max: 1, step: '0.01', hint: '0.00–1.00', error: errors.decipher, description: 'GenomeDx genomic classifier' }),
-          e(NumInput, { label: 'Oncotype GPS',   value: gps,     onChange: setGps,     min: 0, max: 100, hint: '0–100',   error: errors.gps,     description: 'Genomic Prostate Score' }),
-          e(NumInput, { label: 'Prolaris CCP',   value: prolaris, onChange: setProlaris, min: 0, max: 10, step: '0.01', hint: '0–10', error: errors.prolaris, description: 'Cell Cycle Progression score' }),
+        e('div', { className: 'grid grid-cols-2 gap-3 mt-4' },
+          e(NumInput, { label: 'Decipher score', value: decipher, onChange: setDecipher, min: 0, max: 1, step: '0.01', hint: '0.00–1.00', error: errors.decipher }),
+          e(NumInput, { label: 'Oncotype GPS',   value: gps,     onChange: setGps,     min: 0, max: 100, hint: '0–100',   error: errors.gps }),
+          e(NumInput, { label: 'Prolaris CCP',   value: prolaris, onChange: setProlaris, min: 0, max: 10, step: '0.01', hint: '0–10', error: errors.prolaris }),
           e('div', {},
             e('label', { className: 'block text-xs font-medium text-gray-700 mb-0.5' }, 'ConfirmMDx'),
-            e('p', { className: 'text-xs text-gray-400 mb-1' }, 'Epigenetic field effect'),
             e(YesNoButtons, {
               value: confirmMDx, onChange: setConfirmMDx,
               options: [['positive', 'Positive'], ['negative', 'Negative'], ['not_done', 'Not done']],
@@ -508,27 +434,16 @@ export default function PatientForm({ onSubmit, initialValues = {} }) {
       )
     ),
 
-    // ── Section 3: PSMA PET/CT ────────────────────────────────────────────
+    // ── Section 3: PSMA ───────────────────────────────────────────────────
     e('div', { className: 'bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden' },
       e(SectionToggle, {
-        title: 'PSMA PET/CT',
-        subtitle: 'If performed — staging and local extent',
+        title: 'PSMA',
         badge: 'Optional',
         open: showPSMA, onToggle: () => setShowPSMA(v => !v),
-        info: [
-          {
-            heading: 'PSMA Model',
-            cohort: 'N=1,213 cohort: PSMA PET/CT testing prevalence too low for internal validation. No cohort-derived sensitivity/specificity available.',
-            literature: 'EAU-EANM-ESTRO-ESUR-SIOG Guidelines 2024. Staging classification: negative / local / regional / metastatic. Metastatic finding = hard contraindication to AS (also applies EAU 2024 systemic therapy indication). Regional nodal involvement triggers treatment discussion.',
-            note: 'Not a continuous prediction model — classification only. Hard stop fires automatically for metastatic disease.',
-          },
-        ],
+        mutedText: 'Staging only · select if performed',
       }),
       showPSMA && e('div', { className: 'px-4 pb-5 border-t border-gray-50' },
-        e('p', { className: 'text-xs text-gray-400 mt-3 mb-3 leading-relaxed' },
-          'Staging classification per EAU-EANM-ESTRO-ESUR-SIOG Guidelines 2024. Metastatic disease is a hard contraindication to active surveillance.'
-        ),
-        e('div', { className: 'space-y-3' },
+        e('div', { className: 'space-y-3 mt-4' },
           e('div', {},
             e('label', { className: 'block text-xs font-medium text-gray-700 mb-2' }, 'PSMA PET/CT finding'),
             e('div', { className: 'grid grid-cols-2 gap-2' },
@@ -561,61 +476,39 @@ export default function PatientForm({ onSubmit, initialValues = {} }) {
       )
     ),
 
-    // ── Section 4: Advanced MRI ───────────────────────────────────────────
+    // ── Section 4: MRI Features ───────────────────────────────────────────
     e('div', { className: 'bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden' },
       e(SectionToggle, {
-        title: 'Advanced MRI Features',
-        subtitle: 'Extracapsular features on mpMRI',
+        title: 'MRI Features',
         badge: 'Optional',
         open: showMRI, onToggle: () => setShowMRI(v => !v),
-        info: [
-          {
-            heading: 'Intensive Monitoring — MRI Features',
-            cohort: 'Internal validation sub-cohort (N=218): Abutment present in 23% (N=50), upgrade rate 14.0% (Sens 25%, Spec 71%, PPV 14%, NPV 83%). ECE: only N=1 positive — no statistical calibration possible. Broad capsular contact: not captured in dataset. Full N=1,213 MRI feature re-analysis pending.',
-            literature: 'ECE & abutment: EAU Guidelines 2024 staging. Broad capsular contact >10 mm: EAU 2024. All three features increase monitoring intensity per NCCN 2024.',
-            note: 'ECE and broad capsular contact are guideline-only triggers in this tool — no internal cohort data to validate them.',
-          },
-        ],
+        mutedText: 'ECE, abutment, broad contact',
       }),
       showMRI && e('div', { className: 'px-4 pb-5 border-t border-gray-50' },
-        e('p', { className: 'text-xs text-gray-400 mt-3 mb-3 leading-relaxed' },
-          'Extracapsular features increase the monitoring intensity tier (Sub-model 4). All features should be assessed on dedicated diagnostic mpMRI.'
-        ),
-        e('div', { className: 'space-y-3' },
+        e('div', { className: 'space-y-3 mt-4' },
           e('div', {},
-            e('label', { className: 'block text-xs font-medium text-gray-700 mb-1' }, 'Extracapsular extension (ECE)'),
-            e('p', { className: 'text-xs text-gray-400 mb-1.5' }, 'Tumour extending through the prostatic capsule on MRI'),
+            e('label', { className: 'block text-xs font-medium text-gray-700 mb-1.5' }, 'Extracapsular extension (ECE)'),
             e(YesNoButtons, { value: ece, onChange: setEce })
           ),
           e('div', {},
-            e('label', { className: 'block text-xs font-medium text-gray-700 mb-1' }, 'Neurovascular bundle abutment'),
-            e('p', { className: 'text-xs text-gray-400 mb-1.5' }, 'Tumour abutting or invading the NVB'),
+            e('label', { className: 'block text-xs font-medium text-gray-700 mb-1.5' }, 'Neurovascular bundle abutment'),
             e(YesNoButtons, { value: abutment, onChange: setAbutment })
           ),
           e('div', {},
-            e('label', { className: 'block text-xs font-medium text-gray-700 mb-1' }, 'Broad capsular contact > 10 mm'),
-            e('p', { className: 'text-xs text-gray-400 mb-1.5' }, 'Tumour-capsule interface length > 10 mm'),
+            e('label', { className: 'block text-xs font-medium text-gray-700 mb-1.5' }, 'Broad capsular contact > 10 mm'),
             e(YesNoButtons, { value: broadContact, onChange: setBroadContact })
           )
         )
       )
     ),
 
-    // ── Section 5: Additional ─────────────────────────────────────────────
+    // ── Section 5: Risk Factors ───────────────────────────────────────────
     e('div', { className: 'bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden' },
       e(SectionToggle, {
-        title: 'Age, Family History & PSA Kinetics',
-        subtitle: 'Germline risk factors and life expectancy context',
+        title: 'Risk Factors',
         badge: 'Optional',
         open: showExtra, onToggle: () => setShowExtra(v => !v),
-        info: [
-          {
-            heading: 'Intensive Monitoring — Patient Factors',
-            cohort: 'N=1,213 cohort age tiers: under 50 (N=50, upgrade 30.0%, progression 46.0% — highest of any age group), 50–59 (N=304, 27.6%), 60–69 (N=526, 25.3%), 70+ (N=231, 28.1%). Family history: FHx+ upgrade rate 14.3% vs FHx− 22.4% in internal validation sub-cohort (inverse — likely surveillance bias). Age AUC 0.502 (not discriminatory).',
-            literature: 'Age <50: PRIAS protocol; AUA/ASTRO 2022 (long life expectancy = elevated cumulative risk). PSA velocity ≥2 ng/mL/yr: D\'Amico AV et al., JAMA 2004. PSA doubling time <3 yr: Bul M et al. PRIAS, Eur Urol 2013. BRCA2/HOXB13: NCCN 2024 (enhanced monitoring or treatment preferred).',
-            note: 'PSA velocity and doubling time are not in the N=1,213 dataset — guideline thresholds only.',
-          },
-        ],
+        mutedText: 'Age, PSA kinetics, germline',
       }),
       showExtra && e('div', { className: 'px-4 pb-5 border-t border-gray-50' },
         e('div', { className: 'pt-3 space-y-3' },
@@ -624,22 +517,15 @@ export default function PatientForm({ onSubmit, initialValues = {} }) {
               label: 'Patient age', value: age, onChange: setAge,
               min: 18, max: 120, step: '1', hint: 'years', unit: 'yrs',
               error: errors.age,
-              description: 'Age < 50 flags higher cumulative risk',
             }),
             e('div', {})
           ),
           e('div', {},
-            e('label', { className: 'block text-xs font-medium text-gray-700 mb-1.5' }, 'Family history of prostate cancer'),
-            e(YesNoButtons, { value: familyHistory, onChange: setFamilyHistory, options: [['yes','Yes'],['no','No']] })
-          ),
-          e('div', {},
             e('label', { className: 'block text-xs font-medium text-gray-700 mb-1' }, 'BRCA2 mutation'),
-            e('p', { className: 'text-xs text-gray-400 mb-1.5' }, 'Pathogenic germline variant'),
             e(YesNoButtons, { value: brca2, onChange: setBrca2, options: [['yes','Positive'],['no','Negative'],['unknown','Unknown']] })
           ),
           e('div', {},
             e('label', { className: 'block text-xs font-medium text-gray-700 mb-1' }, 'HOXB13 mutation'),
-            e('p', { className: 'text-xs text-gray-400 mb-1.5' }, 'G84E germline variant'),
             e(YesNoButtons, { value: hoxb13, onChange: setHoxb13, options: [['yes','Positive'],['no','Negative'],['unknown','Unknown']] })
           )
         )
