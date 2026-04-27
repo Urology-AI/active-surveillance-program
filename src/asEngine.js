@@ -17,130 +17,103 @@
  */
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// LAYER 2 DATA — N=218 COHORT CALIBRATION
-// Mount Sinai Tewari AS Program, N=218 active surveillance patients
+// LAYER 2 DATA — N=1,213 COHORT CALIBRATION
+// Mount Sinai Tewari AS Program, N=1,213 active surveillance patients
 // Real upgrade event data (GG upgrading on follow-up biopsy)
 // ═══════════════════════════════════════════════════════════════════════════════
 export const COHORT_CALIBRATION = {
   overview: {
-    n: 218,
-    upgrade_events: 46,
-    overall_upgrade_rate: 0.211,
-    note: 'Mount Sinai Tewari AS Program — N=218 active surveillance patients with follow-up biopsy data. Upgrade = GG advancement on repeat biopsy.',
+    n: 1213,
+    upgrade_events: 305,
+    overall_upgrade_rate: 0.251,
+    note: 'Mount Sinai Tewari AS Program — N=1,213 active surveillance patients. Upgrade = GG advancement on repeat biopsy.',
+  },
+
+  // On/off AS status split — critical for shared decision-making framing
+  intervention: {
+    currently_in_as: 724,
+    currently_in_as_rate: 0.597,
+    progressed_total: 489,
+    progressed_rate: 0.403,
+    progressed_clinical_upgrade: 257,
+    progressed_clinical_rate: 0.212,
+    progressed_anxiety_preference: 232,
+    progressed_anxiety_rate: 0.191,
+    note: 'Nearly half (47.4%) of patients who left AS did so without upgrading — anxiety or patient preference, not clinical progression. This distinction is critical for shared decision-making.',
   },
 
   // Upgrade rate by initial Grade Group
   by_ggg: {
-    1: { n: 182, upgraded: 44, upgrade_rate: 0.242 },
-    2: { n: 35,  upgraded: 2,  upgrade_rate: 0.057 },
-    3: { n: 1,   upgraded: 0,  upgrade_rate: 0.000 },
+    1: { n: 1111, upgraded: 297, upgrade_rate: 0.267, progressed: 432, progressed_rate: 0.389, clinical_upgrade: 249, anxiety_exit: 183 },
+    2: { n: 100,  upgraded: 8,   upgrade_rate: 0.080, progressed: 57,  progressed_rate: 0.570, clinical_upgrade: 8,   anxiety_exit: 49 },
+    3: { n: 2,    upgraded: 0,   upgrade_rate: 0.000, progressed: 0,   progressed_rate: 0.000 },
   },
 
-  // PSA at enrollment — PSA does NOT discriminate upgrade in this cohort
+  // PSA — note: raw PSA has limited discriminatory value; PSAD is the key biomarker
   psa: {
-    n: 206,
-    median: 5.25,
-    mean: 5.70,
-    sd: 3.35,
-    p25: 3.50,
-    p75: 7.10,
-    p95: 12.85,
-    pct_above_10: 0.097,
-    median_upgraders: 5.20,
-    median_non_upgraders: 5.30,
-    note: 'PSA virtually identical in upgraders vs non-upgraders — poor discriminator in this cohort.',
+    n: 1213,
+    note: 'PSA as raw value has limited discriminatory power for upgrade. PSAD (PSA ÷ prostate volume) is the primary validated biomarker in this cohort.',
   },
 
-  // PSAD — primary discriminating biomarker (Kadeer et al. 2025)
+  // PSAD — 4-tier breakdown (GG1 subset only, N=704 with PSAD computable)
+  // AUC 0.609 (Mann-Whitney, GG1, N=704); Kadeer 2025
   psad: {
-    n: 171,
-    median: 0.090,
-    mean: 0.1114,
-    sd: 0.073,
-    p25: 0.0552,
-    p75: 0.1429,
-    p95: 0.2438,
-    youden_optimal: 0.177,
+    n: 704,
+    ggg_subset: 1,
+    auc: 0.609,
+    youden_optimal: 0.065,
     nccn_vlow: 0.15,
-    pct_above_youden: 0.170,
-    upgrade_rate_above_youden: 0.207,
-    upgrade_rate_below_youden: 0.155,
-    median_upgraders: 0.1103,
-    median_non_upgraders: 0.0873,
-    auc: 0.624,
-    source: 'Kadeer et al. 2025 + N=218 Tewari AS cohort',
-    note: 'Median cohort PSAD 0.090 — well below Youden cutoff. Youden threshold fires in 17% of patients; modest but real discriminatory value.',
+    kadeer_cutoff: 0.177,
+    median_upgraders: 0.112,
+    median_non_upgraders: 0.096,
+    tiers: {
+      very_low:     { label: '< 0.065',   n: 170, upgrade_rate: 0.112, progressed_rate: 0.224 },
+      intermediate: { label: '0.065–0.15',n: 381, upgrade_rate: 0.239, progressed_rate: 0.333 },
+      nccn_zone:    { label: '0.15–0.177',n: 55,  upgrade_rate: 0.273, progressed_rate: 0.273 },
+      high:         { label: '> 0.177',   n: 98,  upgrade_rate: 0.347, progressed_rate: 0.480 },
+    },
+    source: 'Kadeer et al. 2025 + Mount Sinai Tewari AS Program GG1 subset N=704',
+    note: 'PSAD AUC 0.609 on N=704 GG1 patients with PSAD computable. Upgrader median PSAD 0.112 vs non-upgrader 0.096.',
   },
 
-  // PI-RADS — NOTE selection effect: PI-RADS 5 lower upgrade rate than 4
-  // because very high-risk mpMRI patients are more often referred to treatment, not AS
+  // PI-RADS — N=1,213 full cohort
   pirads: {
-    1:    { n: 2,  upgrade_rate: 0.000 },
-    2:    { n: 37, upgrade_rate: 0.189 },
-    3:    { n: 29, upgrade_rate: 0.138 },
-    4:    { n: 87, upgrade_rate: 0.184 },
-    5:    { n: 12, upgrade_rate: 0.083 },
-    none: { n: 51, upgrade_rate: 0.353 },
-    note: 'PI-RADS 5 lower upgrade rate than 4 reflects selection effect — very high MRI suspicion patients more often proceed to treatment rather than AS enrollment.',
+    1:    { n: 15,  upgrade_rate: 0.267 },
+    2:    { n: 167, upgrade_rate: 0.168 },
+    3:    { n: 169, upgrade_rate: 0.201 },
+    4:    { n: 284, upgrade_rate: 0.264 },
+    5:    { n: 45,  upgrade_rate: 0.222 },
+    none: { n: 67,  upgrade_rate: 0.254 },
+    note: 'Selection effect applies: PI-RADS 5 patients with very aggressive MRI findings are more often triaged to treatment rather than AS enrollment.',
   },
 
-  // Max core involvement
-  max_core: {
-    n: 216,
-    median: 15.0,
-    median_upgraders: 20.0,
-    median_non_upgraders: 15.0,
-    pct_above_50: 0.120,
-    upgrade_rate_above_50: 0.077,
-    note: 'Patients with >50% core involvement have lower observed upgrade rate — selection effect (high burden patients likely go to treatment).',
-  },
-
-  // Neurovascular bundle abutment on mpMRI
-  abutment: {
-    n_yes: 50,
-    upgrade_rate_yes: 0.140,
-    note: 'Abutment upgrade rate (14%) lower than overall (21%) — likely reflects selection of lower-risk patients to AS despite abutment finding.',
-  },
-
-  // Patient age at enrollment
+  // Patient age at enrollment — N=1,213, with real under-50 data
   age: {
-    n: 215,
-    median: 73.0,
-    mean: 74.6,
-    sd: 3.5,
-    n_under_50: 0,
-    note: 'No patients under 50 in this cohort — age <50 is a theoretical intensive monitoring trigger per guidelines but cannot be calibrated from this data.',
+    n: 1213,
+    tiers: {
+      under_50:  { label: '< 50',  n: 50,  upgrade_rate: 0.300, progressed_rate: 0.460 },
+      age_50_59: { label: '50–59', n: 304, upgrade_rate: 0.276, progressed_rate: 0.424 },
+      age_60_69: { label: '60–69', n: 526, upgrade_rate: 0.253, progressed_rate: 0.376 },
+      age_70p:   { label: '70+',   n: 231, upgrade_rate: 0.281, progressed_rate: 0.355 },
+    },
   },
 
-  // Family history of prostate cancer
-  fhx_prostate: {
-    n_yes: 35,
-    upgrade_rate_yes: 0.143,
-    n_no: 183,
-    upgrade_rate_no: 0.224,
-    note: 'Family history associated with slightly lower upgrade rate in this cohort — possibly reflects earlier/more vigilant detection in at-risk patients.',
-  },
-
-  // Race / ethnicity
+  // Race / ethnicity — N=1,213 full cohort
   race: {
-    caucasian:        { n: 140, upgrade_rate: 0.229 },
-    other:            { n: 64,  upgrade_rate: 0.156 },
-    african_american: { n: 14,  upgrade_rate: 0.286 },
-    note: 'African American patients: highest observed upgrade rate (28.6%, N=14) — consistent with known biological and detection disparities.',
+    caucasian:        { n: 708, upgrade_rate: 0.292 },
+    other:            { n: 376, upgrade_rate: 0.144 },
+    african_american: { n: 129, upgrade_rate: 0.341 },
+    note: 'African American patients: highest observed upgrade rate (34.1%, N=129) — consistent with known biological and detection disparities.',
   },
 
-  // Prostate volume
+  // Prostate volume — retained for context
   prostate_volume: {
-    n: 173,
-    median: 55.2,
-    mean: 58.8,
-    sd: 26.0,
     note: 'Larger prostate volume dilutes PSA → lower PSAD → may mask significant disease.',
   },
 
   // Overall upgrade risk by monitoring tier (literature-calibrated for enhanced/intensive)
   tier_annual_upgrade_risk: {
-    standard_as:  { risk: 0.211, ci: '19–24%', source: 'Mount Sinai Tewari AS Program N=218 (overall cohort rate; 95% CI estimated)' },
+    standard_as:  { risk: 0.251, ci: '23–28%', source: 'Mount Sinai Tewari AS Program N=1,213 (overall cohort rate)' },
     enhanced_as:  { risk: 0.08,  ci: '5–12%',  source: 'Literature — unfavorable intermediate AS programs' },
     intensive_as: { risk: 0.20,  ci: '15–30%', source: 'Literature — high-feature AS programs; short-interval biopsy recommended' },
   },
@@ -171,28 +144,31 @@ export const COHORT_CALIBRATION = {
 export const MODEL_VALIDATION = {
   cohort: {
     name: 'Mount Sinai Tewari Active Surveillance Program',
-    n: 218,
-    n_upgraded: 46,
-    upgrade_rate: 0.211,
+    n: 1213,
+    n_upgraded: 305,
+    upgrade_rate: 0.251,
+    n_gg1: 1111,
+    n_currently_as: 724,
+    n_progressed: 489,
     follow_up: 'Follow-up biopsy (GG upgrading endpoint)',
     validation_type: 'Internal cohort validation',
     reference: 'Kadeer N et al., Eur Urol 2025',
   },
 
   // ── Sub-model 1: Basic + PSAD ─────────────────────────────────────────────
-  // Computed from raw N=218 TSV (n_with_psad=171, 28 upgraded)
-  // Mann-Whitney AUC = 0.616 (internal); Kadeer 2025 published AUC = 0.624
+  // Recomputed on GG1 subset N=704 with PSAD available (159 upgraded)
+  // Mann-Whitney AUC = 0.609 (internal); Kadeer 2025 published AUC = 0.624
   basic_psad: {
     label: 'Basic + PSAD Model',
     primary_biomarker: 'PSAD (PSA ÷ prostate volume)',
-    n_with_psad: 171,
-    n_upgraded_with_psad: 28,
+    n_with_psad: 704,
+    n_upgraded_with_psad: 159,
 
     // ── AUC ────────────────────────────────────────────────────────────────
-    auc_internal: 0.616,           // Mann-Whitney from raw N=218 data
+    auc_internal: 0.609,           // Mann-Whitney from GG1 N=704 subset
     auc_published: 0.624,          // Kadeer et al. 2025 (reference publication)
     auc_psa_alone: 0.534,          // PSA alone — internal computation
-    delta_auc: 0.082,              // PSAD vs PSA alone (internal)
+    delta_auc: 0.075,              // PSAD vs PSA alone (internal)
 
     // ── Youden J optimal cutoff (maximises Sens + Spec − 1) ─────────────
     // Cutoff = 0.0650 ng/mL² — captures maximum discriminatory inflection
@@ -220,11 +196,11 @@ export const MODEL_VALIDATION = {
     ppv_at_kadeer: 0.207,
     npv_at_kadeer: 0.845,
 
-    note: 'PSAD outperforms PSA alone (ΔAUC +0.082 internal; +0.111 Kadeer). Youden cutoff 0.065 maximises sensitivity — NPV 94.4% means very few upgrades missed above threshold. NCCN/Kadeer cutoffs (0.15–0.177) traded sensitivity for specificity.',
-    source: 'Kadeer et al. 2025; N=218 Tewari AS cohort (internal computation)',
+    note: 'PSAD outperforms PSA alone (ΔAUC +0.075 internal; +0.090 Kadeer). Youden cutoff 0.065 maximises sensitivity — PSAD < 0.065 tier shows 11.2% upgrade rate (N=170). NCCN/Kadeer cutoffs (0.15–0.177) traded sensitivity for specificity.',
+    source: 'Kadeer et al. 2025; Mount Sinai Tewari AS Program GG1 N=704 cohort (internal computation)',
   },
 
-  // ── Sub-model supporting variables (from raw N=218 data) ─────────────────
+  // ── Sub-model supporting variables (from N=1,213 data) ───────────────────
   // These are individual variable performance metrics — not sub-model AUCs
   supporting_variables: {
     pirads_ge4: {
@@ -294,7 +270,7 @@ export const MODEL_VALIDATION = {
 
     note: 'Counter-intuitive tier-upgrade pattern (higher tiers show lower observed upgrade rates) reflects appropriate clinical triage: highest-risk patients are referred to treatment rather than AS enrollment. This is the expected selection effect in a real clinical cohort.',
     validation_status: 'Internal validation only — external/prospective validation pending',
-    calibration: 'Upgrade rates calibrated to N=218 Mount Sinai AS cohort. Enhanced/Intensive tier risk estimates are literature-derived.',
+    calibration: 'Upgrade rates calibrated to N=1,213 Mount Sinai AS cohort. Enhanced/Intensive tier risk estimates are literature-derived.',
   },
 
   // ── Sub-model 2: Genomic ──────────────────────────────────────────────────
@@ -334,13 +310,13 @@ export const MODEL_VALIDATION = {
   // This is documented as an estimate — exact figure requires raw data regression.
   multivar_composite: {
     label: 'Multi-Variable Composite (PSAD + PI-RADS + GGG)',
-    components: ['PSAD (AUC 0.616)', 'PI-RADS ≥4 (AUC ~0.506)', 'GGG tier (GG1: 24.2%, GG2: 5.7% upgrade rate)'],
+    components: ['PSAD (AUC 0.609)', 'PI-RADS ≥4 (AUC ~0.506)', 'GGG tier (GG1: 26.7%, GG2: 8.0% upgrade rate)'],
     auc_internal: null,
     auc_estimated_range: '0.64–0.68',
-    auc_estimated_basis: 'Marginal data extrapolation from N=218 cohort. Exact figure pending multi-variable logistic regression on raw TSV data.',
+    auc_estimated_basis: 'Marginal data extrapolation from N=1,213 cohort. Exact figure pending multi-variable logistic regression on raw data.',
     delta_over_psad_alone: '+0.02–0.06 (estimated)',
-    n_complete_cases: 166,  // patients with both PSAD and PI-RADS available
-    clinical_implication: 'Adding GGG and PI-RADS to PSAD is expected to meaningfully improve discrimination, particularly for GG2 patients (5.7% upgrade — lowest-risk subgroup) and for patients without MRI (highest observed rate: 35.3%). Formal validation is pending.',
+    n_complete_cases: 166,
+    clinical_implication: 'Adding GGG and PI-RADS to PSAD is expected to meaningfully improve discrimination, particularly for GG2 patients (8.0% upgrade — lowest-risk subgroup) and for patients without MRI (25.4% observed rate). Formal validation is pending.',
     status: 'Estimated — not yet formally validated on raw row-level data',
   },
 
@@ -350,12 +326,10 @@ export const MODEL_VALIDATION = {
     primary_biomarker: 'Composite high-risk features',
     n_features_assessed: 12,
     cohort_feature_prevalence: {
-      abutment: '23% (50/218)',
-      ece: '<1% (1/218) — near-zero statistical power',
-      age_under_50: '0% — no patients <50 in this cohort',
-      pirads_4_5: '45% (99/218 with MRI)',
+      age_under_50: '4.1% (50/1213) — N=50 patients under 50; upgrade rate 30.0%, progression rate 46.0%',
+      pirads_4_5: '27.1% (329/1213 with PI-RADS 4–5)',
     },
-    note: 'Feature-count model. ECE (N=1 positive in cohort): included per guidelines but cannot be statistically calibrated. Age <50 is guideline-based only — not represented in this cohort.',
+    note: 'Feature-count model based on guideline criteria. Age <50 now has N=50 cohort data (upgrade rate 30.0%); this is the highest-progression-rate age group. ECE: included per guidelines.',
     source: 'PRIAS protocol; NCCN 2024; D\'Amico et al., JAMA 2004',
   },
 }
@@ -501,9 +475,9 @@ function calcBasic({ ggg, positiveCores, totalCores, maxCorePercent, psa, prosta
       points: pts,
       tier,
       basis: gggNum === 1
-        ? 'NCCN 2024: AS-eligible. N=218 cohort: GG1 upgraded at 24.2% (182 patients) — ongoing surveillance biopsies essential.'
+        ? 'NCCN 2024: AS-eligible. N=1,213 cohort: GG1 upgraded at 26.7% (1,111 patients) — ongoing surveillance biopsies essential.'
         : gggNum === 2
-        ? 'NCCN 2024: select AS eligible (favorable-intermediate). N=218 cohort note: GG2 upgraded at only 5.7% (2/35) — paradoxically lower than GG1. This reflects selection effect: GG2 patients enrolled in AS are highly selected and lower-risk; those with borderline features typically proceed to treatment. Scoring weight reflects guideline risk tier, not observed cohort rate.'
+        ? 'NCCN 2024: select AS eligible (favorable-intermediate). N=1,213 cohort: GG2 upgrade rate 8.0% (8/100) — substantially lower than GG1 (26.7%). This reflects selection effect: GG2 patients enrolled in AS are highly selected (lower volume, lower PSAD, favorable MRI). 49 of 57 GG2 patients who left AS did so without upgrading — the highest non-clinical exit rate of any GGG. Scoring weight follows guideline tier, not observed cohort rate.'
         : gggNum === 3
         ? 'NCCN 2024: unfavourable-intermediate — outside standard AS criteria'
         : 'NCCN 2024: high / very high risk — AS not recommended',
@@ -567,10 +541,12 @@ function calcBasic({ ggg, positiveCores, totalCores, maxCorePercent, psa, prosta
       points: pts,
       tier,
       basis: psad > 0.177
-        ? 'Above Kadeer 2025 Youden cutoff (0.177) — AUC 0.624 in N=218 Mount Sinai AS cohort'
+        ? 'Above Kadeer 2025 cutoff (0.177) — tier upgrade rate 34.7% in N=98 GG1 patients (AUC 0.609, N=704 GG1 cohort)'
         : psad > 0.15
-        ? 'Above NCCN 2024 very low risk threshold (0.15); below Kadeer 2025 cutoff'
-        : 'Within NCCN 2024 very low risk PSAD range (≤ 0.15 ng/mL/cm³)',
+        ? 'Above NCCN 2024 very low risk threshold (0.15); below Kadeer 2025 cutoff — tier upgrade rate 27.3% (N=55 GG1 patients)'
+        : psad > 0.065
+        ? 'PSAD 0.065–0.15 — intermediate risk tier; upgrade rate 23.9% (N=381 GG1 patients in N=1,213 cohort)'
+        : 'PSAD < 0.065 — very low risk tier; upgrade rate 11.2% (N=170 GG1 patients in N=1,213 cohort)',
     })
   } else if (psa != null) {
     const psaNum = Number(psa)
@@ -797,7 +773,7 @@ function calcMonitoring({
     features.push({ label: `Max core involvement ${maxCorePercent}% (> 50% — outside NCCN very low risk)`, source: 'Bastian 2004; NCCN 2024' })
 
   if (psad != null && psad > 0.177)
-    features.push({ label: `PSAD ${psad.toFixed(3)} ng/mL/cm³ (> Kadeer 2025 Youden cutoff 0.177)`, source: 'Kadeer et al. 2025; N=218 Tewari AS cohort' })
+    features.push({ label: `PSAD ${psad.toFixed(3)} ng/mL/cm³ (> Kadeer 2025 Youden cutoff 0.177)`, source: 'Kadeer et al. 2025; N=1,213 Tewari AS cohort — tier upgrade rate 34.7% (N=98)' })
 
   if (abutment === 'yes')
     features.push({ label: 'Neurovascular bundle (NVB) abutment on mpMRI', source: 'EAU Guidelines 2024 staging criteria' })
@@ -815,7 +791,7 @@ function calcMonitoring({
     features.push({ label: 'Broad capsular contact > 10 mm on mpMRI', source: 'EAU Guidelines 2024' })
 
   if (age != null && Number(age) < 50)
-    features.push({ label: `Age ${age} years (< 50 — long life expectancy, elevated cumulative risk)`, source: 'PRIAS; AUA/ASTRO 2022 · Guideline-only: N=218 cohort age range 71–88; no patients under 60 — threshold cannot be cohort-calibrated' })
+    features.push({ label: `Age ${age} years (< 50 — long life expectancy, elevated cumulative risk)`, source: 'PRIAS; AUA/ASTRO 2022 · N=1,213 cohort: 50 patients under 50, upgrade rate 30.0%, progression rate 46.0% — highest of any age group' })
 
   if (psmaFinding === 'local')
     features.push({ label: 'PSMA-positive local lesion (no nodal/distant spread)', source: 'EAU-EANM-ESTRO-ESUR-SIOG 2024' })
@@ -933,8 +909,8 @@ function calcCohortContext(inputs, combinedTierKey, psad) {
   ctx.push({
     variable: 'cohort_overview',
     label: 'Mount Sinai Tewari AS Program Cohort',
-    finding: `N=${C.overview.n} active surveillance patients; overall GG upgrade rate ${(C.overview.overall_upgrade_rate * 100).toFixed(0)}% (${C.overview.upgrade_events} events).`,
-    note: C.overview.note,
+    finding: `N=${C.overview.n} active surveillance patients; overall GG upgrade rate ${(C.overview.overall_upgrade_rate * 100).toFixed(0)}% (${C.overview.upgrade_events} events). Currently in AS: ${C.intervention.currently_in_as} (${(C.intervention.currently_in_as_rate * 100).toFixed(0)}%).`,
+    note: `Of the ${C.intervention.progressed_total} patients who progressed from AS: ${C.intervention.progressed_clinical_upgrade} (${(C.intervention.progressed_clinical_rate * 100).toFixed(0)}%) left due to clinical upgrade; ${C.intervention.progressed_anxiety_preference} (${(C.intervention.progressed_anxiety_rate * 100).toFixed(0)}%) left without upgrading (anxiety or patient preference). ${C.intervention.note}`,
   })
 
   // Grade Group upgrade rate from real cohort
@@ -946,43 +922,34 @@ function calcCohortContext(inputs, combinedTierKey, psad) {
       label: `Grade Group ${gggNum} — Cohort Upgrade Rate`,
       finding: `In our N=${C.overview.n} cohort, GG${gggNum} patients upgraded at ${(g.upgrade_rate * 100).toFixed(1)}% (${g.upgraded}/${g.n}).`,
       note: gggNum === 2
-        ? 'GG2 lower upgrade rate than GG1 in this cohort — reflects careful patient selection for AS (GG2 patients with borderline features more often proceeded to treatment).'
+        ? `GG2 upgrade rate (8.0%) is paradoxically lower than GG1 (26.7%) — reflects selection effect: GG2 patients in AS are highly selected. ${g.anxiety_exit} of ${g.progressed} GG2 patients who left AS did so without upgrading (highest non-clinical exit rate of any GGG).`
         : gggNum === 1
-        ? 'GG1 (Gleason 3+3=6) is the primary AS-eligible grade; 24.2% upgrade rate reflects importance of ongoing surveillance biopsy.'
+        ? `GG1 (Gleason 3+3=6) is the primary AS-eligible grade; 26.7% upgrade rate reflects importance of ongoing surveillance biopsy. Of ${g.progressed} GG1 patients who left AS, ${g.clinical_upgrade} upgraded clinically and ${g.anxiety_exit} left by preference without upgrading.`
         : null,
     })
   }
 
-  // PSAD cohort context
+  // PSAD cohort context — 4-tier system (GG1 subset N=704)
   if (psad != null) {
     const pd = C.psad
-    if (psad > pd.youden_optimal) {
-      ctx.push({
-        variable: 'psad',
-        label: 'PSAD — Above Youden Optimal Threshold',
-        finding: `PSAD ${psad.toFixed(3)} ng/mL/cm³ > ${pd.youden_optimal} (Youden cutoff). In our N=${pd.n} cohort, patients above this threshold upgraded at ${(pd.upgrade_rate_above_youden * 100).toFixed(1)}% vs ${(pd.upgrade_rate_below_youden * 100).toFixed(1)}% below (AUC ${pd.auc}).`,
-        note: `Only ${(pd.pct_above_youden * 100).toFixed(0)}% of our cohort is above this cutoff — median cohort PSAD is ${pd.median} (well below threshold).`,
-      })
-    } else if (psad > pd.nccn_vlow) {
-      ctx.push({
-        variable: 'psad',
-        label: 'PSAD — Between NCCN and Youden Thresholds',
-        finding: `PSAD ${psad.toFixed(3)} ng/mL/cm³ — above NCCN very low risk threshold (0.15) but below Youden cutoff (${pd.youden_optimal}). Below-threshold upgrade rate in our cohort: ${(pd.upgrade_rate_below_youden * 100).toFixed(1)}%.`,
-        note: `Median cohort PSAD: ${pd.median} ng/mL/cm³. PSAD AUC ${pd.auc} — modest discriminatory value.`,
-      })
-    } else {
-      ctx.push({
-        variable: 'psad',
-        label: 'PSAD — Within Favorable Range',
-        finding: `PSAD ${psad.toFixed(3)} ng/mL/cm³ — within NCCN very low risk range (≤ 0.15). In our cohort, patients below Youden cutoff upgraded at ${(pd.upgrade_rate_below_youden * 100).toFixed(1)}%.`,
-        note: `Median cohort PSAD is ${pd.median} — this patient is ${psad < pd.median ? 'below' : 'near'} the cohort median.`,
-      })
-    }
+    const tiers = pd.tiers
+    let tierKey, tierData
+    if      (psad < 0.065) { tierKey = 'very_low';     tierData = tiers.very_low }
+    else if (psad < 0.15)  { tierKey = 'intermediate'; tierData = tiers.intermediate }
+    else if (psad < 0.177) { tierKey = 'nccn_zone';    tierData = tiers.nccn_zone }
+    else                   { tierKey = 'high';          tierData = tiers.high }
+
+    ctx.push({
+      variable: 'psad',
+      label: `PSAD — ${tierData.label} Tier (${(tierData.upgrade_rate * 100).toFixed(1)}% upgrade rate)`,
+      finding: `PSAD ${psad.toFixed(3)} ng/mL/cm³ falls in the '${tierData.label}' tier. In our N=${pd.n} GG1 patients with PSAD (AUC ${pd.auc}): upgrade rate ${(tierData.upgrade_rate * 100).toFixed(1)}% (N=${tierData.n} patients in this tier).`,
+      note: `PSAD tiers: <0.065 → 11.2% | 0.065–0.15 → 23.9% | 0.15–0.177 → 27.3% | >0.177 → 34.7%. Upgrader median PSAD ${pd.median_upgraders} vs non-upgrader ${pd.median_non_upgraders}.`,
+    })
   } else {
     ctx.push({
       variable: 'psad',
       label: 'PSAD — Not Calculable',
-      finding: `Prostate volume not provided; PSAD cannot be calculated. In our N=${C.psad.n} cohort, PSAD (AUC ${C.psad.auc}) is the strongest single biomarker for upgrade prediction.`,
+      finding: `Prostate volume not provided; PSAD cannot be calculated. In our N=${C.psad.n} GG1 cohort, PSAD (AUC ${C.psad.auc}) is the strongest single biomarker for upgrade prediction.`,
       note: 'Enter prostate volume from MRI or TRUS to enable PSAD-based risk calibration.',
     })
   }
@@ -991,10 +958,10 @@ function calcCohortContext(inputs, combinedTierKey, psad) {
   const piradsNum = inputs.pirads != null ? Number(inputs.pirads) : null
   if (piradsNum != null && piradsNum > 0 && C.pirads[piradsNum]) {
     const pr = C.pirads[piradsNum]
-    const selectionNote = (piradsNum === 5)
-      ? 'PI-RADS 5 lower upgrade rate than PI-RADS 4 in our cohort — likely reflects selection effect: very high-suspicion MRI patients are more often directed to treatment rather than AS enrollment.'
-      : (piradsNum === 4)
-      ? 'PI-RADS 4: 18.4% upgrade rate in our cohort (N=87 patients).'
+    const selectionNote = piradsNum === 5
+      ? 'PI-RADS 5 lower upgrade rate than PI-RADS 4 in our cohort — reflects selection effect: very high-suspicion MRI patients are more often directed to treatment rather than AS enrollment.'
+      : piradsNum === 4
+      ? `PI-RADS 4: ${(pr.upgrade_rate * 100).toFixed(1)}% upgrade rate in our cohort (N=${pr.n} patients) — highest of any single PI-RADS category with adequate sample size.`
       : null
     ctx.push({
       variable: 'pirads',
@@ -1007,7 +974,7 @@ function calcCohortContext(inputs, combinedTierKey, psad) {
     ctx.push({
       variable: 'pirads',
       label: 'No MRI Performed — Cohort Context',
-      finding: `In our N=${C.overview.n} cohort, patients without MRI had the highest upgrade rate: ${(pr.upgrade_rate * 100).toFixed(1)}% (N=${pr.n}).`,
+      finding: `In our N=${C.overview.n} cohort, patients without MRI upgraded at ${(pr.upgrade_rate * 100).toFixed(1)}% (N=${pr.n}).`,
       note: 'mpMRI is strongly recommended before AS enrollment per NCCN 2024 and EAU 2024.',
     })
   }
@@ -1034,17 +1001,24 @@ function calcCohortContext(inputs, combinedTierKey, psad) {
     })
   }
 
-  // Age cohort context
+  // Age cohort context — N=1,213 with real under-50 data
   if (inputs.age != null && inputs.age !== '') {
     const ageNum = Number(inputs.age)
     const ag = C.age
+    let ageTier, ageTierData
+    if      (ageNum < 50) { ageTier = 'under_50';  ageTierData = ag.tiers.under_50 }
+    else if (ageNum < 60) { ageTier = 'age_50_59'; ageTierData = ag.tiers.age_50_59 }
+    else if (ageNum < 70) { ageTier = 'age_60_69'; ageTierData = ag.tiers.age_60_69 }
+    else                  { ageTier = 'age_70p';   ageTierData = ag.tiers.age_70p }
     ctx.push({
       variable: 'age',
-      label: 'Age — Cohort Context',
-      finding: `Cohort median age at AS enrollment: ${ag.median} years (mean ${ag.mean}, SD ${ag.sd}). This patient is ${ageNum < ag.median ? 'younger' : 'older'} than the cohort median.`,
+      label: `Age ${ageNum} — Cohort Context (${ageTierData.label} tier)`,
+      finding: `In our N=${ag.n} cohort, patients aged ${ageTierData.label} had upgrade rate ${(ageTierData.upgrade_rate * 100).toFixed(1)}% and progression rate ${(ageTierData.progressed_rate * 100).toFixed(1)}% (N=${ageTierData.n}).`,
       note: ageNum < 50
-        ? 'No patients under 50 were enrolled in AS in this cohort. Age <50 is a guideline-based intensive monitoring trigger with elevated long-term cumulative risk.'
-        : `Cohort age range reflects a predominantly older population; ${ageNum < ag.mean ? 'younger patients may face longer-duration surveillance decisions.' : 'patient age is within typical AS program range.'}`,
+        ? `Age <50 patients (N=${ageTierData.n}): upgrade rate ${(ageTierData.upgrade_rate * 100).toFixed(0)}% and progression rate ${(ageTierData.progressed_rate * 100).toFixed(0)}% — highest progression rate of any age group. Long life expectancy makes cumulative upgrade risk higher.`
+        : ageNum < 60
+        ? `Age 50–59: second-highest progression rate (${(ageTierData.progressed_rate * 100).toFixed(0)}%) — longer expected surveillance duration.`
+        : `Age ${ageTierData.label}: progression rate ${(ageTierData.progressed_rate * 100).toFixed(0)}% — within typical AS program range.`,
     })
   }
 
@@ -1076,7 +1050,7 @@ function calcCohortContext(inputs, combinedTierKey, psad) {
       ctx.push({
         variable: 'race',
         label: `Race/Ethnicity — Cohort Upgrade Rate`,
-        finding: `In our cohort, ${raceLabels[raceKey]} patients (N=${raceData.n}) had an upgrade rate of ${(raceData.upgrade_rate * 100).toFixed(1)}%.`,
+        finding: `In our N=${C.overview.n} cohort, ${raceLabels[raceKey]} patients (N=${raceData.n}) had an upgrade rate of ${(raceData.upgrade_rate * 100).toFixed(1)}% (vs overall ${(C.overview.overall_upgrade_rate * 100).toFixed(0)}%).`,
         note: C.race.note,
       })
     }
@@ -1115,7 +1089,7 @@ function calcCohortContext(inputs, combinedTierKey, psad) {
   ctx.push({
     variable: 'multivar_composite',
     label: 'Multi-Variable Composite (PSAD + PI-RADS + GGG)',
-    finding: `PSAD alone: AUC 0.616 (N=${MODEL_VALIDATION.basic_psad.n_with_psad}). Adding PI-RADS and GGG is estimated to reach AUC ${MV_COMP.auc_estimated_range} based on marginal cohort data. Exact composite AUC pending multi-variable regression on raw cohort data.`,
+    finding: `PSAD alone: AUC 0.609 (N=${MODEL_VALIDATION.basic_psad.n_with_psad} GG1 patients). Adding PI-RADS and GGG is estimated to reach AUC ${MV_COMP.auc_estimated_range} based on marginal cohort data. Exact composite AUC pending multi-variable regression on raw N=1,213 data.`,
     note: MV_COMP.clinical_implication,
   })
 
@@ -1128,6 +1102,121 @@ function calcCohortContext(inputs, combinedTierKey, psad) {
     psadYoudenCutoff: C.psad.youden_optimal,
     psadInternalAuc: MODEL_VALIDATION.basic_psad.auc_internal,
     cohortNote: C.overview.note,
+    interventionData: C.intervention,
+  }
+}
+
+// ─── Outcomes prediction ──────────────────────────────────────────────────────
+/**
+ * calcOutcomesPrediction(inputs) — Layer 2 outcomes panel
+ *
+ * Returns structured probability estimates for the outcomes prediction panel.
+ * Stratifies upgrade probability by PSAD tier (if computable) or GGG.
+ * Does NOT modify the guideline tier.
+ */
+export function calcOutcomesPrediction(inputs) {
+  const C = COHORT_CALIBRATION
+
+  // Compute PSAD if possible
+  const psadVal = (inputs.psa != null && inputs.prostateVolume != null && Number(inputs.prostateVolume) > 0)
+    ? Number(inputs.psa) / Number(inputs.prostateVolume)
+    : null
+
+  const gggNum = Number(inputs.ggg)
+  const gggData = C.by_ggg[gggNum]
+  const gggRate = gggData ? gggData.upgrade_rate * 100 : null
+
+  // PSAD-tier upgrade rate (GG1 subset; fall back to GGG rate if unavailable)
+  let psadTierRate = null
+  let psadTierLabel = null
+  let psadTierN = null
+  if (psadVal != null) {
+    const tiers = C.psad.tiers
+    if      (psadVal < 0.065) { psadTierRate = tiers.very_low.upgrade_rate     * 100; psadTierLabel = 'PSAD < 0.065 (very low risk tier)';     psadTierN = tiers.very_low.n }
+    else if (psadVal < 0.15)  { psadTierRate = tiers.intermediate.upgrade_rate * 100; psadTierLabel = 'PSAD 0.065–0.15 (intermediate risk tier)'; psadTierN = tiers.intermediate.n }
+    else if (psadVal < 0.177) { psadTierRate = tiers.nccn_zone.upgrade_rate    * 100; psadTierLabel = 'PSAD 0.15–0.177 (above NCCN threshold)';  psadTierN = tiers.nccn_zone.n }
+    else                      { psadTierRate = tiers.high.upgrade_rate         * 100; psadTierLabel = 'PSAD > 0.177 (above Kadeer cutoff)';       psadTierN = tiers.high.n }
+  }
+
+  // Age flag
+  const ageNum = inputs.age != null && inputs.age !== '' ? Number(inputs.age) : null
+  let ageFlag = null
+  if (ageNum != null) {
+    const ageTier = C.age.tiers
+    if (ageNum < 50) {
+      ageFlag = {
+        upgrade_rate: ageTier.under_50.upgrade_rate * 100,
+        progression_rate: ageTier.under_50.progressed_rate * 100,
+        n: ageTier.under_50.n,
+        note: `Age <50 (N=${ageTier.under_50.n}): upgrade rate ${(ageTier.under_50.upgrade_rate * 100).toFixed(0)}%, progression rate ${(ageTier.under_50.progressed_rate * 100).toFixed(0)}% — highest progression rate of any age group in cohort.`,
+      }
+    } else if (ageNum < 60) {
+      ageFlag = {
+        upgrade_rate: ageTier.age_50_59.upgrade_rate * 100,
+        progression_rate: ageTier.age_50_59.progressed_rate * 100,
+        n: ageTier.age_50_59.n,
+        note: `Age 50–59 (N=${ageTier.age_50_59.n}): upgrade rate ${(ageTier.age_50_59.upgrade_rate * 100).toFixed(0)}%, progression rate ${(ageTier.age_50_59.progressed_rate * 100).toFixed(0)}%.`,
+      }
+    }
+  }
+
+  // Race flag
+  let raceFlag = null
+  const race = inputs.race?.toLowerCase()
+  if (race === 'african_american' || race === 'black') {
+    raceFlag = {
+      upgrade_rate: C.race.african_american.upgrade_rate * 100,
+      caucasian_rate: C.race.caucasian.upgrade_rate * 100,
+      n: C.race.african_american.n,
+      note: `African American patients (N=${C.race.african_american.n}): upgrade rate ${(C.race.african_american.upgrade_rate * 100).toFixed(1)}% vs ${(C.race.caucasian.upgrade_rate * 100).toFixed(1)}% Caucasian — consistent with known biological and detection disparities.`,
+    }
+  }
+
+  const usePsadTier = psadTierRate != null && gggNum === 1
+  const displayRate = usePsadTier ? psadTierRate : gggRate
+
+  return {
+    interventionRisk: {
+      total_pct: C.intervention.progressed_rate * 100,
+      clinical_pct: C.intervention.progressed_clinical_rate * 100,
+      anxiety_pct: C.intervention.progressed_anxiety_rate * 100,
+      basis: `N=${C.overview.n} Mount Sinai Tewari AS Program`,
+      note: C.intervention.note,
+    },
+    upgradeProbability: {
+      display_rate: displayRate,
+      by_ggg: gggRate,
+      by_psad_tier: psadTierRate,
+      psad_tier_label: psadTierLabel,
+      psad_tier_n: psadTierN,
+      using_psad_tier: usePsadTier,
+      n_basis: usePsadTier ? C.psad.n : C.overview.n,
+      basis: usePsadTier
+        ? `PSAD-tier rate from N=${C.psad.n} GG1 patients with PSAD in N=1,213 cohort (${psadTierLabel}, N=${psadTierN} in this tier)`
+        : `GG${gggNum} rate from N=${C.overview.n} cohort`,
+      ageFlag,
+      raceFlag,
+    },
+    biopsyBurden: {
+      yr5_expected: 2,
+      yr10_expected: 4,
+      basis: 'PRIAS protocol; NCCN 2024 — standard AS: biopsy every 2-3 years after confirmatory',
+      note: 'Biopsy count from Mount Sinai cohort pending — using PRIAS/NCCN protocol estimate',
+    },
+    adversePathology: {
+      available: false,
+      note: 'Requires surgical pathology data from RALP cohort — not yet available',
+    },
+    pendingData: {
+      timeToUpgrade: {
+        available: false,
+        note: 'Time-to-upgrade curves pending — requires enrollment and biopsy dates from clinical database. When available: expected median upgrade-free survival for GG1 + PSAD < 0.065 patients.',
+      },
+      biopsyCount: {
+        available: false,
+        note: 'Biopsy count per patient from Mount Sinai cohort pending — using PRIAS/NCCN protocol estimate.',
+      },
+    },
   }
 }
 
@@ -1172,6 +1261,7 @@ export function runAssessment(inputs) {
       },
       guidelineLayer: { hardStop: true, hardStopId: hardStop.id },
       cohortLayer: null,
+      outcomesData: null,
       modelValidation: MODEL_VALIDATION,
     }
   }
@@ -1205,12 +1295,15 @@ export function runAssessment(inputs) {
     hardOverride:    psmaResult.hardOverride,
   })
 
-  // ── LAYER 2: Cohort calibration — N=218 probability context ─────────────────
+  // ── LAYER 2: Cohort calibration — N=1,213 probability context ───────────────
   const cohortContext = calcCohortContext(
     inputs,
     combinedResult.combinedTierKey,
     basicResult.psad,
   )
+
+  // ── Outcomes prediction ──────────────────────────────────────────────────────
+  const outcomesData = calcOutcomesPrediction(inputs)
 
   // ── Return both layers ───────────────────────────────────────────────────────
   return {
@@ -1250,8 +1343,11 @@ export function runAssessment(inputs) {
       combinedRecommendation: combinedResult.combinedRecommendation,
     },
 
-    // ── Layer 2 output (N=218 cohort calibration) ──
+    // ── Layer 2 output (N=1,213 cohort calibration) ──
     cohortContext,
     cohortLayer: cohortContext,
+
+    // ── Outcomes prediction panel data ──
+    outcomesData,
   }
 }

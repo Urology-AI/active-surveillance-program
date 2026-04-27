@@ -36,7 +36,7 @@ const COMBINED_TIER_LABELS = {
 // Validation badge definitions for each sub-model
 const VALIDATION_BADGES = {
   cohort_validated: {
-    label: 'Cohort validated · N=218',
+    label: 'Cohort validated · N=1,213',
     style: { background: '#dcfce7', color: '#166534', border: '1px solid #bbf7d0' },
   },
   literature_threshold: {
@@ -203,12 +203,240 @@ function SummaryCard({ label, value, subvalue, highlight }) {
   )
 }
 
+// ─── Shared StatChip ──────────────────────────────────────────────────────────
+function StatChip({ label, value, sub, highlight, colorScheme }) {
+  const schemes = {
+    green:  { bg: '#f0fdf4', border: '#bbf7d0', val: '#15803d', lbl: '#166534' },
+    amber:  { bg: '#fffbeb', border: '#fde68a', val: '#b45309', lbl: '#78350f' },
+    red:    { bg: '#fef2f2', border: '#fecaca', val: '#dc2626', lbl: '#991b1b' },
+    blue:   { bg: '#e0f2fe', border: '#7dd3fc', val: '#0369a1', lbl: '#0c4a6e' },
+    default:{ bg: '#f1f5f9', border: '#e2e8f0', val: '#1e293b', lbl: '#64748b' },
+  }
+  const s = schemes[colorScheme] || (highlight ? schemes.blue : schemes.default)
+  return e('div', {
+    className: 'flex flex-col items-center justify-center rounded-xl px-3 py-2.5 min-w-[80px]',
+    style: { background: s.bg, border: `1px solid ${s.border}` },
+  },
+    e('span', { className: 'text-lg font-extrabold', style: { color: s.val } }, value),
+    e('span', { className: 'text-[10px] font-semibold uppercase tracking-wide text-center leading-tight', style: { color: s.lbl } }, label),
+    sub && e('span', { className: 'text-[10px] mt-0.5', style: { color: s.lbl } }, sub)
+  )
+}
+
+// ─── Outcomes Prediction Panel ────────────────────────────────────────────────
+function OutcomesPredictionPanel({ outcomesData }) {
+  const [open, setOpen] = useState(false)
+  if (!outcomesData) return null
+
+  const { interventionRisk, upgradeProbability, biopsyBurden, pendingData } = outcomesData
+  const displayRate = upgradeProbability.display_rate
+  const upgradeColor = displayRate < 15 ? 'green' : displayRate < 28 ? 'amber' : 'red'
+
+  // PSAD tier table rows
+  const psadTierRows = [
+    { label: '< 0.065',   rate: '11.2%', n: 170, key: 'very_low' },
+    { label: '0.065–0.15',rate: '23.9%', n: 381, key: 'intermediate' },
+    { label: '0.15–0.177',rate: '27.3%', n: 55,  key: 'nccn_zone' },
+    { label: '> 0.177',   rate: '34.7%', n: 98,  key: 'high' },
+  ]
+  const activeTierKey = upgradeProbability.using_psad_tier
+    ? (upgradeProbability.psad_tier_label?.startsWith('PSAD <') ? 'very_low'
+      : upgradeProbability.psad_tier_label?.startsWith('PSAD 0.065') ? 'intermediate'
+      : upgradeProbability.psad_tier_label?.startsWith('PSAD 0.15') ? 'nccn_zone'
+      : 'high')
+    : null
+
+  return e('div', {
+    className: 'rounded-2xl overflow-hidden shadow-sm',
+    style: { border: '1px solid #d1d5db', background: '#f8fafc' },
+  },
+
+    // Header
+    e('div', {
+      className: 'px-4 py-3.5 flex items-center justify-between',
+      style: { background: '#f1f5f9', borderBottom: '1px solid #e2e8f0' },
+    },
+      e('div', { className: 'flex items-center gap-2.5' },
+        e('div', {
+          className: 'w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0',
+          style: { background: '#212070' },
+        },
+          e('svg', { className: 'w-4 h-4 text-white', fill: 'none', viewBox: '0 0 24 24', stroke: 'currentColor', strokeWidth: 2 },
+            e('path', { strokeLinecap: 'round', strokeLinejoin: 'round', d: 'M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z' })
+          )
+        ),
+        e('div', {},
+          e('p', { className: 'text-sm font-bold text-slate-800' }, 'Outcomes Prediction'),
+          e('p', { className: 'text-xs text-slate-500' }, `Cohort validated · N=1,213 Mount Sinai Tewari AS Program`)
+        )
+      ),
+      e('div', { className: 'flex items-center gap-2' },
+        e('span', {
+          className: 'text-xs font-semibold px-2 py-0.5 rounded-full hidden sm:block',
+          style: { background: '#dcfce7', color: '#166534', border: '1px solid #bbf7d0' },
+        }, 'Cohort validated · N=1,213'),
+      )
+    ),
+
+    // Always-visible stat chips
+    e('div', { className: 'px-4 py-4' },
+      e('p', { className: 'text-[10px] font-semibold uppercase tracking-wide text-slate-400 mb-2.5' },
+        upgradeProbability.using_psad_tier
+          ? `Upgrade probability based on ${upgradeProbability.psad_tier_label}`
+          : `Upgrade probability based on GG${Math.round(upgradeProbability.by_ggg ?? 0) === upgradeProbability.by_ggg ? '' : ''}${upgradeProbability.by_ggg != null ? ' rate' : ''}`
+      ),
+      e('div', { className: 'flex flex-wrap gap-2.5 mb-4' },
+        e(StatChip, {
+          label: 'P(GG Upgrade)',
+          value: `${displayRate != null ? displayRate.toFixed(1) : '—'}%`,
+          sub: upgradeProbability.using_psad_tier ? 'PSAD tier' : 'GGG rate',
+          colorScheme: upgradeColor,
+        }),
+        e(StatChip, {
+          label: 'Clinical Exit',
+          value: `${interventionRisk.clinical_pct.toFixed(1)}%`,
+          sub: 'left due to upgrade',
+          colorScheme: 'amber',
+        }),
+        e(StatChip, {
+          label: 'Pref/Anxiety Exit',
+          value: `${interventionRisk.anxiety_pct.toFixed(1)}%`,
+          sub: 'left without upgrade',
+          colorScheme: 'default',
+        }),
+        e(StatChip, {
+          label: 'Currently in AS',
+          value: '59.7%',
+          sub: '724 / 1,213',
+          colorScheme: 'green',
+        })
+      ),
+
+      // Anxiety/clinical exit framing — always visible
+      e('div', {
+        className: 'rounded-xl px-3.5 py-3 mb-3',
+        style: { background: '#fefce8', border: '1px solid #fde68a' },
+      },
+        e('p', { className: 'text-xs font-bold text-amber-800 mb-1' }, '⚠ Clinical exit vs anxiety/preference exit'),
+        e('p', { className: 'text-xs text-amber-700 leading-relaxed' },
+          `In our N=1,213 cohort, 47.4% of patients who left AS did so WITHOUT upgrading — patient preference or anxiety, not disease progression. Of ${interventionRisk.total_pct.toFixed(0)}% who left AS: ${interventionRisk.clinical_pct.toFixed(0)}% left because the cancer grew (clinical upgrade); ${interventionRisk.anxiety_pct.toFixed(0)}% left by personal choice. These are two very different clinical situations that must be clearly communicated in shared decision-making.`
+        )
+      ),
+
+      // Expand button
+      e('button', {
+        type: 'button',
+        onClick: () => setOpen(v => !v),
+        className: 'w-full text-left text-xs font-semibold text-slate-500 flex items-center gap-1 hover:text-slate-700 transition-colors',
+      },
+        e('svg', {
+          className: `w-3.5 h-3.5 transition-transform duration-150 ${open ? 'rotate-180' : ''}`,
+          fill: 'none', viewBox: '0 0 24 24', stroke: 'currentColor', strokeWidth: 2.5,
+        },
+          e('path', { strokeLinecap: 'round', strokeLinejoin: 'round', d: 'M19 9l-7 7-7-7' })
+        ),
+        open ? 'Hide full cohort breakdown' : 'Show full cohort breakdown'
+      )
+    ),
+
+    // Expanded detail
+    open && e('div', { className: 'px-4 pb-4 space-y-3 border-t border-slate-100 pt-3' },
+
+      // PSAD tier table
+      e('div', {},
+        e('p', { className: 'text-xs font-bold text-slate-700 mb-2' }, 'PSAD Tier Breakdown (GG1 patients, N=704 with PSAD)'),
+        e('div', { className: 'rounded-xl overflow-hidden', style: { border: '1px solid #e2e8f0' } },
+          e('div', { className: 'grid px-3 py-1.5', style: { gridTemplateColumns: '1fr 80px 60px', background: '#f8fafc' } },
+            e('span', { className: 'text-[10px] font-bold text-slate-500 uppercase' }, 'PSAD Range'),
+            e('span', { className: 'text-[10px] font-bold text-slate-500 uppercase text-center' }, 'Upgrade Rate'),
+            e('span', { className: 'text-[10px] font-bold text-slate-500 uppercase text-center' }, 'N'),
+          ),
+          ...psadTierRows.map(row =>
+            e('div', {
+              key: row.key,
+              className: 'grid px-3 py-2 border-t border-slate-50',
+              style: {
+                gridTemplateColumns: '1fr 80px 60px',
+                background: row.key === activeTierKey ? '#eff6ff' : 'transparent',
+              },
+            },
+              e('span', { className: 'text-xs text-slate-700 flex items-center gap-1.5' },
+                row.key === activeTierKey && e('span', {
+                  className: 'inline-block w-1.5 h-1.5 rounded-full flex-shrink-0',
+                  style: { background: '#2563eb' },
+                }),
+                row.label,
+                row.key === activeTierKey && e('span', {
+                  className: 'text-[10px] font-semibold px-1.5 py-0.5 rounded',
+                  style: { background: '#dbeafe', color: '#1d4ed8' },
+                }, 'this patient')
+              ),
+              e('span', { className: 'text-xs font-semibold text-center', style: { color: row.key === activeTierKey ? '#2563eb' : '#374151' } }, row.rate),
+              e('span', { className: 'text-xs text-slate-400 text-center' }, row.n),
+            )
+          )
+        )
+      ),
+
+      // Age context (if <60)
+      upgradeProbability.ageFlag && e('div', {
+        className: 'rounded-xl px-3.5 py-3',
+        style: { background: '#fef2f2', border: '1px solid #fecaca' },
+      },
+        e('p', { className: 'text-xs font-bold text-red-800 mb-0.5' }, 'Age context'),
+        e('p', { className: 'text-xs text-red-700 leading-relaxed' }, upgradeProbability.ageFlag.note)
+      ),
+
+      // Race context (if African American)
+      upgradeProbability.raceFlag && e('div', {
+        className: 'rounded-xl px-3.5 py-3',
+        style: { background: '#fff7ed', border: '1px solid #fed7aa' },
+      },
+        e('p', { className: 'text-xs font-bold text-orange-800 mb-0.5' }, 'Racial disparity context'),
+        e('p', { className: 'text-xs text-orange-700 leading-relaxed' }, upgradeProbability.raceFlag.note)
+      ),
+
+      // Biopsy burden
+      e('div', {
+        className: 'rounded-xl px-3.5 py-3',
+        style: { background: '#f0f9ff', border: '1px solid #bae6fd' },
+      },
+        e('p', { className: 'text-xs font-bold text-sky-800 mb-1' }, 'Expected biopsy burden'),
+        e('div', { className: 'flex gap-3 mb-1.5' },
+          e(StatChip, { label: '5-year', value: `~${biopsyBurden.yr5_expected}`, sub: 'biopsies', colorScheme: 'blue' }),
+          e(StatChip, { label: '10-year', value: `~${biopsyBurden.yr10_expected}`, sub: 'biopsies', colorScheme: 'blue' }),
+        ),
+        e('p', { className: 'text-[10px] text-sky-600 leading-relaxed' }, biopsyBurden.note),
+        e('p', { className: 'text-[10px] text-sky-400 mt-0.5 italic' }, biopsyBurden.basis)
+      ),
+
+      // Pending data placeholders
+      e('div', {
+        className: 'rounded-xl px-3.5 py-3',
+        style: { background: '#f9fafb', border: '1px solid #e5e7eb' },
+      },
+        e('p', { className: 'text-xs font-bold text-slate-600 mb-2' }, 'Pending cohort data'),
+        e('div', { className: 'space-y-2' },
+          e('div', { className: 'flex items-start gap-2' },
+            e('span', { className: 'text-[10px] font-semibold px-1.5 py-0.5 rounded flex-shrink-0 mt-0.5', style: { background: '#fef9c3', color: '#713f12' } }, 'Pending'),
+            e('p', { className: 'text-xs text-slate-500 leading-snug' }, pendingData.timeToUpgrade.note)
+          ),
+          e('div', { className: 'flex items-start gap-2' },
+            e('span', { className: 'text-[10px] font-semibold px-1.5 py-0.5 rounded flex-shrink-0 mt-0.5', style: { background: '#fef9c3', color: '#713f12' } }, 'Pending'),
+            e('p', { className: 'text-xs text-slate-500 leading-snug' }, 'Adverse pathology at surgery (ECE, SVI, LN+) — requires RALP cohort pathology data.')
+          ),
+        )
+      )
+    )
+  )
+}
+
 // ─── Model Validation Card ────────────────────────────────────────────────────
 function ModelValidationCard() {
   const [open, setOpen] = useState(false)
   const MV = MODEL_VALIDATION
 
-  // Stat chip
+  // Stat chip (inline — uses module-level StatChip)
   function StatChip({ label, value, sub, highlight }) {
     return e('div', {
       className: 'flex flex-col items-center justify-center rounded-xl px-3 py-2.5 min-w-[80px]',
@@ -541,7 +769,7 @@ export default function PatientResults({ results, inputs, onBack, onDownloadData
     psmaFinding, psmaScore, psmaFactors, psmaAssessed,
     monitoringTier, monitoringLabel, monitoringSchedule, features, featureCount,
     combinedTierKey, combinedRecommendation, combinedColor,
-    cohortContext,
+    cohortContext, outcomesData,
   } = results
 
   const showEpsaCard = Boolean(
@@ -600,6 +828,9 @@ export default function PatientResults({ results, inputs, onBack, onDownloadData
         )
       )
     ),
+
+    // ── Outcomes Prediction Panel ────────────────────────────────────────
+    outcomesData && e(OutcomesPredictionPanel, { outcomesData }),
 
     // ── ePSA context (pre-biopsy handoff / JSON) ─────────────────────────
     showEpsaCard && e('div', {
@@ -802,7 +1033,7 @@ export default function PatientResults({ results, inputs, onBack, onDownloadData
         // Evidence note
         e('div', { className: 'pt-3 border-t border-gray-50 text-xs text-gray-400 leading-relaxed' },
           e('strong', { className: 'text-gray-500' }, 'Evidence basis: '),
-          'Feature list and monitoring intensity tiers derived from PRIAS protocol (Bul et al., Eur Urol 2013), NCCN 2024 active surveillance monitoring guidelines, and Canary PASS (Newcomb et al., J Urol 2016). Cohort calibration (Layer 2) from Mount Sinai Tewari AS Program N=218.'
+          'Feature list and monitoring intensity tiers derived from PRIAS protocol (Bul et al., Eur Urol 2013), NCCN 2024 active surveillance monitoring guidelines, and Canary PASS (Newcomb et al., J Urol 2016). Cohort calibration (Layer 2) from Mount Sinai Tewari AS Program N=1,213.'
         )
       )
     ),
@@ -872,7 +1103,7 @@ export default function PatientResults({ results, inputs, onBack, onDownloadData
         'This tool provides algorithmic decision-support output only. It does not constitute medical advice, a diagnosis, or a treatment recommendation. Scoring thresholds are based on published literature; point weights are ordinal proxies for published risk tiers and have not been prospectively validated as an integrated composite score. All clinical decisions must be made by a qualified healthcare provider in the context of the patient\'s full clinical history, institutional protocols, and shared decision-making.'
       ),
       e('p', { className: 'text-xs text-gray-400' },
-        'Key references: NCCN Prostate Cancer Guidelines v3.2024 · EAU Guidelines 2024 · Kadeer et al., Eur Urol 2025 · PRIAS protocol (Bul et al., 2013) · Mount Sinai Tewari AS Program N=218 cohort calibration data'
+        'Key references: NCCN Prostate Cancer Guidelines v3.2024 · EAU Guidelines 2024 · Kadeer et al., Eur Urol 2025 · PRIAS protocol (Bul et al., 2013) · Mount Sinai Tewari AS Program N=1,213 cohort calibration data'
       )
     )
   )

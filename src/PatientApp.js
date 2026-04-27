@@ -44,6 +44,20 @@ function sleep(ms) {
   return new Promise(resolve => setTimeout(resolve, ms))
 }
 
+// ─── Cohort facts — Mount Sinai Tewari AS Program, N=1,213 ───────────────────
+export const COHORT_FACTS = {
+  source: 'Mount Sinai Tewari Active Surveillance Program, N=1,213 patients',
+  overall_upgrade_rate: 0.251,
+  clinical_intervention_rate: 0.212,
+  anxiety_exit_rate: 0.191,
+  gg1_upgrade_rate: 0.267,
+  gg1_low_psad_upgrade_rate: 0.112,   // PSAD < 0.065
+  gg1_high_psad_upgrade_rate: 0.347,  // PSAD > 0.177
+  aa_upgrade_rate: 0.341,
+  currently_stable_pct: 0.597,        // 724/1213 currently in AS, stable
+  key_message: 'Most men with low-grade prostate cancer remain stable on active surveillance. In our program, 59.7% of patients are still on AS. Of those who left, nearly half did so by personal choice rather than because the cancer grew.',
+}
+
 // ─── Q&A knowledge base ──────────────────────────────────────────────────────
 
 const QA_TOPICS = [
@@ -180,6 +194,32 @@ const QA_TOPICS = [
       {
         q: 'What other lifestyle changes are recommended?',
         a: 'Beyond exercise and diet, several lifestyle habits are recommended for men on Active Surveillance:\n\n• Quit smoking: Smoking is linked to more aggressive prostate cancer and worse outcomes. Your care team can connect you with cessation programs.\n• Manage your weight: A healthy body weight reduces cancer risk and improves overall health.\n• Prioritize sleep: Aim for 7–8 hours per night. Poor sleep affects immune function and mood.\n• Reduce stress: Chronic stress can affect overall health. Mindfulness, meditation, yoga, or talking with a counselor can help.\n• Limit alcohol: Excessive drinking is associated with increased cancer risk and interferes with healthy sleep and recovery.\n• Stay connected: Social support — from family, friends, or prostate cancer support groups — significantly improves quality of life during surveillance.\n• Keep all follow-up appointments: Lifestyle changes complement — but do not replace — your regular monitoring schedule.\n\nThink of Active Surveillance as an opportunity to invest in your overall health.',
+      },
+    ],
+  },
+  {
+    category: 'Outcomes at Mount Sinai',
+    railLabel: 'Our Results',
+    questions: [
+      {
+        q: 'Will I need treatment? What are my chances of staying on surveillance?',
+        a: `Based on our Mount Sinai Tewari Active Surveillance Program (${COHORT_FACTS.source}): 59.7% of patients are still on surveillance and doing well. Of those who eventually left the program, 21.2% left because the cancer showed signs of growth (clinical upgrade), while 19.1% left by personal choice — anxiety, preference, or peace of mind — even though their cancer had not progressed. Most men stay on surveillance for many years without needing treatment.`,
+      },
+      {
+        q: 'What are my chances of cancer upgrading?',
+        a: `In our program (N=1,213 patients), the overall grade upgrade rate on follow-up biopsy was 25.1%. For men with Grade Group 1 cancer (Gleason 3+3=6), the upgrade rate was 26.7%. However, upgrade risk varies by PSA density (PSAD): men with PSAD below 0.065 had an upgrade rate of only 11.2%, while those with PSAD above 0.177 had a rate of 34.7%. Your doctor can tell you which risk tier applies to you.`,
+      },
+      {
+        q: 'How long can I stay on Active Surveillance?',
+        a: `Many men stay on Active Surveillance for many years. In our program (N=1,213 patients), 59.7% of patients — 724 people — are currently stable on surveillance. Of those who have left surveillance, 21.2% left due to cancer progression and 19.1% left by personal preference without any cancer upgrade. Active Surveillance is not a permanent decision — it is re-evaluated at each monitoring visit, and treatment is always available if the cancer shows signs of growth.`,
+      },
+      {
+        q: 'Does race affect my risk on Active Surveillance?',
+        a: `In our N=1,213 patient cohort, African American men had an upgrade rate of 34.1% compared to 29.2% in Caucasian men. This is consistent with known biological differences and historical underrepresentation in surveillance programs. At Mount Sinai, African American men are enrolled in surveillance and monitored carefully — this data does not mean surveillance is not appropriate, but it does mean close follow-up is especially important.`,
+      },
+      {
+        q: 'What does "leaving surveillance" really mean?',
+        a: `Leaving surveillance can mean two very different things, and it is important to understand the difference. In our program (N=1,213), of the 40.3% of patients who left surveillance: 21.2% left because repeat biopsy showed the cancer had grown to a higher grade — this is a clinical progression, and treatment is appropriate. 19.1% left by personal choice, not because the cancer grew, but because of anxiety, worry, or simply preferring to have treatment for peace of mind. Neither reason is wrong — both are valid reasons to choose treatment. But the medical situation is very different, and your care team can help you understand where you stand.`,
       },
     ],
   },
