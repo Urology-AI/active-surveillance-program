@@ -1253,6 +1253,148 @@ export function calcOutcomesPrediction(inputs) {
   }
 }
 
+// ═══════════════════════════════════════════════════════════════════════════════
+// LAYER 3 — PERSONALIZED LOGISTIC REGRESSION (Mount Sinai AS Cohort, N=781)
+// Validated on GG1/GG2 patients; outcome: GG upgrade on repeat biopsy
+// Significant predictors (p<0.01): GGG, PSAD, positive core count
+// NOT significant: age (p=0.75), max % core (p=0.48), PI-RADS (p=0.40)
+// Primary model AUC 0.668 (PSAD, N=781); fallback AUC 0.609 (no PSAD, N=1,197)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+export const UPGRADE_RISK_MODEL = {
+  // Primary model — requires PSAD (N=781 subset, AUC 0.668)
+  withPsad: {
+    intercept:  -1.993554,
+    is_gg2:     -2.151274,
+    psad:        3.865594,
+    pos_cores:   0.113897,
+    // Covariance matrix for delta-method 95% CI
+    cov: {
+      c_c:   0.036894,
+      c_g:   0.014423,
+      c_p:  -0.133434,
+      c_k:  -0.004355,
+      g_g:   0.300061,
+      g_p:  -0.093734,
+      g_k:  -0.004085,
+      p_p:   1.155689,
+      p_k:  -0.004068,
+      k_k:   0.001791,
+    },
+    auc: 0.668, n: 781, base_rate: 0.209,
+  },
+  // Fallback — no prostate volume/PSAD (N=1,197, AUC 0.609)
+  noPsad: {
+    intercept:  -1.270373,
+    is_gg2:     -1.640259,
+    pos_cores:   0.107063,
+    auc: 0.609, n: 1197, base_rate: 0.252,
+  },
+}
+
+// Precomputed percentile breakpoints from N=781 cohort predicted risks
+export const RISK_PERCENTILES = {
+  0: 0.0201, 5: 0.0427, 10: 0.1384, 15: 0.1532, 20: 0.1604,
+  25: 0.1676, 30: 0.1737, 35: 0.1790, 40: 0.1853, 45: 0.1906,
+  50: 0.1976, 55: 0.2049, 60: 0.2135, 65: 0.2264, 70: 0.2345,
+  75: 0.2485, 80: 0.2638, 85: 0.2775, 90: 0.3167, 95: 0.3630,
+  100: 0.7240,
+}
+
+// Clinical impact per 1,000 AS patients at key risk thresholds
+// Base rate 20.9% (n_upgraded=209/1000), derived from PSAD-model cohort
+export const CLINICAL_IMPACT_TABLE = {
+  0.10: { biopsies: 908, caught: 205, missed: 4,  avoided: 92,  sens: 0.98, spec: 0.11, ppv: 0.22, npv: 0.94 },
+  0.15: { biopsies: 867, caught: 201, missed: 8,  avoided: 133, sens: 0.96, spec: 0.16, ppv: 0.23, npv: 0.94 },
+  0.20: { biopsies: 472, caught: 138, missed: 71, avoided: 528, sens: 0.66, spec: 0.58, ppv: 0.29, npv: 0.86 },
+  0.25: { biopsies: 243, caught: 82,  missed: 127,avoided: 757, sens: 0.39, spec: 0.80, ppv: 0.34, npv: 0.83 },
+  0.30: { biopsies: 114, caught: 42,  missed: 167,avoided: 886, sens: 0.20, spec: 0.91, ppv: 0.37, npv: 0.81 },
+  0.35: { biopsies: 59,  caught: 22,  missed: 187,avoided: 941, sens: 0.10, spec: 0.95, ppv: 0.37, npv: 0.80 },
+}
+
+export function calcUpgradeRisk(inputs) {
+  const ggg = Number(inputs.ggg)
+  const positiveCores = inputs.positiveCores != null
+    ? Number(inputs.positiveCores)
+    : inputs.totalPositiveCores != null
+      ? Number(inputs.totalPositiveCores)
+      : null
+
+  if (!ggg || positiveCores == null || isNaN(positiveCores)) {
+    return { available: false, reason: 'GGG and positive core count required' }
+  }
+
+  const isGG2 = ggg === 2 ? 1 : 0
+  const psaVal = inputs.psa != null ? Number(inputs.psa) : null
+  const volVal = inputs.prostateVolume != null ? Number(inputs.prostateVolume) : null
+  const psad = (psaVal != null && volVal != null && volVal > 0) ? psaVal / volVal : null
+
+  const sig = x => 1 / (1 + Math.exp(-x))
+  let prob, ciLo, ciHi, modelKey
+
+  if (psad != null) {
+    const M = UPGRADE_RISK_MODEL.withPsad
+    const g = isGG2, p = psad, k = positiveCores
+    const logit = M.intercept + M.is_gg2 * g + M.psad * p + M.pos_cores * k
+    const C = M.cov
+    const varLogit =
+      C.c_c +
+      C.g_g * g * g + C.p_p * p * p + C.k_k * k * k +
+      2 * C.c_g * g + 2 * C.c_p * p + 2 * C.c_k * k +
+      2 * C.g_p * g * p + 2 * C.g_k * g * k + 2 * C.p_k * p * k
+    const se = Math.sqrt(Math.max(0, varLogit))
+    prob  = sig(logit)
+    ciLo  = sig(logit - 1.96 * se)
+    ciHi  = sig(logit + 1.96 * se)
+    modelKey = 'withPsad'
+  } else {
+    const M = UPGRADE_RISK_MODEL.noPsad
+    const logit = M.intercept + M.is_gg2 * isGG2 + M.pos_cores * positiveCores
+    prob  = sig(logit)
+    ciLo  = null
+    ciHi  = null
+    modelKey = 'noPsad'
+  }
+
+  // Percentile rank vs cohort
+  const keys = Object.keys(RISK_PERCENTILES).map(Number).sort((a, b) => a - b)
+  let pctBelow = 0
+  for (let i = 0; i < keys.length - 1; i++) {
+    const lo = RISK_PERCENTILES[keys[i]], hi = RISK_PERCENTILES[keys[i + 1]]
+    if (prob >= lo && prob < hi) {
+      pctBelow = keys[i] + (keys[i + 1] - keys[i]) * (prob - lo) / (hi - lo)
+      break
+    }
+    if (prob >= RISK_PERCENTILES[95]) pctBelow = 95 + (prob - RISK_PERCENTILES[95]) / (RISK_PERCENTILES[100] - RISK_PERCENTILES[95]) * 5
+    if (prob <= RISK_PERCENTILES[0]) pctBelow = 0
+  }
+
+  const M = UPGRADE_RISK_MODEL[modelKey]
+  let band, bandColor
+  if      (prob < 0.15) { band = 'Very Low';  bandColor = 'green'  }
+  else if (prob < 0.20) { band = 'Low';       bandColor = 'green'  }
+  else if (prob < 0.28) { band = 'Average';   bandColor = 'yellow' }
+  else if (prob < 0.40) { band = 'Elevated';  bandColor = 'orange' }
+  else                  { band = 'High';      bandColor = 'red'    }
+
+  return {
+    available: true,
+    probability: prob,
+    pct: Math.round(prob * 100),
+    ciLo: ciLo != null ? Math.round(ciLo * 100) : null,
+    ciHi: ciHi != null ? Math.round(ciHi * 100) : null,
+    hasCi: ciLo != null,
+    pctBelow: Math.round(pctBelow),
+    band, bandColor,
+    psadUsed: psad != null,
+    modelKey,
+    auc: M.auc,
+    modelN: M.n,
+    cohortAvgPct: Math.round(M.base_rate * 100),
+    inputs: { ggg, isGG2, psad, positiveCores },
+  }
+}
+
 // ─── Main export ──────────────────────────────────────────────────────────────
 /**
  * runAssessment(inputs) — two-layer engine entry point
@@ -1382,5 +1524,8 @@ export function runAssessment(inputs) {
 
     // ── Outcomes prediction panel data ──
     outcomesData,
+
+    // ── Layer 3: Personalized logistic regression risk ──
+    upgradeRisk: calcUpgradeRisk(inputs),
   }
 }
