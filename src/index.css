@@ -201,20 +201,45 @@ html {
 }
 
 @media print {
-  body { background: #fff; }
+  * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  body { background: #fff; font-size: 12px; }
   .no-print { display: none !important; }
+
+  /* Hide app chrome */
+  header, footer, nav, [class*="ProgramHeader"], [class*="disclaimer-footer"] { display: none !important; }
+
+  /* Results report — full width, clean layout */
+  .space-y-4 > * { break-inside: avoid; margin-bottom: 16px; }
+
+  /* Dark hero banner — keep readable in print */
+  [style*="linear-gradient(165deg, #00002D"] {
+    background: #00002D !important;
+    color: #fff !important;
+    border-radius: 12px;
+    -webkit-print-color-adjust: exact;
+  }
+
+  /* Cards */
+  [style*="borderRadius: 18"] {
+    border: 1px solid #e2e8f0 !important;
+    box-shadow: none !important;
+    break-inside: avoid;
+  }
+
+  /* Typography size up slightly for print */
+  body { font-family: 'Source Sans 3', Georgia, serif; }
+
+  /* Remove shadows */
+  * { box-shadow: none !important; }
+
   /* When printing the chart only */
   body.chart-print-mode * { visibility: hidden; }
   body.chart-print-mode #chart-print-view,
   body.chart-print-mode #chart-print-view * { visibility: visible; }
   body.chart-print-mode #chart-print-view {
     position: fixed;
-    left: 0;
-    top: 0;
-    width: 100%;
-    min-height: 100%;
-    background: #fff;
-    margin: 0;
-    padding: 1rem;
+    left: 0; top: 0;
+    width: 100%; min-height: 100%;
+    background: #fff; margin: 0; padding: 1rem;
   }
 }

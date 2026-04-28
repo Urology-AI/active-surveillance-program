@@ -251,62 +251,55 @@ export default function ClinicalCalculator() {
   return e('div', {
     style: {
       maxWidth: 880, width: '100%', margin: '0 auto',
-      padding: '18px 20px 40px',
+      padding: '0 0 40px',
     },
   },
 
-    // ── Title row ──────────────────────────────────────────────────────────────
+    // ── Action bar (Load / Export JSON only — branding is in the global header) ─
     e('div', {
       style: {
-        display: 'flex', alignItems: 'flex-start', gap: 12,
-        marginBottom: 14,
+        display: 'flex', alignItems: 'center', justifyContent: 'flex-end',
+        padding: '10px 20px 4px',
       },
     },
-      e('div', { style: { flex: 1, minWidth: 0 } },
-        e('h1', {
-          style: {
-            fontSize: 20, fontWeight: 700, color: CETACEAN,
-            margin: 0, letterSpacing: '-0.01em',
-          },
-        }, 'AI Surveillance Tool'),
-        e('p', {
-          style: { fontSize: 11.5, color: '#64748b', margin: '2px 0 0' },
-        }, 'Multi-model AS assessment · Calibrated to N=1,213 Tewari Cohort')
-      ),
-      // Load JSON button
       view === 'results'
         ? e('button', {
             type: 'button', onClick: handleDownload,
             style: {
-              padding: '7px 12px', borderRadius: 8,
+              padding: '7px 13px', borderRadius: 9,
               background: '#fff', border: '1px solid #e2e8f0',
-              fontSize: 12, fontWeight: 600, color: '#212070',
+              fontSize: 12, fontWeight: 700, color: '#212070',
               display: 'flex', alignItems: 'center', gap: 5, cursor: 'pointer',
+              boxShadow: '0 1px 3px rgba(0,0,45,0.06)',
             },
           },
-            e('svg', { width: 14, height: 14, fill: 'none', viewBox: '0 0 24 24', stroke: 'currentColor', strokeWidth: 2 },
+            e('svg', { width: 13, height: 13, fill: 'none', viewBox: '0 0 24 24', stroke: 'currentColor', strokeWidth: 2 },
               e('path', { strokeLinecap: 'round', strokeLinejoin: 'round', d: 'M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4' })
             ),
-            'Download JSON'
+            'Export JSON'
           )
         : e('label', {
             style: {
-              padding: '7px 12px', borderRadius: 8,
+              padding: '7px 13px', borderRadius: 9,
               background: '#fff', border: '1px solid #e2e8f0',
-              fontSize: 12, fontWeight: 600, color: '#212070',
+              fontSize: 12, fontWeight: 700, color: '#212070',
               display: 'flex', alignItems: 'center', gap: 5, cursor: 'pointer',
+              boxShadow: '0 1px 3px rgba(0,0,45,0.06)',
             },
           },
             e('input', {
               type: 'file', accept: 'application/json,.json',
               onChange: handleUpload, style: { display: 'none' },
             }),
-            e('svg', { width: 14, height: 14, fill: 'none', viewBox: '0 0 24 24', stroke: 'currentColor', strokeWidth: 2 },
+            e('svg', { width: 13, height: 13, fill: 'none', viewBox: '0 0 24 24', stroke: 'currentColor', strokeWidth: 2 },
               e('path', { strokeLinecap: 'round', strokeLinejoin: 'round', d: 'M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12' })
             ),
             'Load JSON'
           )
     ),
+
+    // ── Inner content wrapper ──────────────────────────────────────────────────
+    e('div', { style: { padding: '0 20px' } },
 
     // ── ePSA banner ────────────────────────────────────────────────────────────
     isEpsaNotice && !epsaBannerDismissed && e('div', {
@@ -372,5 +365,6 @@ export default function ClinicalCalculator() {
           onDownloadData: handleDownload,
           onUploadData: handleUpload,
         })
+    ) // close inner content wrapper
   )
 }
