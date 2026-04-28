@@ -110,6 +110,111 @@ function StatChip({ label, value, sub, highlight, colorScheme }) {
   )
 }
 
+// ─── Upgrade Risk Panel ───────────────────────────────────────────────────────
+function UpgradeRiskPanel({ upgradeRisk }) {
+  if (!upgradeRisk) return null
+
+  if (!upgradeRisk.available) {
+    return e('div', {
+      className: 'bg-white rounded-2xl border border-gray-100 shadow-sm p-4',
+    },
+      e('div', { className: 'flex items-center justify-between mb-2' },
+        e('span', { className: 'font-semibold text-gray-900 text-sm' }, 'Personalized Upgrade Risk'),
+        e('span', { className: 'text-xs text-gray-400' }, 'Mount Sinai Model')
+      ),
+      e('p', { className: 'text-sm text-gray-400 text-center py-3' },
+        'Enter positive core count to see personalized risk'
+      )
+    )
+  }
+
+  const BAND_COLORS = {
+    green:  { border: '#16a34a', bg: '#f0fdf4', text: '#14532d', pctColor: '#15803d', badgeBg: '#dcfce7', badgeText: '#166534' },
+    yellow: { border: '#ca8a04', bg: '#fefce8', text: '#713f12', pctColor: '#a16207', badgeBg: '#fef9c3', badgeText: '#713f12' },
+    orange: { border: '#d97706', bg: '#fffbeb', text: '#78350f', pctColor: '#b45309', badgeBg: '#fde68a', badgeText: '#78350f' },
+    red:    { border: '#dc2626', bg: '#fef2f2', text: '#7f1d1d', pctColor: '#dc2626', badgeBg: '#fee2e2', badgeText: '#991b1b' },
+  }
+  const c = BAND_COLORS[upgradeRisk.bandColor] || BAND_COLORS.green
+  const M = upgradeRisk.model === 'withPsad'
+    ? { auc: '0.668', n: 781 }
+    : { auc: '0.609', n: 1197 }
+
+  const cohortPct = Math.round(upgradeRisk.cohortAverage * 100)
+  const belowAvg  = upgradeRisk.probabilityPct < cohortPct
+  const inp       = upgradeRisk.inputs
+
+  return e('div', {
+    className: 'rounded-2xl border-2 shadow-sm overflow-hidden',
+    style: { background: c.bg, borderColor: c.border },
+  },
+    // Header
+    e('div', {
+      className: 'px-4 pt-3.5 pb-2 flex items-center justify-between gap-2 border-b',
+      style: { borderColor: c.border + '40' },
+    },
+      e('span', { className: 'font-semibold text-sm', style: { color: c.text } }, 'Personalized Upgrade Risk'),
+      e('span', { className: 'text-xs font-medium', style: { color: c.text, opacity: 0.7 } }, 'Mount Sinai Model')
+    ),
+
+    // Body
+    e('div', { className: 'px-4 py-3' },
+
+      // Large percentage + band
+      e('div', { className: 'flex items-end gap-3 mb-2' },
+        e('div', {},
+          e('span', { className: 'text-4xl font-bold leading-none', style: { color: c.pctColor } },
+            `${upgradeRisk.probabilityPct}%`
+          ),
+          e('p', { className: 'text-xs mt-0.5', style: { color: c.text, opacity: 0.75 } }, 'upgrade risk')
+        ),
+        e('div', { className: 'mb-1' },
+          e('span', {
+            className: 'text-sm font-bold px-2.5 py-1 rounded-full',
+            style: { background: c.badgeBg, color: c.badgeText },
+          }, upgradeRisk.band),
+          e('span', { className: 'ml-2 text-xs', style: { color: c.text, opacity: 0.75 } },
+            `— ${belowAvg ? 'below' : 'above'} cohort average (${cohortPct}%)`
+          )
+        )
+      ),
+
+      // Inputs summary line
+      e('p', { className: 'text-xs mb-2', style: { color: c.text, opacity: 0.75 } },
+        'Based on: ',
+        e('span', { className: 'font-medium' }, `GG${inp.ggg}`),
+        inp.psad != null
+          ? [' · ', e('span', { key: 'psad', className: 'font-medium' }, `PSAD ${inp.psad.toFixed(3)}`)]
+          : null,
+        ' · ',
+        e('span', { className: 'font-medium' }, `${inp.positiveCores} positive core${inp.positiveCores !== 1 ? 's' : ''}`)
+      ),
+
+      // PSAD upgrade prompt (amber, only when PSAD not used)
+      !upgradeRisk.psadUsed && e('div', {
+        className: 'rounded-lg px-3 py-2 text-xs mb-2',
+        style: { background: '#fffbeb', border: '1px solid #fde68a', color: '#78350f' },
+      },
+        'Add prostate volume for PSAD-enhanced model (AUC 0.668)'
+      ),
+
+      // Model info line
+      e('p', { className: 'text-xs', style: { color: c.text, opacity: 0.55 } },
+        `N=${M.n} · AUC ${M.auc} · Internal validation only`
+      )
+    ),
+
+    // Calibration disclaimer
+    e('div', {
+      className: 'px-4 py-2.5 border-t',
+      style: { borderColor: c.border + '30', background: 'rgba(0,0,0,0.02)' },
+    },
+      e('p', { className: 'text-[11px] leading-snug', style: { color: c.text, opacity: 0.6 } },
+        `Model calibrated on N=1,213 Mount Sinai AS patients. Well-calibrated 5–40%. Not validated externally. Use alongside clinical judgment.`
+      )
+    )
+  )
+}
+
 // ─── Key Drivers ─────────────────────────────────────────────────────────────
 function KeyDrivers({ asFactors, genomicFactors, genomicAssessed, psmaFactors, psmaAssessed }) {
   const [openIdx, setOpenIdx] = useState(-1)
@@ -706,7 +811,7 @@ export default function PatientResults({ results, inputs, onBack, onDownloadData
     psmaFinding, psmaScore, psmaFactors, psmaAssessed,
     monitoringTier, monitoringLabel, monitoringSchedule, features, featureCount,
     combinedTierKey, combinedRecommendation, combinedColor,
-    cohortContext, outcomesData,
+    cohortContext, outcomesData, upgradeRisk,
   } = results
 
   const colors   = TIER_COLORS[combinedColor]   || TIER_COLORS.green
@@ -788,14 +893,20 @@ export default function PatientResults({ results, inputs, onBack, onDownloadData
           e('span', { style: { color: 'rgba(255,255,255,0.3)' } }, '·'),
           e('span', { style: { fontWeight: 400 } },
             psadNum < MV.basic_psad.youden_cutoff
-              ? `Below threshold (${MV.basic_psad.youden_cutoff}) · NPV ${(MV.basic_psad.npv_at_youden * 100).toFixed(0)}%`
-              : `Above threshold (${MV.basic_psad.youden_cutoff}) · AUC ${MV.basic_psad.auc_internal}`
+              ? `Below threshold (${MV.basic_psad.youden_cutoff}) · `
+              : `Above threshold (${MV.basic_psad.youden_cutoff}) · `,
+            upgradeRisk?.available
+              ? `Personalized risk: ${upgradeRisk.probabilityPct}%`
+              : `NPV ${(MV.basic_psad.npv_at_youden * 100).toFixed(0)}%`
           )
         )
       )
     ),
 
-    // ── 2. Key Drivers ───────────────────────────────────────────────────
+    // ── 2. Personalized Upgrade Risk ─────────────────────────────────────
+    e(UpgradeRiskPanel, { upgradeRisk }),
+
+    // ── 3. Key Drivers ───────────────────────────────────────────────────
     e(KeyDrivers, {
       asFactors,
       genomicFactors: genomicFactors || [],
@@ -804,7 +915,7 @@ export default function PatientResults({ results, inputs, onBack, onDownloadData
       psmaAssessed,
     }),
 
-    // ── 3. Monitoring Schedule ───────────────────────────────────────────
+    // ── 4. Monitoring Schedule ───────────────────────────────────────────
     e(MonitoringSchedule, {
       monitoringSchedule,
       monitoringLabel,
@@ -813,7 +924,7 @@ export default function PatientResults({ results, inputs, onBack, onDownloadData
       featureCount,
     }),
 
-    // ── 4. Cohort Context Chips ──────────────────────────────────────────
+    // ── 5. Cohort Context Chips ──────────────────────────────────────────
     e('div', {
       style: { background: '#fff', borderRadius: 18, border: '1px solid #f1f5f9', boxShadow: '0 1px 0 rgba(0,0,45,0.02), 0 4px 14px rgba(6,171,235,0.04)', padding: '16px 18px' },
     },
@@ -821,7 +932,7 @@ export default function PatientResults({ results, inputs, onBack, onDownloadData
       e(CohortChips, { cohortContext, inputs, psad: psadNum })
     ),
 
-    // ── 5. Actions ───────────────────────────────────────────────────────
+    // ── 6. Actions ───────────────────────────────────────────────────────
     e('div', { className: 'no-print', style: { display: 'flex', flexWrap: 'wrap', gap: 10 } },
       e('button', {
         onClick: onBack,
@@ -856,7 +967,7 @@ export default function PatientResults({ results, inputs, onBack, onDownloadData
       )
     ),
 
-    // ── 6. Detail Accordion ──────────────────────────────────────────────
+    // ── 7. Detail Accordion ──────────────────────────────────────────────
     e(DetailAccordion, {
       asFactors, asScore, asTierKey,
       genomicAssessed, genomicRiskTier, genomicScore, genomicFactors,

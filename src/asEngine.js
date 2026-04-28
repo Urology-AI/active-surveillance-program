@@ -1253,6 +1253,87 @@ export function calcOutcomesPrediction(inputs) {
   }
 }
 
+// ── Mount Sinai AS Cohort — Logistic Regression Model ──────────────────────
+// Derived from N=1,213 GG1/GG2 active surveillance patients
+// Outcome: GG upgrade on repeat biopsy
+// Method: Maximum likelihood logistic regression (statsmodels)
+// Three significant predictors (p<0.01): GGG, PSAD, positive core count
+// NOT significant: age (p=0.75), max % core (p=0.48), PI-RADS (p=0.40)
+// Internal AUC: 0.668 (PSAD model) / 0.609 (fallback, no PSAD)
+// Calibration: well-calibrated 5–40%; mild overestimate above 40%
+export const UPGRADE_RISK_MODEL = {
+  // Primary model — requires PSAD (N=781, AUC 0.668)
+  withPsad: {
+    intercept:  -1.993554,
+    is_gg2:     -2.151274,
+    psad:        3.865594,
+    pos_cores:   0.113897,
+    auc: 0.668,
+    n: 781,
+    n_upgraded: 163,
+  },
+  // Fallback — no prostate volume/PSAD available (N=1197, AUC 0.609)
+  noPsad: {
+    intercept:  -1.270373,
+    is_gg2:     -1.640259,
+    pos_cores:   0.107063,
+    auc: 0.609,
+    n: 1197,
+    n_upgraded: 301,
+  },
+}
+
+export function calcUpgradeRisk(inputs) {
+  const ggg = Number(inputs.ggg)
+  const positiveCores = Number(inputs.positiveCores) || Number(inputs.totalPositiveCores) || null
+  const psaVal = Number(inputs.psa) || null
+  const volumeVal = Number(inputs.prostateVolume) || null
+  const isGG2 = ggg === 2 ? 1 : 0
+
+  const psad = (psaVal != null && volumeVal != null && volumeVal > 0)
+    ? psaVal / volumeVal
+    : null
+
+  if (positiveCores == null || isNaN(positiveCores)) {
+    return { available: false, reason: 'Positive core count required' }
+  }
+
+  let prob, model, modelLabel
+  if (psad != null) {
+    const M = UPGRADE_RISK_MODEL.withPsad
+    const logit = M.intercept + M.is_gg2 * isGG2 + M.psad * psad + M.pos_cores * positiveCores
+    prob = 1 / (1 + Math.exp(-logit))
+    model = 'withPsad'
+    modelLabel = `GGG + PSAD + cores (AUC 0.668, N=${M.n})`
+  } else {
+    const M = UPGRADE_RISK_MODEL.noPsad
+    const logit = M.intercept + M.is_gg2 * isGG2 + M.pos_cores * positiveCores
+    prob = 1 / (1 + Math.exp(-logit))
+    model = 'noPsad'
+    modelLabel = `GGG + cores only — PSAD not available (AUC 0.609, N=${M.n})`
+  }
+
+  let band, bandColor
+  if      (prob < 0.15) { band = 'Very Low'; bandColor = 'green' }
+  else if (prob < 0.20) { band = 'Low';      bandColor = 'green' }
+  else if (prob < 0.28) { band = 'Average';  bandColor = 'yellow' }
+  else if (prob < 0.40) { band = 'Elevated'; bandColor = 'orange' }
+  else                  { band = 'High';     bandColor = 'red' }
+
+  return {
+    available: true,
+    probability: prob,
+    probabilityPct: Math.round(prob * 100),
+    band,
+    bandColor,
+    model,
+    modelLabel,
+    cohortAverage: 0.252,
+    psadUsed: psad != null,
+    inputs: { ggg, isGG2, psad, positiveCores },
+  }
+}
+
 // ─── Main export ──────────────────────────────────────────────────────────────
 /**
  * runAssessment(inputs) — two-layer engine entry point
@@ -1296,6 +1377,7 @@ export function runAssessment(inputs) {
       cohortLayer: null,
       outcomesData: null,
       modelValidation: MODEL_VALIDATION,
+      upgradeRisk: calcUpgradeRisk(inputs),
     }
   }
 
@@ -1382,5 +1464,8 @@ export function runAssessment(inputs) {
 
     // ── Outcomes prediction panel data ──
     outcomesData,
+
+    // ── Personalized upgrade risk (logistic regression) ──
+    upgradeRisk: calcUpgradeRisk(inputs),
   }
 }
