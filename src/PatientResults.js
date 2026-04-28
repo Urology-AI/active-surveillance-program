@@ -217,16 +217,15 @@ function UpgradeRiskPanel({ upgradeRisk }) {
 
 // ─── Key Drivers ─────────────────────────────────────────────────────────────
 function KeyDrivers({ asFactors, genomicFactors, genomicAssessed, psmaFactors, psmaAssessed }) {
+  const [openIdx, setOpenIdx] = useState(-1)
   const [expanded, setExpanded] = useState(false)
 
-  // Merge all factors; tag source
   const allFactors = [
     ...asFactors.map(f => ({ ...f, _src: 'basic' })),
     ...(genomicAssessed ? genomicFactors.map(f => ({ ...f, _src: 'genomic' })) : []),
     ...(psmaAssessed    ? psmaFactors.map(f => ({   ...f, _src: 'psma'    })) : []),
   ]
 
-  // Always include GGG row (label starts with "Grade Group") and PSAD/PSA row
   const isKeyRow = f =>
     f.label?.startsWith('Grade Group') ||
     f.label?.startsWith('PSAD') ||
@@ -241,42 +240,70 @@ function KeyDrivers({ asFactors, genomicFactors, genomicAssessed, psmaFactors, p
   const visible = expanded ? shown : shown.slice(0, MAX)
   const hiddenCount = shown.length - MAX
 
-  const iconFor = tier => {
-    if (tier === 'low')      return e('span', { className: 'text-green-600 font-bold text-base flex-shrink-0' }, '✓')
-    if (tier === 'intermediate') return e('span', { className: 'text-amber-500 text-base flex-shrink-0' }, '⚠')
-    if (tier === 'high')     return e('span', { className: 'text-red-600 font-bold text-base flex-shrink-0' }, '✗')
-    if (tier === 'override') return e('span', { className: 'text-purple-600 font-bold text-xs flex-shrink-0 px-1 py-0.5 rounded', style: { background: '#ede9fe' } }, 'OVERRIDE')
-    return e('span', { className: 'text-gray-400 text-base flex-shrink-0' }, '·')
-  }
+  const colorFor = tier =>
+    tier === 'low' ? '#10b981' : tier === 'high' ? '#f43f5e' : tier === 'intermediate' ? '#f59e0b' : '#94a3b8'
+  const arrowFor = tier =>
+    tier === 'low' ? '↑' : tier === 'high' ? '↓' : tier === 'intermediate' ? '→' : '·'
+  const labelFor = tier =>
+    tier === 'low' ? 'Low risk' : tier === 'high' ? 'High risk' : tier === 'intermediate' ? 'Monitor' : tier === 'override' ? 'OVERRIDE' : null
 
-  const labelFor = tier => {
-    if (tier === 'low')          return e('span', { className: 'text-green-600 text-xs font-medium' }, 'Low risk')
-    if (tier === 'intermediate') return e('span', { className: 'text-amber-600 text-xs font-medium' }, 'Monitor closely')
-    if (tier === 'high')         return e('span', { className: 'text-red-600 text-xs font-medium' }, 'High risk')
-    if (tier === 'override')     return e('span', { className: 'text-purple-600 text-xs font-medium' }, 'OVERRIDE')
-    return null
-  }
-
-  return e('div', { className: 'bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden' },
-    e('div', { className: 'px-4 pt-4 pb-2 border-b border-gray-50' },
-      e('span', { className: 'font-semibold text-gray-900 text-sm' }, 'Key Drivers')
+  return e('div', {
+    style: { background: '#fff', borderRadius: 18, border: '1px solid #f1f5f9', boxShadow: '0 1px 0 rgba(0,0,45,0.02), 0 4px 14px rgba(6,171,235,0.04)', overflow: 'hidden' },
+  },
+    e('div', {
+      style: { display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 12, padding: '16px 18px 12px', borderBottom: '1px solid #f1f5f9' },
+    },
+      e('div', {},
+        e('div', { style: { fontSize: 16, fontWeight: 800, color: '#00002D', letterSpacing: '-0.005em' } }, 'Key Drivers'),
+        e('div', { style: { fontSize: 12, color: '#64748b', marginTop: 2 } }, 'What\'s pushing the score')
+      ),
+      e('span', { style: { fontSize: 11, fontWeight: 700, color: '#DC298D' } }, 'Tap to explain')
     ),
-    e('div', { className: 'px-4 py-2 divide-y divide-gray-50' },
+    e('div', { style: { display: 'flex', flexDirection: 'column', gap: 4, padding: '8px 12px 12px' } },
       visible.length === 0
-        ? e('p', { className: 'py-3 text-xs text-gray-400 text-center' }, 'No significant drivers identified')
-        : visible.map((f, i) =>
-            e('div', { key: i, className: 'py-2.5 flex items-center gap-3' },
-              iconFor(f.tier),
-              e('span', { className: 'flex-1 text-sm text-gray-800 leading-snug min-w-0' }, f.label),
-              labelFor(f.tier)
+        ? e('p', { style: { padding: '12px 6px', fontSize: 12, color: '#94a3b8', textAlign: 'center' } }, 'No significant drivers identified')
+        : visible.map((f, i) => {
+            const color = f.points === 'OVERRIDE' ? '#7c3aed' : colorFor(f.tier)
+            const open = openIdx === i
+            const pts = f.points
+            const barPct = pts === 'OVERRIDE' ? 100 : Math.min(100, Math.abs(typeof pts === 'number' ? pts : 0) * 10)
+            return e('button', {
+              key: i, type: 'button',
+              onClick: () => setOpenIdx(open ? -1 : i),
+              style: {
+                background: open ? '#fff' : '#f8fafc',
+                border: `1px solid ${open ? 'rgba(220,41,141,0.35)' : '#f1f5f9'}`,
+                borderRadius: 12, padding: '11px 14px',
+                cursor: 'pointer', transition: 'all 0.18s', textAlign: 'left', fontFamily: 'inherit',
+                boxShadow: open ? '0 4px 14px rgba(220,41,141,0.08)' : 'none',
+              },
+            },
+              e('div', { style: { display: 'flex', alignItems: 'center', gap: 10 } },
+                e('div', { style: { width: 22, textAlign: 'center', fontSize: 16, fontWeight: 800, color, flexShrink: 0, lineHeight: 1 } },
+                  f.points === 'OVERRIDE' ? '!' : arrowFor(f.tier)
+                ),
+                e('div', { style: { flex: 1, fontSize: 14, fontWeight: 600, color: '#00002D', minWidth: 0, lineHeight: 1.3 } }, f.label),
+                e('div', { style: { display: 'flex', alignItems: 'center', gap: 8, minWidth: 90, flexShrink: 0 } },
+                  e('div', { style: { flex: 1, height: 5, background: '#f1f5f9', borderRadius: 3, overflow: 'hidden', minWidth: 56 } },
+                    e('div', { style: { width: barPct + '%', height: '100%', background: color, borderRadius: 3, transition: 'width 0.4s' } })
+                  ),
+                  labelFor(f.tier) && e('div', { style: { fontSize: 11, fontWeight: 700, color, minWidth: 40, textAlign: 'right' } }, labelFor(f.tier))
+                )
+              ),
+              open && f.basis && e('div', {
+                style: { paddingTop: 10, paddingLeft: 32, paddingBottom: 4, fontSize: 13, color: '#64748b', lineHeight: 1.55 },
+              }, f.basis),
+              open && !f.basis && e('div', {
+                style: { paddingTop: 8, paddingLeft: 32, paddingBottom: 4, fontSize: 13, color: '#94a3b8', lineHeight: 1.55, fontStyle: 'italic' },
+              }, f.tier === 'low' ? 'Pushes toward AS eligibility.' : f.tier === 'high' ? 'Pulls away from AS — surface during shared decision-making.' : 'Worth monitoring at next imaging cycle.')
             )
-          )
+          })
     ),
-    !expanded && hiddenCount > 0 && e('div', { className: 'px-4 pb-3' },
+    !expanded && hiddenCount > 0 && e('div', { style: { padding: '0 18px 14px' } },
       e('button', {
         type: 'button',
         onClick: () => setExpanded(true),
-        className: 'text-xs text-sinai-cerulean font-medium hover:underline focus:outline-none',
+        style: { fontSize: 12, color: '#06ABEB', fontWeight: 600, background: 'transparent', border: 'none', cursor: 'pointer', padding: 0 },
       }, `+${hiddenCount} more factors`)
     )
   )
@@ -286,33 +313,41 @@ function KeyDrivers({ asFactors, genomicFactors, genomicAssessed, psmaFactors, p
 function MonitoringSchedule({ monitoringSchedule, monitoringLabel, monitoringTier, features, featureCount }) {
   const monStyle = MONITORING_STYLES[monitoringTier] || MONITORING_STYLES.standard
 
-  return e('div', { className: 'bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden' },
-    e('div', { className: 'px-4 pt-4 pb-2 border-b border-gray-50 flex items-center justify-between gap-2 flex-wrap' },
-      e('span', { className: 'font-semibold text-gray-900 text-sm' }, 'Monitoring Protocol'),
+  return e('div', {
+    style: { background: '#fff', borderRadius: 18, border: '1px solid #f1f5f9', boxShadow: '0 1px 0 rgba(0,0,45,0.02), 0 4px 14px rgba(6,171,235,0.04)', overflow: 'hidden' },
+  },
+    e('div', {
+      style: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, padding: '16px 18px 12px', borderBottom: '1px solid #f1f5f9', flexWrap: 'wrap' },
+    },
+      e('div', {},
+        e('div', { style: { fontSize: 16, fontWeight: 800, color: '#00002D', letterSpacing: '-0.005em' } }, 'Monitoring Protocol'),
+        e('div', { style: { fontSize: 12, color: '#64748b', marginTop: 2 } }, 'Recommended surveillance schedule')
+      ),
       e('span', {
-        className: 'text-xs font-bold px-2.5 py-1 rounded-full',
-        style: { background: monStyle.bg, color: monStyle.color },
+        style: { fontSize: 12, fontWeight: 800, padding: '4px 12px', borderRadius: 999, background: monStyle.bg, color: monStyle.color },
       }, monStyle.label)
     ),
-    e('div', { className: 'px-4 py-3 space-y-3' },
-      e('ul', { className: 'space-y-2' },
+    e('div', { style: { padding: '14px 18px', display: 'flex', flexDirection: 'column', gap: 12 } },
+      e('ul', { style: { display: 'flex', flexDirection: 'column', gap: 8, margin: 0, padding: 0, listStyle: 'none' } },
         ...monitoringSchedule.map((item, i) =>
-          e('li', { key: i, className: 'flex items-start gap-2.5' },
-            e('div', { className: 'flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center mt-0.5', style: { background: monStyle.bg } },
-              e('div', { className: 'w-1.5 h-1.5 rounded-full', style: { background: monStyle.color } })
+          e('li', { key: i, style: { display: 'flex', alignItems: 'flex-start', gap: 10 } },
+            e('div', {
+              style: { flexShrink: 0, width: 20, height: 20, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', marginTop: 2, background: monStyle.bg },
+            },
+              e('div', { style: { width: 6, height: 6, borderRadius: '50%', background: monStyle.color } })
             ),
-            e('span', { className: 'text-sm text-gray-700 leading-snug' }, item)
+            e('span', { style: { fontSize: 14, color: '#334155', lineHeight: 1.5 } }, item)
           )
         )
       ),
-      featureCount > 0 && e('div', { className: 'pt-2 border-t border-gray-50' },
-        e('p', { className: 'text-xs font-semibold uppercase tracking-wide text-gray-400 mb-1.5' },
+      featureCount > 0 && e('div', { style: { paddingTop: 12, borderTop: '1px solid #f1f5f9' } },
+        e('p', { style: { fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#94a3b8', marginBottom: 8 } },
           `High-Risk Features (${featureCount})`
         ),
-        e('ul', { className: 'space-y-1' },
+        e('ul', { style: { display: 'flex', flexDirection: 'column', gap: 6, margin: 0, padding: 0, listStyle: 'none' } },
           ...features.map((feat, i) =>
-            e('li', { key: i, className: 'flex items-start gap-2 text-sm text-gray-700' },
-              e('svg', { className: 'w-3.5 h-3.5 flex-shrink-0 mt-0.5 text-amber-500', fill: 'currentColor', viewBox: '0 0 20 20' },
+            e('li', { key: i, style: { display: 'flex', alignItems: 'flex-start', gap: 8, fontSize: 13, color: '#334155' } },
+              e('svg', { style: { width: 14, height: 14, flexShrink: 0, marginTop: 2, color: '#f59e0b' }, fill: 'currentColor', viewBox: '0 0 20 20' },
                 e('path', { fillRule: 'evenodd', clipRule: 'evenodd', d: 'M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z' })
               ),
               e('span', null, typeof feat === 'string' ? feat : feat.label)
@@ -760,6 +795,14 @@ function DetailAccordion({
   )
 }
 
+const SHORT_TIER_LABEL = {
+  standard_as:          'AS Eligible',
+  enhanced_as:          'Enhanced AS',
+  intensive_as:         'Intensive AS',
+  treatment_discussion: 'SDM Required',
+  treatment_required:   'Treatment Required',
+}
+
 // ─── Main component ───────────────────────────────────────────────────────────
 export default function PatientResults({ results, inputs, onBack, onDownloadData, onUploadData }) {
   const {
@@ -776,45 +819,85 @@ export default function PatientResults({ results, inputs, onBack, onDownloadData
   const psadNum = psad != null ? Number(psad) : null
   const isEpsa = inputs.epsaPreBiopsyTier || inputs.epsaContext?.source === 'epsa'
 
-  return e('div', { className: 'space-y-4' },
+  // Tone pill colors for dark backgrounds
+  const tonePill =
+    combinedColor === 'green'  ? { bg: 'rgba(16,185,129,0.18)',  color: '#6ee7b7',  border: '1px solid rgba(16,185,129,0.4)' } :
+    combinedColor === 'yellow' ? { bg: 'rgba(245,158,11,0.18)',  color: '#fcd34d',  border: '1px solid rgba(245,158,11,0.4)' } :
+    combinedColor === 'amber'  ? { bg: 'rgba(245,158,11,0.18)',  color: '#fcd34d',  border: '1px solid rgba(245,158,11,0.4)' } :
+                                 { bg: 'rgba(244,63,94,0.18)',   color: '#fda4af',  border: '1px solid rgba(244,63,94,0.4)'  }
 
-    // ── 1. Recommendation Banner ─────────────────────────────────────────
+  return e('div', { style: { display: 'flex', flexDirection: 'column', gap: 16 } },
+
+    // ── 1. Dark Hero Banner ──────────────────────────────────────────────
     e('div', {
-      className: 'rounded-2xl border-2 p-5 shadow-sm',
-      style: { background: colors.bg, borderColor: colors.border },
+      style: {
+        background: 'linear-gradient(165deg, #00002D 0%, #212070 55%, #06ABEB 145%)',
+        color: '#fff',
+        borderRadius: 22,
+        padding: '24px 22px 26px',
+        position: 'relative',
+        overflow: 'hidden',
+        boxShadow: '0 12px 30px rgba(0,0,45,0.3)',
+      },
     },
-      e('div', { className: 'flex items-start gap-4' },
-        e('div', {
-          className: 'flex-shrink-0 w-11 h-11 rounded-xl flex items-center justify-center',
-          style: { background: colors.badge },
+      // Decorative radial blob
+      e('div', {
+        style: {
+          position: 'absolute', top: -80, right: -80,
+          width: 280, height: 280, borderRadius: '50%',
+          background: 'radial-gradient(circle, rgba(220,41,141,0.28), transparent 70%)',
+          pointerEvents: 'none',
         },
-          e('svg', { className: 'w-5 h-5', style: { color: colors.badgeText }, fill: 'none', viewBox: '0 0 24 24', stroke: 'currentColor', strokeWidth: 2 },
-            e('path', { strokeLinecap: 'round', strokeLinejoin: 'round', d: 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z' })
-          )
+      }),
+      e('div', { style: { position: 'relative' } },
+        // Eyebrow row
+        e('div', { style: { display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12, flexWrap: 'wrap' } },
+          e('div', { style: { fontSize: 10, fontWeight: 800, letterSpacing: '0.18em', color: '#06ABEB', textTransform: 'uppercase' } }, 'AI Surveillance Tool'),
+          e('span', { style: { color: 'rgba(255,255,255,0.3)' } }, '·'),
+          e('span', {
+            style: {
+              fontSize: 11, fontWeight: 800, padding: '3px 10px', borderRadius: 999,
+              background: tonePill.bg, color: tonePill.color, border: tonePill.border,
+              letterSpacing: '0.04em',
+            },
+          }, SHORT_TIER_LABEL[combinedTierKey] || combinedTierKey),
+          isEpsa && e('span', {
+            style: {
+              fontSize: 11, fontWeight: 700, padding: '3px 10px', borderRadius: 999,
+              background: 'rgba(219,234,254,0.15)', color: '#93c5fd',
+              border: '1px solid rgba(147,197,253,0.3)',
+            },
+          }, 'Via ePSA')
         ),
-        e('div', { className: 'flex-1 min-w-0' },
-          e('div', { className: 'flex items-center gap-2 mb-1 flex-wrap' },
-            e('span', { className: 'text-xs font-semibold uppercase tracking-wide', style: { color: colors.border } }, 'AI Surveillance Tool'),
-            e('span', {
-              className: 'text-xs font-bold px-2 py-0.5 rounded-full',
-              style: { background: colors.badge, color: colors.badgeText },
-            }, COMBINED_TIER_LABELS[combinedTierKey] || combinedTierKey),
-            isEpsa && e('span', {
-              className: 'text-xs font-semibold px-2 py-0.5 rounded-full',
-              style: { background: '#dbeafe', color: '#1e40af' },
-            }, 'Via ePSA')
-          ),
-          e('p', { className: 'text-base font-bold leading-snug', style: { color: colors.text } }, combinedRecommendation),
-
-          // Inline PSAD line (only if PSAD computed)
-          psadNum != null && e('p', { className: 'text-xs mt-2 leading-snug', style: { color: colors.text, opacity: 0.85 } },
-            `PSAD ${psadNum.toFixed(3)} · `,
+        // Big tier label
+        e('h2', {
+          style: {
+            fontSize: 'clamp(26px, 5vw, 40px)', fontWeight: 800, color: '#fff',
+            margin: '0 0 10px', letterSpacing: '-0.02em', lineHeight: 1.08,
+          },
+        }, COMBINED_TIER_LABELS[combinedTierKey] || combinedTierKey),
+        // Recommendation text
+        e('p', {
+          style: { color: 'rgba(255,255,255,0.78)', fontSize: 14, lineHeight: 1.55, margin: '0 0 14px', maxWidth: 560 },
+        }, combinedRecommendation),
+        // PSAD stat strip
+        psadNum != null && e('div', {
+          style: {
+            display: 'inline-flex', alignItems: 'center', gap: 8,
+            background: 'rgba(255,255,255,0.08)', borderRadius: 10,
+            padding: '7px 12px', fontSize: 12, color: 'rgba(255,255,255,0.85)',
+            border: '1px solid rgba(255,255,255,0.12)',
+          },
+        },
+          e('span', { style: { fontWeight: 800 } }, `PSAD ${psadNum.toFixed(3)}`),
+          e('span', { style: { color: 'rgba(255,255,255,0.3)' } }, '·'),
+          e('span', { style: { fontWeight: 400 } },
             psadNum < MV.basic_psad.youden_cutoff
-              ? `below threshold (${MV.basic_psad.youden_cutoff}) · `
-              : `above threshold (${MV.basic_psad.youden_cutoff}) · `,
+              ? `Below threshold (${MV.basic_psad.youden_cutoff}) · `
+              : `Above threshold (${MV.basic_psad.youden_cutoff}) · `,
             upgradeRisk?.available
               ? `Personalized risk: ${upgradeRisk.probabilityPct}%`
-              : `NPV ${(MV.basic_psad.npv_at_youden * 100).toFixed(0)}% in N=${MV.basic_psad.n_with_psad} cohort`
+              : `NPV ${(MV.basic_psad.npv_at_youden * 100).toFixed(0)}%`
           )
         )
       )
@@ -842,53 +925,45 @@ export default function PatientResults({ results, inputs, onBack, onDownloadData
     }),
 
     // ── 5. Cohort Context Chips ──────────────────────────────────────────
-    e('div', { className: 'bg-white rounded-2xl border border-gray-100 shadow-sm p-4' },
-      e('p', { className: 'text-xs font-semibold uppercase tracking-wide text-gray-400 mb-2.5' }, 'Cohort Context'),
+    e('div', {
+      style: { background: '#fff', borderRadius: 18, border: '1px solid #f1f5f9', boxShadow: '0 1px 0 rgba(0,0,45,0.02), 0 4px 14px rgba(6,171,235,0.04)', padding: '16px 18px' },
+    },
+      e('p', { style: { fontSize: 11, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em', color: '#94a3b8', marginBottom: 12, margin: '0 0 12px' } }, 'Cohort Context'),
       e(CohortChips, { cohortContext, inputs, psad: psadNum })
     ),
 
     // ── 6. Actions ───────────────────────────────────────────────────────
-    e('div', { className: 'flex flex-wrap gap-3 no-print' },
+    e('div', { className: 'no-print', style: { display: 'flex', flexWrap: 'wrap', gap: 10 } },
       e('button', {
         onClick: onBack,
-        className: 'flex-1 min-w-[160px] py-3 rounded-xl border-2 border-gray-200 text-sm font-semibold text-gray-600 hover:border-gray-300 hover:bg-gray-50 transition-colors',
+        style: {
+          flex: '1 1 160px', height: 48, borderRadius: 12,
+          border: '1.5px solid #e2e8f0', background: '#fff',
+          fontSize: 13, fontWeight: 700, color: '#334155',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+          cursor: 'pointer', transition: 'all 0.15s', fontFamily: 'inherit',
+        },
       },
-        e('span', { className: 'flex items-center justify-center gap-1.5' },
-          e('svg', { className: 'w-4 h-4', fill: 'none', viewBox: '0 0 24 24', stroke: 'currentColor', strokeWidth: 2 },
-            e('path', { strokeLinecap: 'round', strokeLinejoin: 'round', d: 'M15 19l-7-7 7-7' })
-          ),
-          'Edit Inputs'
-        )
-      ),
-      e('label', {
-        className: 'flex-1 min-w-[160px] py-3 rounded-xl border-2 border-slate-200 text-sm font-semibold text-slate-700 hover:border-slate-300 hover:bg-slate-50 transition-colors text-center cursor-pointer',
-      },
-        e('input', {
-          type: 'file',
-          accept: 'application/json,.json',
-          onChange: onUploadData,
-          className: 'hidden',
-        }),
-        e('span', { className: 'flex items-center justify-center gap-1.5' }, 'Upload Data')
-      ),
-      e('button', {
-        type: 'button',
-        onClick: onDownloadData,
-        className: 'flex-1 min-w-[160px] py-3 rounded-xl border-2 border-sky-200 bg-sky-50 text-sm font-semibold text-sky-700 hover:bg-sky-100 transition-colors',
-      },
-        e('span', { className: 'flex items-center justify-center gap-1.5' }, 'Download Data')
+        e('svg', { width: 15, height: 15, fill: 'none', viewBox: '0 0 24 24', stroke: 'currentColor', strokeWidth: 2 },
+          e('path', { strokeLinecap: 'round', strokeLinejoin: 'round', d: 'M15 19l-7-7 7-7' })
+        ),
+        'Edit Inputs'
       ),
       e('button', {
         onClick: () => window.print(),
-        className: 'flex-1 min-w-[160px] py-3 rounded-xl text-sm font-semibold text-white shadow-sm hover:opacity-90 transition-opacity',
-        style: { background: '#06ABEB' },
+        style: {
+          flex: '2 1 200px', height: 48, borderRadius: 12, border: 'none',
+          background: 'linear-gradient(135deg, #00002D 0%, #212070 100%)',
+          fontSize: 13, fontWeight: 700, color: '#fff',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+          cursor: 'pointer', boxShadow: '0 6px 18px rgba(0,0,45,0.25)',
+          transition: 'all 0.15s', fontFamily: 'inherit',
+        },
       },
-        e('span', { className: 'flex items-center justify-center gap-1.5' },
-          e('svg', { className: 'w-4 h-4', fill: 'none', viewBox: '0 0 24 24', stroke: 'currentColor', strokeWidth: 2 },
-            e('path', { strokeLinecap: 'round', strokeLinejoin: 'round', d: 'M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z' })
-          ),
-          'Print / Save PDF'
-        )
+        e('svg', { width: 15, height: 15, fill: 'none', viewBox: '0 0 24 24', stroke: 'currentColor', strokeWidth: 2 },
+          e('path', { strokeLinecap: 'round', strokeLinejoin: 'round', d: 'M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z' })
+        ),
+        'Print Report'
       )
     ),
 
@@ -903,19 +978,18 @@ export default function PatientResults({ results, inputs, onBack, onDownloadData
     }),
 
     // ── Disclaimer ───────────────────────────────────────────────────────
-    e('div', { className: 'rounded-xl p-4 space-y-2', style: { background: '#f8fafc', border: '1px solid #e2e8f0' } },
-      e('div', { className: 'flex items-center justify-between flex-wrap gap-2' },
-        e('p', { className: 'text-xs font-semibold text-gray-500 uppercase tracking-wide' }, 'Clinical Disclaimer'),
+    e('div', { style: { borderRadius: 14, padding: '14px 16px', background: '#f8fafc', border: '1px solid #e2e8f0', display: 'flex', flexDirection: 'column', gap: 8 } },
+      e('div', { style: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 } },
+        e('p', { style: { fontSize: 10, fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.12em', margin: 0 } }, 'Clinical Disclaimer'),
         isEpsa && e('span', {
-          className: 'text-xs font-medium px-2 py-0.5 rounded-full',
-          style: { background: '#dbeafe', color: '#1e40af' },
+          style: { fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 999, background: '#dbeafe', color: '#1e40af' },
         }, 'Via ePSA')
       ),
-      e('p', { className: 'text-xs text-gray-400 leading-relaxed' },
-        'This tool provides algorithmic decision-support output only. It does not constitute medical advice, a diagnosis, or a treatment recommendation. Scoring thresholds are based on published literature; point weights are ordinal proxies for published risk tiers and have not been prospectively validated as an integrated composite score. All clinical decisions must be made by a qualified healthcare provider in the context of the patient\'s full clinical history, institutional protocols, and shared decision-making.'
+      e('p', { style: { fontSize: 11, color: '#94a3b8', lineHeight: 1.6, margin: 0 } },
+        'This tool provides algorithmic decision-support output only. It does not constitute medical advice, a diagnosis, or a treatment recommendation. All clinical decisions must be made by a qualified healthcare provider in the context of the patient\'s full clinical history, institutional protocols, and shared decision-making.'
       ),
-      e('p', { className: 'text-xs text-gray-400' },
-        'Key references: NCCN Prostate Cancer Guidelines v3.2024 · EAU Guidelines 2024 · Kadeer et al., Eur Urol 2025 · PRIAS protocol (Bul et al., 2013) · Mount Sinai Tewari AS Program N=1,213 cohort calibration data'
+      e('p', { style: { fontSize: 11, color: '#94a3b8', margin: 0 } },
+        'Key references: NCCN Prostate Cancer Guidelines v3.2024 · EAU Guidelines 2024 · Kadeer et al., Eur Urol 2025 · PRIAS (Bul et al., 2013) · Mount Sinai Tewari AS Program N=1,213 cohort'
       )
     )
   )

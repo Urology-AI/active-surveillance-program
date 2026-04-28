@@ -7,6 +7,7 @@ function validate({ ggg, positiveCores, totalCores, maxCorePercent, psa, prostat
   const errs = {}
 
   if (ggg === null) errs.ggg = 'Select a Grade Group to continue'
+  // GG3 requires explicit clinician acknowledgement since it is outside standard AS criteria
 
   const pc = positiveCores === '' ? null : Number(positiveCores)
   const tc = totalCores    === '' ? null : Number(totalCores)
@@ -99,39 +100,57 @@ function YesNoButtons({ value, onChange, options }) {
   )
 }
 
-function SectionToggle({ title, badge, open, onToggle, mutedText }) {
+function SectionToggle({ title, badge, open, onToggle, mutedText, num, numColor }) {
+  const nc = numColor || '#94a3b8'
   return e('div', {},
     e('button', {
       type: 'button', onClick: onToggle,
-      className: 'w-full flex items-center justify-between p-4 text-left hover:bg-gray-50 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-sinai-cerulean/30',
+      style: {
+        width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        padding: '14px 16px', textAlign: 'left',
+        background: 'transparent', border: 'none', cursor: 'pointer', fontFamily: 'inherit',
+        transition: 'background 0.15s',
+      },
     },
-      e('div', { className: 'flex items-center gap-3' },
+      e('div', { style: { display: 'flex', alignItems: 'center', gap: 12 } },
+        num && e('div', {
+          style: {
+            width: 34, height: 34, borderRadius: 9, flexShrink: 0,
+            background: nc + '18',
+            display: 'grid', placeItems: 'center',
+            fontSize: 15, fontWeight: 800, color: nc,
+          },
+        }, num),
         e('div', {},
-          e('div', { className: 'font-semibold text-gray-900 text-sm' }, title)
+          e('div', { style: { fontSize: 15, fontWeight: 800, color: '#00002D', letterSpacing: '-0.005em' } }, title)
         ),
-        badge && e('span', { className: 'text-xs px-2 py-0.5 rounded-full font-medium', style: { background: '#e0f2fe', color: '#075985' } }, badge)
+        badge && e('span', {
+          style: { fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 999, background: '#e0f2fe', color: '#075985' },
+        }, badge)
       ),
-      e('div', { className: 'flex items-center gap-2' },
-        e('span', { className: 'text-xs text-sinai-cerulean font-medium' }, open ? 'Collapse' : 'Expand'),
+      e('div', { style: { display: 'flex', alignItems: 'center', gap: 6 } },
+        e('span', { style: { fontSize: 11, fontWeight: 700, color: '#06ABEB' } }, open ? 'Collapse' : 'Expand'),
         e('svg', {
-          className: `w-4 h-4 text-gray-400 transition-transform duration-200 flex-shrink-0 ${open ? 'rotate-180' : ''}`,
+          style: {
+            width: 16, height: 16, color: '#94a3b8', flexShrink: 0,
+            transition: 'transform 0.2s',
+            transform: open ? 'rotate(180deg)' : 'none',
+          },
           fill: 'none', viewBox: '0 0 24 24', stroke: 'currentColor', strokeWidth: 2,
         },
           e('path', { strokeLinecap: 'round', strokeLinejoin: 'round', d: 'M19 9l-7 7-7-7' })
         )
       )
     ),
-    mutedText && e('p', { className: 'px-4 pb-2 text-xs text-gray-400' }, mutedText)
+    mutedText && e('p', { style: { padding: '0 16px 8px 62px', fontSize: 12, color: '#94a3b8', margin: 0 } }, mutedText)
   )
 }
 
 // ─── Static data ──────────────────────────────────────────────────────────────
 const GGG_OPTIONS = [
-  { value: 1, label: 'GG 1', sub: '3+3=6', color: '#10b981', bg: '#f0fdf4', note: 'AS eligible',  outside: false },
-  { value: 2, label: 'GG 2', sub: '3+4=7', color: '#84cc16', bg: '#f7fee7', note: 'Select AS',    outside: false },
-  { value: 3, label: 'GG 3', sub: '4+3=7', color: '#f59e0b', bg: '#fffbeb', note: 'Unfav-int',    outside: true },
-  { value: 4, label: 'GG 4', sub: '4+4=8', color: '#f97316', bg: '#fff7ed', note: 'High risk',    outside: true },
-  { value: 5, label: 'GG 5', sub: '9–10',  color: '#ef4444', bg: '#fef2f2', note: 'Very high',    outside: true },
+  { value: 1, label: 'GG 1', sub: '3+3=6', color: '#10b981', bg: '#f0fdf4', note: 'AS eligible', outside: false },
+  { value: 2, label: 'GG 2', sub: '3+4=7', color: '#84cc16', bg: '#f7fee7', note: 'Select AS',   outside: false },
+  { value: 3, label: 'GG 3', sub: '4+3=7', color: '#f59e0b', bg: '#fffbeb', note: 'Outside std', outside: true },
 ]
 
 const PIRADS_OPTIONS = [
@@ -152,6 +171,8 @@ export default function PatientForm({ onSubmit, initialValues = {} }) {
   const [psa,            setPsa]           = useState('')
   const [prostateVolume, setVolume]        = useState('')
   const [pirads,         setPirads]        = useState(null)
+  // GG 3 explicit acknowledgement
+  const [gg3Acknowledged, setGg3Acknowledged] = useState(false)
   // ePSA banner
   const [bannerDismissed, setBannerDismissed] = useState(false)
 
@@ -280,16 +301,30 @@ export default function PatientForm({ onSubmit, initialValues = {} }) {
     ),
 
     // ── Section 1: Required ────────────────────────────────────────────────
-    e('div', { className: 'bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden' },
-      e('div', { className: 'flex items-center justify-between px-4 pt-4 pb-3 border-b border-gray-50' },
-        e('div', { className: 'flex items-center gap-2' },
-          e('div', { className: 'w-2 h-2 rounded-full flex-shrink-0', style: { background: '#06ABEB' } }),
-          e('span', { className: 'font-semibold text-gray-900 text-sm' }, 'Biopsy & Clinical Data')
+    e('div', { style: { background: '#fff', borderRadius: 18, border: '1px solid #f1f5f9', boxShadow: '0 1px 0 rgba(0,0,45,0.02), 0 4px 14px rgba(6,171,235,0.04)', overflow: 'hidden' } },
+      e('div', {
+        style: {
+          display: 'flex', alignItems: 'center', gap: 12,
+          padding: '14px 16px',
+          borderBottom: '1px solid #f1f5f9',
+        },
+      },
+        e('div', {
+          style: {
+            width: 36, height: 36, borderRadius: 10, flexShrink: 0,
+            background: 'rgba(6,171,235,0.12)',
+            display: 'grid', placeItems: 'center',
+            fontSize: 16, fontWeight: 800, color: '#06ABEB',
+          },
+        }, '1'),
+        e('div', { style: { flex: 1 } },
+          e('div', { style: { fontSize: 15, fontWeight: 800, color: '#00002D', letterSpacing: '-0.005em' } }, 'Biopsy & Clinical Data'),
+          e('div', { style: { fontSize: 12, color: '#64748b', marginTop: 1 } }, 'Pathology, PSA, and imaging from initial workup')
         ),
-        e('span', { className: 'text-xs text-red-400 font-medium' }, 'Required')
+        e('span', { style: { fontSize: 11, fontWeight: 700, color: '#ef4444', flexShrink: 0 } }, 'Required')
       ),
 
-      e('div', { className: 'p-4 space-y-5' },
+      e('div', { style: { padding: '16px', display: 'flex', flexDirection: 'column', gap: 20 } },
 
         // ── Grade Group ──────────────────────────────────────────────────
         e('div', { 'data-error-anchor': errors.ggg ? '' : undefined },
@@ -299,21 +334,57 @@ export default function PatientForm({ onSubmit, initialValues = {} }) {
             ),
             e('span', { className: 'text-xs text-gray-400' }, 'Gleason score equivalent')
           ),
-          e('div', { className: 'grid grid-cols-5 gap-1.5' },
-            ...GGG_OPTIONS.map(opt =>
-              e('button', {
+          e('div', { className: 'grid grid-cols-3 gap-2' },
+            ...GGG_OPTIONS.map(opt => {
+              const isGG3 = opt.value === 3
+              const isSelected = ggg === opt.value
+              const isGG3Locked = isGG3 && !gg3Acknowledged
+
+              return e('button', {
                 key: opt.value, type: 'button',
-                onClick: () => setGgg(opt.value),
-                className: `rounded-xl p-2 text-center border-2 transition-all duration-150 focus:outline-none focus-visible:ring-2 ${
-                  ggg === opt.value ? 'shadow-md' : 'border-gray-200 bg-white hover:border-gray-300 hover:shadow-sm'
-                } ${opt.outside && ggg !== opt.value ? 'opacity-40' : ''}`,
-                style: ggg === opt.value ? { borderColor: opt.color, background: opt.bg } : {},
-                title: opt.outside ? 'Outside AS criteria' : opt.note,
+                onClick: () => {
+                  if (isGG3 && !gg3Acknowledged) return  // must acknowledge first
+                  setGgg(isSelected ? null : opt.value)
+                },
+                className: `rounded-xl p-3 text-center border-2 transition-all duration-150 focus:outline-none focus-visible:ring-2`,
+                style: isSelected
+                  ? { borderColor: opt.color, background: opt.bg }
+                  : isGG3Locked
+                    ? { borderColor: '#e5e7eb', background: '#f9fafb', opacity: 0.55, cursor: 'not-allowed' }
+                    : { borderColor: '#e5e7eb', background: '#fff' },
+                title: isGG3 ? 'Outside standard AS criteria — acknowledge below to enable' : opt.note,
+                disabled: isGG3 && !gg3Acknowledged,
               },
-                e('div', { className: 'text-sm font-bold leading-tight', style: { color: ggg === opt.value ? opt.color : '#374151' } }, opt.label),
-                e('div', { className: 'text-xs mt-0.5 leading-tight', style: { color: ggg === opt.value ? opt.color : '#9ca3af' } }, opt.sub),
-                e('div', { className: 'text-xs mt-0.5 font-medium', style: { color: ggg === opt.value ? opt.color : '#d1d5db', fontSize: '10px' } }, opt.note)
+                e('div', { style: { fontSize: 14, fontWeight: 800, lineHeight: 1.2, color: isSelected ? opt.color : '#374151' } }, opt.label),
+                e('div', { style: { fontSize: 12, marginTop: 2, color: isSelected ? opt.color : '#9ca3af' } }, opt.sub),
+                e('div', { style: { fontSize: 10, marginTop: 3, fontWeight: 700, color: isSelected ? opt.color : isGG3 ? '#f59e0b' : '#d1d5db' } },
+                  isGG3 ? '⚠ Outside std' : opt.note
+                )
               )
+            })
+          ),
+          // GG 3 acknowledgement checkbox
+          e('label', {
+            style: {
+              display: 'flex', alignItems: 'flex-start', gap: 8, marginTop: 10,
+              padding: '10px 12px', borderRadius: 10,
+              background: gg3Acknowledged ? '#fffbeb' : '#f9fafb',
+              border: `1px solid ${gg3Acknowledged ? '#fde68a' : '#e5e7eb'}`,
+              cursor: 'pointer',
+            },
+          },
+            e('input', {
+              type: 'checkbox',
+              checked: gg3Acknowledged,
+              onChange: ev => {
+                setGg3Acknowledged(ev.target.checked)
+                if (!ev.target.checked && ggg === 3) setGgg(null)  // deselect GG3 if unacknowledged
+              },
+              style: { marginTop: 1, flexShrink: 0, accentColor: '#f59e0b' },
+            }),
+            e('span', { style: { fontSize: 12, color: '#78350f', lineHeight: 1.4 } },
+              e('strong', { style: { fontWeight: 700 } }, 'Include Grade Group 3 (GG 3)'),
+              ' — I understand GG 3 is outside standard active surveillance criteria for this program and am proceeding under clinician judgment.'
             )
           ),
           errors.ggg && e('p', { className: 'mt-2 text-xs text-red-500 flex items-center gap-1' },
@@ -411,14 +482,15 @@ export default function PatientForm({ onSubmit, initialValues = {} }) {
     ),
 
     // ── Section 2: Genomic ────────────────────────────────────────────────
-    e('div', { className: 'bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden' },
+    e('div', { style: { background: '#fff', borderRadius: 18, border: '1px solid #f1f5f9', boxShadow: '0 1px 0 rgba(0,0,45,0.02), 0 4px 14px rgba(6,171,235,0.04)', overflow: 'hidden' } },
       e(SectionToggle, {
         title: 'Genomic',
         badge: 'Optional',
         open: showGenomic, onToggle: () => setShowGenomic(v => !v),
         mutedText: 'Literature thresholds · <10% of AS patients',
+        num: '2', numColor: '#DC298D',
       }),
-      showGenomic && e('div', { className: 'px-4 pb-5 border-t border-gray-50' },
+      showGenomic && e('div', { style: { padding: '16px 16px 20px', borderTop: '1px solid #f1f5f9' } },
         e('div', { className: 'grid grid-cols-2 gap-3 mt-4' },
           e(NumInput, { label: 'Decipher score', value: decipher, onChange: setDecipher, min: 0, max: 1, step: '0.01', hint: '0.00–1.00', error: errors.decipher }),
           e(NumInput, { label: 'Oncotype GPS',   value: gps,     onChange: setGps,     min: 0, max: 100, hint: '0–100',   error: errors.gps }),
@@ -435,14 +507,15 @@ export default function PatientForm({ onSubmit, initialValues = {} }) {
     ),
 
     // ── Section 3: PSMA ───────────────────────────────────────────────────
-    e('div', { className: 'bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden' },
+    e('div', { style: { background: '#fff', borderRadius: 18, border: '1px solid #f1f5f9', boxShadow: '0 1px 0 rgba(0,0,45,0.02), 0 4px 14px rgba(6,171,235,0.04)', overflow: 'hidden' } },
       e(SectionToggle, {
         title: 'PSMA',
         badge: 'Optional',
         open: showPSMA, onToggle: () => setShowPSMA(v => !v),
         mutedText: 'Staging only · select if performed',
+        num: '3', numColor: '#10b981',
       }),
-      showPSMA && e('div', { className: 'px-4 pb-5 border-t border-gray-50' },
+      showPSMA && e('div', { style: { padding: '16px 16px 20px', borderTop: '1px solid #f1f5f9' } },
         e('div', { className: 'space-y-3 mt-4' },
           e('div', {},
             e('label', { className: 'block text-xs font-medium text-gray-700 mb-2' }, 'PSMA PET/CT finding'),
@@ -477,14 +550,15 @@ export default function PatientForm({ onSubmit, initialValues = {} }) {
     ),
 
     // ── Section 4: MRI Features ───────────────────────────────────────────
-    e('div', { className: 'bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden' },
+    e('div', { style: { background: '#fff', borderRadius: 18, border: '1px solid #f1f5f9', boxShadow: '0 1px 0 rgba(0,0,45,0.02), 0 4px 14px rgba(6,171,235,0.04)', overflow: 'hidden' } },
       e(SectionToggle, {
         title: 'MRI Features',
         badge: 'Optional',
         open: showMRI, onToggle: () => setShowMRI(v => !v),
         mutedText: 'ECE, abutment, broad contact',
+        num: '4', numColor: '#06ABEB',
       }),
-      showMRI && e('div', { className: 'px-4 pb-5 border-t border-gray-50' },
+      showMRI && e('div', { style: { padding: '16px 16px 20px', borderTop: '1px solid #f1f5f9' } },
         e('div', { className: 'space-y-3 mt-4' },
           e('div', {},
             e('label', { className: 'block text-xs font-medium text-gray-700 mb-1.5' }, 'Extracapsular extension (ECE)'),
@@ -503,14 +577,15 @@ export default function PatientForm({ onSubmit, initialValues = {} }) {
     ),
 
     // ── Section 5: Risk Factors ───────────────────────────────────────────
-    e('div', { className: 'bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden' },
+    e('div', { style: { background: '#fff', borderRadius: 18, border: '1px solid #f1f5f9', boxShadow: '0 1px 0 rgba(0,0,45,0.02), 0 4px 14px rgba(6,171,235,0.04)', overflow: 'hidden' } },
       e(SectionToggle, {
         title: 'Risk Factors',
         badge: 'Optional',
         open: showExtra, onToggle: () => setShowExtra(v => !v),
         mutedText: 'Age, PSA kinetics, germline',
+        num: '5', numColor: '#f59e0b',
       }),
-      showExtra && e('div', { className: 'px-4 pb-5 border-t border-gray-50' },
+      showExtra && e('div', { style: { padding: '16px 16px 20px', borderTop: '1px solid #f1f5f9' } },
         e('div', { className: 'pt-3 space-y-3' },
           e('div', { className: 'grid grid-cols-2 gap-3' },
             e(NumInput, {
@@ -546,8 +621,20 @@ export default function PatientForm({ onSubmit, initialValues = {} }) {
 
     e('button', {
       type: 'submit',
-      className: 'btn-primary w-full py-3 rounded-xl font-semibold text-sm text-white shadow-md transition-all duration-150',
-      style: { background: '#06ABEB' },
-    }, 'Calculate Assessment')
+      style: {
+        width: '100%', height: 54, borderRadius: 14, border: 'none',
+        background: 'linear-gradient(135deg, #00002D 0%, #212070 100%)',
+        color: '#fff', fontFamily: 'inherit', fontWeight: 800, fontSize: 15,
+        letterSpacing: '-0.005em', cursor: 'pointer',
+        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+        boxShadow: '0 10px 24px rgba(0,0,45,0.3)',
+        transition: 'all 0.15s',
+      },
+    },
+      'Calculate Assessment',
+      e('svg', { width: 16, height: 16, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 2.5, strokeLinecap: 'round', strokeLinejoin: 'round' },
+        e('polyline', { points: '9 18 15 12 9 6' })
+      )
+    )
   )
 }
