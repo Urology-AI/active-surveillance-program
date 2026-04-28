@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { MODEL_VALIDATION, COHORT_CALIBRATION } from './asEngine.js'
+import { MODEL_VALIDATION, COHORT_CALIBRATION, CLINICAL_IMPACT_TABLE } from './asEngine.js'
 
 const e = React.createElement
 
@@ -111,110 +111,6 @@ function StatChip({ label, value, sub, highlight, colorScheme }) {
 }
 
 // ─── Upgrade Risk Panel ───────────────────────────────────────────────────────
-function UpgradeRiskPanel({ upgradeRisk }) {
-  if (!upgradeRisk) return null
-
-  if (!upgradeRisk.available) {
-    return e('div', {
-      className: 'bg-white rounded-2xl border border-gray-100 shadow-sm p-4',
-    },
-      e('div', { className: 'flex items-center justify-between mb-2' },
-        e('span', { className: 'font-semibold text-gray-900 text-sm' }, 'Personalized Upgrade Risk'),
-        e('span', { className: 'text-xs text-gray-400' }, 'Mount Sinai Model')
-      ),
-      e('p', { className: 'text-sm text-gray-400 text-center py-3' },
-        'Enter positive core count to see personalized risk'
-      )
-    )
-  }
-
-  const BAND_COLORS = {
-    green:  { border: '#16a34a', bg: '#f0fdf4', text: '#14532d', pctColor: '#15803d', badgeBg: '#dcfce7', badgeText: '#166534' },
-    yellow: { border: '#ca8a04', bg: '#fefce8', text: '#713f12', pctColor: '#a16207', badgeBg: '#fef9c3', badgeText: '#713f12' },
-    orange: { border: '#d97706', bg: '#fffbeb', text: '#78350f', pctColor: '#b45309', badgeBg: '#fde68a', badgeText: '#78350f' },
-    red:    { border: '#dc2626', bg: '#fef2f2', text: '#7f1d1d', pctColor: '#dc2626', badgeBg: '#fee2e2', badgeText: '#991b1b' },
-  }
-  const c = BAND_COLORS[upgradeRisk.bandColor] || BAND_COLORS.green
-  const M = upgradeRisk.model === 'withPsad'
-    ? { auc: '0.668', n: 781 }
-    : { auc: '0.609', n: 1197 }
-
-  const cohortPct = Math.round(upgradeRisk.cohortAverage * 100)
-  const belowAvg  = upgradeRisk.probabilityPct < cohortPct
-  const inp       = upgradeRisk.inputs
-
-  return e('div', {
-    className: 'rounded-2xl border-2 shadow-sm overflow-hidden',
-    style: { background: c.bg, borderColor: c.border },
-  },
-    // Header
-    e('div', {
-      className: 'px-4 pt-3.5 pb-2 flex items-center justify-between gap-2 border-b',
-      style: { borderColor: c.border + '40' },
-    },
-      e('span', { className: 'font-semibold text-sm', style: { color: c.text } }, 'Personalized Upgrade Risk'),
-      e('span', { className: 'text-xs font-medium', style: { color: c.text, opacity: 0.7 } }, 'Mount Sinai Model')
-    ),
-
-    // Body
-    e('div', { className: 'px-4 py-3' },
-
-      // Large percentage + band
-      e('div', { className: 'flex items-end gap-3 mb-2' },
-        e('div', {},
-          e('span', { className: 'text-4xl font-bold leading-none', style: { color: c.pctColor } },
-            `${upgradeRisk.probabilityPct}%`
-          ),
-          e('p', { className: 'text-xs mt-0.5', style: { color: c.text, opacity: 0.75 } }, 'upgrade risk')
-        ),
-        e('div', { className: 'mb-1' },
-          e('span', {
-            className: 'text-sm font-bold px-2.5 py-1 rounded-full',
-            style: { background: c.badgeBg, color: c.badgeText },
-          }, upgradeRisk.band),
-          e('span', { className: 'ml-2 text-xs', style: { color: c.text, opacity: 0.75 } },
-            `— ${belowAvg ? 'below' : 'above'} cohort average (${cohortPct}%)`
-          )
-        )
-      ),
-
-      // Inputs summary line
-      e('p', { className: 'text-xs mb-2', style: { color: c.text, opacity: 0.75 } },
-        'Based on: ',
-        e('span', { className: 'font-medium' }, `GG${inp.ggg}`),
-        inp.psad != null
-          ? [' · ', e('span', { key: 'psad', className: 'font-medium' }, `PSAD ${inp.psad.toFixed(3)}`)]
-          : null,
-        ' · ',
-        e('span', { className: 'font-medium' }, `${inp.positiveCores} positive core${inp.positiveCores !== 1 ? 's' : ''}`)
-      ),
-
-      // PSAD upgrade prompt (amber, only when PSAD not used)
-      !upgradeRisk.psadUsed && e('div', {
-        className: 'rounded-lg px-3 py-2 text-xs mb-2',
-        style: { background: '#fffbeb', border: '1px solid #fde68a', color: '#78350f' },
-      },
-        'Add prostate volume for PSAD-enhanced model (AUC 0.668)'
-      ),
-
-      // Model info line
-      e('p', { className: 'text-xs', style: { color: c.text, opacity: 0.55 } },
-        `N=${M.n} · AUC ${M.auc} · Internal validation only`
-      )
-    ),
-
-    // Calibration disclaimer
-    e('div', {
-      className: 'px-4 py-2.5 border-t',
-      style: { borderColor: c.border + '30', background: 'rgba(0,0,0,0.02)' },
-    },
-      e('p', { className: 'text-[11px] leading-snug', style: { color: c.text, opacity: 0.6 } },
-        `Model calibrated on N=1,213 Mount Sinai AS patients. Well-calibrated 5–40%. Not validated externally. Use alongside clinical judgment.`
-      )
-    )
-  )
-}
-
 // ─── Key Drivers ─────────────────────────────────────────────────────────────
 function KeyDrivers({ asFactors, genomicFactors, genomicAssessed, psmaFactors, psmaAssessed }) {
   const [openIdx, setOpenIdx] = useState(-1)
@@ -795,6 +691,367 @@ function DetailAccordion({
   )
 }
 
+// ─── Upgrade Risk Panel ───────────────────────────────────────────────────────
+function UpgradeRiskPanel({ upgradeRisk, inputs }) {
+  const [activeTab, setActiveTab] = useState(0)
+  const [threshold, setThreshold] = useState(20)
+
+  if (!upgradeRisk) return null
+
+  const BAND_COLORS = {
+    green:  { accent: '#15803d', bg: '#f0fdf4', border: '#16a34a', text: '#14532d' },
+    yellow: { accent: '#ca8a04', bg: '#fefce8', border: '#ca8a04', text: '#713f12' },
+    orange: { accent: '#ea580c', bg: '#fff7ed', border: '#ea580c', text: '#7c2d12' },
+    red:    { accent: '#dc2626', bg: '#fef2f2', border: '#dc2626', text: '#7f1d1d' },
+  }
+  const bc = BAND_COLORS[upgradeRisk.bandColor] || BAND_COLORS.yellow
+
+  const tabLabels = ['Risk Calculator', 'Clinical Impact', 'Patient Report']
+
+  function renderRiskCalculator() {
+    if (!upgradeRisk.available) {
+      return e('div', {
+        style: {
+          padding: '28px 20px', borderRadius: 12, background: '#f8fafc',
+          border: '1px solid #e2e8f0', textAlign: 'center', color: '#94a3b8',
+          fontSize: 14, margin: 16,
+        },
+      }, 'Enter GGG and positive core count to see personalized risk')
+    }
+
+    const barFillPct = Math.min(100, (upgradeRisk.probability / 0.50) * 100)
+    const cohortAvgPct = upgradeRisk.cohortAvgPct
+    const cohortTickPct = Math.min(100, (cohortAvgPct / 50) * 100)
+    const ggg = upgradeRisk.inputs?.ggg
+    const psad = upgradeRisk.inputs?.psad
+    const positiveCores = upgradeRisk.inputs?.positiveCores
+
+    return e('div', { style: { padding: '20px', display: 'flex', flexDirection: 'column', gap: 16 } },
+      // Large risk number
+      e('div', { style: { textAlign: 'center', padding: '4px 0' } },
+        e('div', { style: { fontSize: 72, fontWeight: 900, color: bc.accent, lineHeight: 1, letterSpacing: '-0.03em' } },
+          `${upgradeRisk.pct}%`
+        ),
+        e('div', { style: { fontSize: 13, color: '#64748b', marginTop: 6 } },
+          'upgrade risk at next biopsy'
+        ),
+        upgradeRisk.hasCi && e('div', { style: { fontSize: 12, color: '#94a3b8', marginTop: 4 } },
+          `95% CI: ${upgradeRisk.ciLo}%–${upgradeRisk.ciHi}%`
+        )
+      ),
+
+      // Progress bar
+      e('div', { style: { display: 'flex', flexDirection: 'column', gap: 0 } },
+        e('div', { style: { position: 'relative', height: 12, borderRadius: 6, background: '#f1f5f9', overflow: 'visible' } },
+          e('div', {
+            style: {
+              position: 'absolute', left: 0, top: 0, height: '100%',
+              width: barFillPct + '%', background: bc.accent, borderRadius: 6,
+              transition: 'width 0.4s',
+            },
+          }),
+          e('div', {
+            style: {
+              position: 'absolute', top: -3, bottom: -3, width: 2,
+              background: '#94a3b8', borderRadius: 1,
+              left: cohortTickPct + '%', transform: 'translateX(-50%)',
+              zIndex: 2,
+            },
+          })
+        ),
+        e('div', { style: { position: 'relative', height: 18, marginTop: 2 } },
+          e('div', {
+            style: {
+              position: 'absolute', fontSize: 10, color: bc.accent, fontWeight: 600,
+              left: `clamp(0px, calc(${barFillPct}% - 32px), calc(100% - 72px))`,
+              top: 2, whiteSpace: 'nowrap',
+            },
+          }, '↑ You are here')
+        ),
+        e('div', { style: { display: 'flex', justifyContent: 'space-between', fontSize: 10, color: '#94a3b8', marginTop: 2 } },
+          e('span', null, '0%'),
+          e('span', null, '50%+')
+        )
+      ),
+
+      // Percentile + band box
+      e('div', {
+        style: {
+          padding: '12px 16px', borderRadius: 10,
+          background: bc.bg, border: `1px solid ${bc.border}`,
+          display: 'flex', flexDirection: 'column', gap: 4,
+        },
+      },
+        e('p', { style: { fontSize: 13, color: bc.text, fontWeight: 600, margin: 0 } },
+          `${upgradeRisk.pctBelow}% of Mount Sinai AS patients have lower risk`
+        ),
+        e('p', { style: { fontSize: 12, color: bc.text, margin: 0 } },
+          'Band: ',
+          e('span', { style: { fontWeight: 700 } }, upgradeRisk.band),
+          ` — ${upgradeRisk.pct < cohortAvgPct ? 'below' : upgradeRisk.pct === cohortAvgPct ? 'at' : 'above'} cohort average (${cohortAvgPct}%)`
+        )
+      ),
+
+      // PSAD alert if not used
+      !upgradeRisk.psadUsed && e('div', {
+        style: {
+          padding: '10px 14px', borderRadius: 10,
+          background: '#fffbeb', border: '1px solid #fde68a',
+          fontSize: 12, color: '#78350f', display: 'flex', gap: 8, alignItems: 'flex-start',
+        },
+      },
+        e('span', null, '⚠️'),
+        e('span', null, 'Add prostate volume for PSAD-enhanced estimate (AUC 0.668)')
+      ),
+
+      // Model note
+      e('div', {
+        style: {
+          fontSize: 11, color: '#94a3b8', borderTop: '1px solid #f1f5f9',
+          paddingTop: 10, display: 'flex', flexDirection: 'column', gap: 2,
+        },
+      },
+        e('p', { style: { margin: 0 } },
+          `Model: GG${ggg}${psad != null ? ` · PSAD ${psad.toFixed(3)}` : ''} · ${positiveCores} positive ${positiveCores === 1 ? 'core' : 'cores'}`
+        ),
+        e('p', { style: { margin: 0 } },
+          `AUC ${upgradeRisk.auc} · N=${upgradeRisk.modelN} · Internal validation only`
+        )
+      )
+    )
+  }
+
+  function renderClinicalImpact() {
+    const THRESHOLD_KEYS = [0.10, 0.15, 0.20, 0.25, 0.30, 0.35]
+    const thresholdKey = THRESHOLD_KEYS.reduce((prev, curr) =>
+      Math.abs(curr - threshold / 100) < Math.abs(prev - threshold / 100) ? curr : prev
+    )
+    const data = CLINICAL_IMPACT_TABLE[thresholdKey]
+    const thresholdPct = Math.round(thresholdKey * 100)
+    const patientAbove = upgradeRisk.available && upgradeRisk.probability >= thresholdKey
+
+    if (!data) return e('div', { style: { padding: 20 } }, 'No data available')
+
+    return e('div', { style: { padding: '20px', display: 'flex', flexDirection: 'column', gap: 16 } },
+      // Header + slider
+      e('div', { style: { display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' } },
+        e('div', {},
+          e('p', { style: { fontSize: 14, fontWeight: 700, color: '#00002D', margin: '0 0 2px' } },
+            `Clinical Impact at ${thresholdPct}% threshold`
+          ),
+          e('p', { style: { fontSize: 11, color: '#94a3b8', margin: 0 } },
+            'For every 1,000 patients in active surveillance:'
+          )
+        ),
+        e('div', { style: { display: 'flex', alignItems: 'center', gap: 6 } },
+          e('span', { style: { fontSize: 10, color: '#94a3b8' } }, '10%'),
+          e('input', {
+            type: 'range', min: 10, max: 35, step: 5, value: threshold,
+            onChange: ev => setThreshold(Number(ev.target.value)),
+            style: { width: 80, accentColor: '#06ABEB' },
+          }),
+          e('span', { style: { fontSize: 10, color: '#94a3b8' } }, '35%')
+        )
+      ),
+
+      // 4 stat boxes
+      e('div', { style: { display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8 } },
+        e('div', { style: { textAlign: 'center', padding: '12px 6px', borderRadius: 10, background: '#f0f9ff', border: '1px solid #bae6fd' } },
+          e('div', { style: { fontSize: 26, fontWeight: 900, color: '#0369a1', lineHeight: 1 } }, String(data.biopsies)),
+          e('div', { style: { fontSize: 9, color: '#0369a1', fontWeight: 600, textTransform: 'uppercase', marginTop: 4, lineHeight: 1.3 } }, 'biopsies\nperformed')
+        ),
+        e('div', { style: { textAlign: 'center', padding: '12px 6px', borderRadius: 10, background: '#f0fdf4', border: '1px solid #bbf7d0' } },
+          e('div', { style: { fontSize: 26, fontWeight: 900, color: '#15803d', lineHeight: 1 } }, String(data.caught)),
+          e('div', { style: { fontSize: 9, color: '#15803d', fontWeight: 600, textTransform: 'uppercase', marginTop: 4, lineHeight: 1.3 } }, 'upgrades\ncaught')
+        ),
+        e('div', { style: { textAlign: 'center', padding: '12px 6px', borderRadius: 10, background: '#fef2f2', border: '1px solid #fecaca' } },
+          e('div', { style: { fontSize: 26, fontWeight: 900, color: '#dc2626', lineHeight: 1 } }, String(data.missed)),
+          e('div', { style: { fontSize: 9, color: '#dc2626', fontWeight: 600, textTransform: 'uppercase', marginTop: 4, lineHeight: 1.3 } }, 'upgrades\nmissed')
+        ),
+        e('div', { style: { textAlign: 'center', padding: '12px 6px', borderRadius: 10, background: '#f8fafc', border: '1px solid #e2e8f0' } },
+          e('div', { style: { fontSize: 26, fontWeight: 900, color: '#334155', lineHeight: 1 } }, String(data.avoided)),
+          e('div', { style: { fontSize: 9, color: '#334155', fontWeight: 600, textTransform: 'uppercase', marginTop: 4, lineHeight: 1.3 } }, 'biopsies\navoided')
+        )
+      ),
+
+      // Sens/Spec/PPV/NPV
+      e('div', { style: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 } },
+        ...['Sensitivity', 'Specificity', 'PPV', 'NPV'].map((label, i) => {
+          const val = [data.sens, data.spec, data.ppv, data.npv][i]
+          return e('div', {
+            key: label,
+            style: { padding: '8px 12px', borderRadius: 8, background: '#f8fafc', border: '1px solid #e2e8f0' },
+          },
+            e('div', { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center' } },
+              e('span', { style: { fontSize: 12, color: '#64748b' } }, label),
+              e('span', { style: { fontSize: 13, fontWeight: 700, color: '#00002D' } }, val.toFixed(2))
+            )
+          )
+        })
+      ),
+
+      // Patient position vs threshold
+      upgradeRisk.available && e('div', {
+        style: {
+          padding: '12px 14px', borderRadius: 10,
+          background: patientAbove ? '#fffbeb' : '#f0fdf4',
+          border: `1px solid ${patientAbove ? '#fde68a' : '#bbf7d0'}`,
+          fontSize: 12,
+          color: patientAbove ? '#78350f' : '#14532d',
+        },
+      },
+        e('p', { style: { margin: '0 0 2px', fontWeight: 600 } },
+          `This patient’s risk: ${upgradeRisk.pct}% → ${patientAbove ? 'AT OR ABOVE threshold' : 'BELOW threshold'}`
+        ),
+        e('p', { style: { margin: 0 } },
+          `→ Would ${patientAbove ? '' : 'NOT '}be recommended for biopsy at this threshold`
+        )
+      )
+    )
+  }
+
+  function renderPatientReport() {
+    const psad = upgradeRisk.inputs?.psad
+    const ggg = upgradeRisk.inputs?.ggg
+    const cores = upgradeRisk.inputs?.positiveCores
+    const pctHigher = 100 - upgradeRisk.pctBelow
+
+    return e('div', { style: { padding: '20px', display: 'flex', flexDirection: 'column', gap: 16 } },
+      // Patient info
+      e('div', {
+        style: { padding: '12px 14px', borderRadius: 10, background: '#f8fafc', border: '1px solid #e2e8f0', fontSize: 12, color: '#334155' },
+      },
+        e('p', { style: { fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#94a3b8', fontSize: 10, margin: '0 0 8px' } },
+          'Patient Information'
+        ),
+        e('div', { style: { display: 'flex', flexWrap: 'wrap', gap: '4px 16px' } },
+          e('span', null, `Grade Group: ${ggg}`),
+          inputs.psa != null && e('span', null, `PSA: ${inputs.psa} ng/mL`),
+          inputs.prostateVolume != null && e('span', null, `Volume: ${inputs.prostateVolume} cc`),
+          psad != null && e('span', null, `PSAD: ${psad.toFixed(3)}`),
+          cores != null && e('span', null, `Positive cores: ${cores}`)
+        )
+      ),
+
+      // Risk section
+      e('div', { style: { display: 'flex', flexDirection: 'column', gap: 12 } },
+        e('div', { style: { borderBottom: '2px solid #e2e8f0', paddingBottom: 8 } },
+          e('p', { style: { fontSize: 11, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em', color: '#64748b', margin: 0 } },
+            'Risk of Finding More Aggressive Cancer at Next Biopsy'
+          )
+        ),
+
+        e('div', {},
+          e('p', { style: { fontSize: 13, fontWeight: 700, color: '#00002D', margin: '0 0 6px' } }, 'What does this tell me?'),
+          e('p', { style: { fontSize: 13, color: '#334155', lineHeight: 1.6, margin: 0 } },
+            'The Mount Sinai AS Tool provides an estimate of how likely you are to have more aggressive cancer detected at your next prostate biopsy. This estimate may help you and your doctor decide whether a biopsy is necessary at this time.'
+          )
+        ),
+
+        e('div', {},
+          e('p', { style: { fontSize: 13, fontWeight: 700, color: '#00002D', margin: '0 0 6px' } }, 'What is my risk?'),
+          e('p', { style: { fontSize: 13, color: '#334155', lineHeight: 1.6, margin: 0 } },
+            upgradeRisk.available
+              ? `Your risk of having more aggressive cancer on a prostate biopsy is about ${upgradeRisk.pct}%${upgradeRisk.hasCi ? ` (95% confidence interval: ${upgradeRisk.ciLo}%–${upgradeRisk.ciHi}%)` : ''}. This means that in 100 men like you, about ${upgradeRisk.pct} would have more aggressive cancer detected at the next biopsy.`
+              : 'Risk estimate not available. Please enter grade group and positive core count.'
+          )
+        ),
+
+        upgradeRisk.available && e('div', {},
+          e('p', { style: { fontSize: 13, fontWeight: 700, color: '#00002D', margin: '0 0 6px' } }, 'How do I compare with other men?'),
+          e('p', { style: { fontSize: 13, color: '#334155', lineHeight: 1.6, margin: 0 } },
+            `Your risk is ${upgradeRisk.band.toLowerCase()} when compared with other men on active surveillance at Mount Sinai. ${pctHigher}% of AS patients have a higher risk than you.`
+          )
+        )
+      ),
+
+      // Important notes
+      e('div', {
+        style: { padding: '12px 14px', borderRadius: 10, background: '#fefce8', border: '1px solid #fde68a', fontSize: 12, color: '#78350f' },
+      },
+        e('p', { style: { fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', fontSize: 10, margin: '0 0 6px', color: '#92400e' } },
+          'Important Notes'
+        ),
+        e('p', { style: { lineHeight: 1.6, margin: 0 } },
+          `This calculator is based on N=${upgradeRisk.modelN} Mount Sinai active surveillance patients. It provides an estimate only — not a guarantee. Use alongside clinical judgment and guideline-based recommendations. This calculator has not been externally validated.`
+        )
+      ),
+
+      // Print button
+      e('button', {
+        onClick: () => window.print(),
+        style: {
+          height: 44, borderRadius: 10, border: 'none',
+          background: 'linear-gradient(135deg, #00002D 0%, #212070 100%)',
+          fontSize: 13, fontWeight: 700, color: '#fff',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+          cursor: 'pointer', width: '100%', fontFamily: 'inherit',
+        },
+      },
+        e('svg', { width: 14, height: 14, fill: 'none', viewBox: '0 0 24 24', stroke: 'currentColor', strokeWidth: 2 },
+          e('path', { strokeLinecap: 'round', strokeLinejoin: 'round', d: 'M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z' })
+        ),
+        'Print Patient Report'
+      )
+    )
+  }
+
+  return e('div', {
+    style: {
+      background: '#fff', borderRadius: 18, border: '1px solid #f1f5f9',
+      boxShadow: '0 1px 0 rgba(0,0,45,0.02), 0 4px 14px rgba(6,171,235,0.04)',
+      overflow: 'hidden',
+    },
+  },
+    // Panel header
+    e('div', {
+      style: {
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        gap: 12, padding: '16px 18px 0', borderBottom: '0',
+      },
+    },
+      e('div', {},
+        e('div', { style: { fontSize: 16, fontWeight: 800, color: '#00002D', letterSpacing: '-0.005em' } }, 'Personalized Upgrade Risk'),
+        e('div', { style: { fontSize: 12, color: '#94a3b8', marginTop: 2 } }, 'Mount Sinai logistic regression · N=781')
+      ),
+      upgradeRisk.available && e('span', {
+        style: {
+          fontSize: 12, fontWeight: 800, padding: '4px 12px', borderRadius: 999,
+          background: bc.bg, color: bc.accent, border: `1px solid ${bc.border}`,
+        },
+      }, `${upgradeRisk.pct}% — ${upgradeRisk.band}`)
+    ),
+
+    // Tab bar
+    e('div', {
+      style: {
+        display: 'flex', borderBottom: '1px solid #f1f5f9',
+        padding: '0 18px', marginTop: 12,
+      },
+    },
+      ...tabLabels.map((label, i) =>
+        e('button', {
+          key: i, type: 'button',
+          onClick: () => setActiveTab(i),
+          style: {
+            flex: 1, height: 38, border: 'none', background: 'transparent',
+            fontSize: 12, fontWeight: activeTab === i ? 700 : 500,
+            color: activeTab === i ? '#06ABEB' : '#94a3b8',
+            borderBottom: `2px solid ${activeTab === i ? '#06ABEB' : 'transparent'}`,
+            cursor: 'pointer', fontFamily: 'inherit', transition: 'all 0.15s',
+            padding: '0 4px',
+          },
+        }, label)
+      )
+    ),
+
+    // Tab content
+    activeTab === 0 ? renderRiskCalculator() :
+    activeTab === 1 ? renderClinicalImpact() :
+    renderPatientReport()
+  )
+}
+
 const SHORT_TIER_LABEL = {
   standard_as:          'AS Eligible',
   enhanced_as:          'Enhanced AS',
@@ -880,31 +1137,46 @@ export default function PatientResults({ results, inputs, onBack, onDownloadData
         e('p', {
           style: { color: 'rgba(255,255,255,0.78)', fontSize: 14, lineHeight: 1.55, margin: '0 0 14px', maxWidth: 560 },
         }, combinedRecommendation),
-        // PSAD stat strip
-        psadNum != null && e('div', {
-          style: {
-            display: 'inline-flex', alignItems: 'center', gap: 8,
-            background: 'rgba(255,255,255,0.08)', borderRadius: 10,
-            padding: '7px 12px', fontSize: 12, color: 'rgba(255,255,255,0.85)',
-            border: '1px solid rgba(255,255,255,0.12)',
-          },
-        },
-          e('span', { style: { fontWeight: 800 } }, `PSAD ${psadNum.toFixed(3)}`),
-          e('span', { style: { color: 'rgba(255,255,255,0.3)' } }, '·'),
-          e('span', { style: { fontWeight: 400 } },
-            psadNum < MV.basic_psad.youden_cutoff
-              ? `Below threshold (${MV.basic_psad.youden_cutoff}) · `
-              : `Above threshold (${MV.basic_psad.youden_cutoff}) · `,
-            upgradeRisk?.available
-              ? `Personalized risk: ${upgradeRisk.probabilityPct}%`
-              : `NPV ${(MV.basic_psad.npv_at_youden * 100).toFixed(0)}%`
-          )
+        // Upgrade risk / PSAD stat strip
+        (upgradeRisk?.available
+          ? e('div', {
+              style: {
+                display: 'inline-flex', alignItems: 'center', gap: 8,
+                background: 'rgba(255,255,255,0.08)', borderRadius: 10,
+                padding: '7px 12px', fontSize: 12, color: 'rgba(255,255,255,0.85)',
+                border: '1px solid rgba(255,255,255,0.12)',
+              },
+            },
+              e('span', { style: { fontWeight: 800 } }, 'Personalized upgrade risk:'),
+              e('span', { style: { color: 'rgba(255,255,255,0.3)' } }, '·'),
+              e('span', { style: { fontWeight: 600 } },
+                upgradeRisk.hasCi
+                  ? `${upgradeRisk.pct}% (95% CI ${upgradeRisk.ciLo}%–${upgradeRisk.ciHi}%)`
+                  : `${upgradeRisk.pct}%`
+              )
+            )
+          : psadNum != null && e('div', {
+              style: {
+                display: 'inline-flex', alignItems: 'center', gap: 8,
+                background: 'rgba(255,255,255,0.08)', borderRadius: 10,
+                padding: '7px 12px', fontSize: 12, color: 'rgba(255,255,255,0.85)',
+                border: '1px solid rgba(255,255,255,0.12)',
+              },
+            },
+              e('span', { style: { fontWeight: 800 } }, `PSAD ${psadNum.toFixed(3)}`),
+              e('span', { style: { color: 'rgba(255,255,255,0.3)' } }, '·'),
+              e('span', { style: { fontWeight: 400 } },
+                psadNum < MV.basic_psad.youden_cutoff
+                  ? `Below threshold (${MV.basic_psad.youden_cutoff}) · NPV 94.4% in N=1,213 cohort`
+                  : `Above threshold (${MV.basic_psad.youden_cutoff}) · NPV 94.4% in N=1,213 cohort`
+              )
+            )
         )
       )
     ),
 
-    // ── 2. Personalized Upgrade Risk ─────────────────────────────────────
-    e(UpgradeRiskPanel, { upgradeRisk }),
+    // ── 2. Personalized Upgrade Risk Panel ──────────────────────────────
+    e(UpgradeRiskPanel, { upgradeRisk, inputs }),
 
     // ── 3. Key Drivers ───────────────────────────────────────────────────
     e(KeyDrivers, {
