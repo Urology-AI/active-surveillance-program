@@ -110,6 +110,7 @@ function StatChip({ label, value, sub, highlight, colorScheme }) {
   )
 }
 
+// ─── Upgrade Risk Panel ───────────────────────────────────────────────────────
 // ─── Key Drivers ─────────────────────────────────────────────────────────────
 function KeyDrivers({ asFactors, genomicFactors, genomicAssessed, psmaFactors, psmaAssessed }) {
   const [openIdx, setOpenIdx] = useState(-1)
@@ -1195,7 +1196,7 @@ export default function PatientResults({ results, inputs, onBack, onDownloadData
       featureCount,
     }),
 
-    // ── 4. Cohort Context Chips ──────────────────────────────────────────
+    // ── 5. Cohort Context Chips ──────────────────────────────────────────
     e('div', {
       style: { background: '#fff', borderRadius: 18, border: '1px solid #f1f5f9', boxShadow: '0 1px 0 rgba(0,0,45,0.02), 0 4px 14px rgba(6,171,235,0.04)', padding: '16px 18px' },
     },
@@ -1203,7 +1204,7 @@ export default function PatientResults({ results, inputs, onBack, onDownloadData
       e(CohortChips, { cohortContext, inputs, psad: psadNum })
     ),
 
-    // ── 5. Actions ───────────────────────────────────────────────────────
+    // ── 6. Actions ───────────────────────────────────────────────────────
     e('div', { className: 'no-print', style: { display: 'flex', flexWrap: 'wrap', gap: 10 } },
       e('button', {
         onClick: onBack,
@@ -1238,7 +1239,7 @@ export default function PatientResults({ results, inputs, onBack, onDownloadData
       )
     ),
 
-    // ── 6. Detail Accordion ──────────────────────────────────────────────
+    // ── 7. Detail Accordion ──────────────────────────────────────────────
     e(DetailAccordion, {
       asFactors, asScore, asTierKey,
       genomicAssessed, genomicRiskTier, genomicScore, genomicFactors,

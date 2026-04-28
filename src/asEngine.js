@@ -1255,10 +1255,13 @@ export function calcOutcomesPrediction(inputs) {
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // LAYER 3 — PERSONALIZED LOGISTIC REGRESSION (Mount Sinai AS Cohort, N=781)
-// Validated on GG1/GG2 patients; outcome: GG upgrade on repeat biopsy
+// Derived from N=1,213 GG1/GG2 active surveillance patients
+// Outcome: GG upgrade on repeat biopsy
+// Method: Maximum likelihood logistic regression (statsmodels)
 // Significant predictors (p<0.01): GGG, PSAD, positive core count
 // NOT significant: age (p=0.75), max % core (p=0.48), PI-RADS (p=0.40)
-// Primary model AUC 0.668 (PSAD, N=781); fallback AUC 0.609 (no PSAD, N=1,197)
+// Internal AUC: 0.668 (PSAD model, N=781) / 0.609 (fallback, no PSAD, N=1,197)
+// Calibration: well-calibrated 5–40%; mild overestimate above 40%
 // ═══════════════════════════════════════════════════════════════════════════════
 
 export const UPGRADE_RISK_MODEL = {
@@ -1281,14 +1284,14 @@ export const UPGRADE_RISK_MODEL = {
       p_k:  -0.004068,
       k_k:   0.001791,
     },
-    auc: 0.668, n: 781, base_rate: 0.209,
+    auc: 0.668, n: 781, n_upgraded: 163, base_rate: 0.209,
   },
   // Fallback — no prostate volume/PSAD (N=1,197, AUC 0.609)
   noPsad: {
     intercept:  -1.270373,
     is_gg2:     -1.640259,
     pos_cores:   0.107063,
-    auc: 0.609, n: 1197, base_rate: 0.252,
+    auc: 0.609, n: 1197, n_upgraded: 301, base_rate: 0.252,
   },
 }
 
@@ -1356,7 +1359,7 @@ export function calcUpgradeRisk(inputs) {
     modelKey = 'noPsad'
   }
 
-  // Percentile rank vs cohort
+  // Percentile rank vs N=781 cohort
   const keys = Object.keys(RISK_PERCENTILES).map(Number).sort((a, b) => a - b)
   let pctBelow = 0
   for (let i = 0; i < keys.length - 1; i++) {
@@ -1438,6 +1441,7 @@ export function runAssessment(inputs) {
       cohortLayer: null,
       outcomesData: null,
       modelValidation: MODEL_VALIDATION,
+      upgradeRisk: calcUpgradeRisk(inputs),
     }
   }
 
