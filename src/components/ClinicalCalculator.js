@@ -15,7 +15,7 @@ const e = React.createElement
 
 const EXPORT_VERSION = 1
 
-export default function ClinicalCalculator() {
+export default function ClinicalCalculator({ onBack }) {
   const [view,              setView]              = useState('form') // 'form' | 'results'
   const [inputs,            setInputs]            = useState(null)
   const [results,           setResults]           = useState(null)
@@ -255,13 +255,29 @@ export default function ClinicalCalculator() {
     },
   },
 
-    // ── Action bar (Load / Export JSON only — branding is in the global header) ─
+    // ── Action bar (Back / Load / Export JSON) ────────────────────────────────
     e('div', {
       style: {
-        display: 'flex', alignItems: 'center', justifyContent: 'flex-end',
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         padding: '10px 20px 4px',
       },
     },
+      // Back to role selector
+      onBack && e('button', {
+        type: 'button', onClick: onBack,
+        style: {
+          padding: '7px 13px', borderRadius: 9,
+          background: 'transparent', border: '1px solid #e2e8f0',
+          fontSize: 12, fontWeight: 700, color: '#64748b',
+          display: 'flex', alignItems: 'center', gap: 5, cursor: 'pointer',
+        },
+      },
+        e('svg', { width: 13, height: 13, fill: 'none', viewBox: '0 0 24 24', stroke: 'currentColor', strokeWidth: 2 },
+          e('path', { strokeLinecap: 'round', strokeLinejoin: 'round', d: 'M15 19l-7-7 7-7' })
+        ),
+        'Change Role'
+      ),
+      !onBack && e('div'),  // spacer when no back button
       view === 'results'
         ? e('button', {
             type: 'button', onClick: handleDownload,

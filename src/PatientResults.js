@@ -691,6 +691,125 @@ function DetailAccordion({
   )
 }
 
+// ─── Clinical Summary Panel (clinician-facing input + sub-model overview) ─────
+function ClinicalSummaryPanel({ inputs, asScore, asTierKey, genomicAssessed, genomicRiskTier, genomicScore, psmaAssessed, psmaFinding, psmaScore, monitoringTier, psad, combinedTierKey }) {
+  const [open, setOpen] = useState(true)
+
+  const SUBMODEL_STYLES = {
+    standard_as:   { label: 'AS Eligible',   bg: '#f0fdf4', border: '#16a34a', color: '#15803d' },
+    enhanced_as:   { label: 'Enhanced',      bg: '#fffbeb', border: '#d97706', color: '#b45309' },
+    intensive_as:  { label: 'Intensive',     bg: '#fef2f2', border: '#dc2626', color: '#b91c1c' },
+    treatment_discussion: { label: 'Tx Discussion', bg: '#f5f3ff', border: '#7c3aed', color: '#6d28d9' },
+    treatment_required:   { label: 'Tx Required',   bg: '#fef2f2', border: '#dc2626', color: '#b91c1c' },
+  }
+
+  const asStyle = SUBMODEL_STYLES[asTierKey] || { label: asTierKey, bg: '#f1f5f9', border: '#e2e8f0', color: '#334155' }
+
+  const genomicStyle =
+    !genomicAssessed           ? { label: 'Not assessed', bg: '#f8fafc', border: '#e2e8f0', color: '#94a3b8' }
+    : genomicRiskTier === 'high'         ? { label: 'High risk',   bg: '#fef2f2', border: '#dc2626', color: '#b91c1c' }
+    : genomicRiskTier === 'intermediate' ? { label: 'Intermediate',bg: '#fffbeb', border: '#d97706', color: '#b45309' }
+    :                                      { label: 'Favorable',   bg: '#f0fdf4', border: '#16a34a', color: '#15803d' }
+
+  const psmaStyle =
+    !psmaAssessed                                                     ? { label: 'Not assessed', bg: '#f8fafc', border: '#e2e8f0', color: '#94a3b8' }
+    : psmaFinding === 'metastatic' || psmaFinding === 'regional'     ? { label: psmaFinding === 'metastatic' ? 'Metastatic' : 'Regional nodes', bg: '#fef2f2', border: '#dc2626', color: '#b91c1c' }
+    : psmaFinding === 'local'                                         ? { label: 'Local only',   bg: '#fffbeb', border: '#d97706', color: '#b45309' }
+    :                                                                    { label: 'Negative',     bg: '#f0fdf4', border: '#16a34a', color: '#15803d' }
+
+  const monStyle = MONITORING_STYLES[monitoringTier] || MONITORING_STYLES.standard
+
+  const psadNum = psad != null ? Number(psad) : null
+
+  function InputRow({ label, value, badge, badgeColor }) {
+    if (value == null || value === '' || value === false) return null
+    return e('div', { style: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '5px 0', borderBottom: '1px solid #f8fafc' } },
+      e('span', { style: { fontSize: 12, color: '#64748b' } }, label),
+      e('div', { style: { display: 'flex', alignItems: 'center', gap: 6 } },
+        e('span', { style: { fontSize: 13, fontWeight: 700, color: '#00002D' } }, value),
+        badge && e('span', {
+          style: { fontSize: 10, fontWeight: 700, padding: '1px 6px', borderRadius: 999, background: badgeColor?.bg || '#f1f5f9', color: badgeColor?.color || '#64748b', border: `1px solid ${badgeColor?.border || '#e2e8f0'}` },
+        }, badge)
+      )
+    )
+  }
+
+  function SubModelBadge({ label, score, style, scoreLabel }) {
+    return e('div', {
+      style: { padding: '10px 12px', borderRadius: 12, background: style.bg, border: `1px solid ${style.border}`, display: 'flex', flexDirection: 'column', gap: 3 },
+    },
+      e('span', { style: { fontSize: 11, fontWeight: 700, color: style.color } }, label),
+      e('span', { style: { fontSize: 12, fontWeight: 800, color: style.color } }, style.label),
+      score != null && e('span', { style: { fontSize: 10, color: style.color, opacity: 0.7 } }, scoreLabel || `Score: ${score > 0 ? '+' : ''}${score}`)
+    )
+  }
+
+  return e('div', {
+    style: { background: '#fff', borderRadius: 18, border: '1px solid #f1f5f9', boxShadow: '0 1px 0 rgba(0,0,45,0.02), 0 4px 14px rgba(6,171,235,0.04)', overflow: 'hidden' },
+  },
+    e('button', {
+      type: 'button',
+      onClick: () => setOpen(v => !v),
+      style: { width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 18px', background: 'transparent', border: 'none', cursor: 'pointer', fontFamily: 'inherit', textAlign: 'left' },
+    },
+      e('div', {},
+        e('div', { style: { fontSize: 16, fontWeight: 800, color: '#00002D', letterSpacing: '-0.005em' } }, 'Clinical Summary'),
+        e('div', { style: { fontSize: 12, color: '#64748b', marginTop: 2 } }, 'Patient inputs · Sub-model scores')
+      ),
+      e('div', { style: { display: 'flex', alignItems: 'center', gap: 6 } },
+        e('span', { style: { fontSize: 11, fontWeight: 700, color: '#06ABEB' } }, open ? 'Collapse' : 'Expand'),
+        e('svg', { width: 16, height: 16, fill: 'none', viewBox: '0 0 24 24', stroke: 'currentColor', strokeWidth: 2, style: { color: '#94a3b8', transition: 'transform 0.2s', transform: open ? 'rotate(180deg)' : 'none' } },
+          e('path', { strokeLinecap: 'round', strokeLinejoin: 'round', d: 'M19 9l-7 7-7-7' })
+        )
+      )
+    ),
+
+    open && e('div', { style: { padding: '0 18px 18px', display: 'flex', flexDirection: 'column', gap: 16, borderTop: '1px solid #f1f5f9' } },
+
+      // Sub-model grid
+      e('div', {},
+        e('p', { style: { fontSize: 11, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#94a3b8', margin: '12px 0 8px' } }, 'Sub-model Results'),
+        e('div', { style: { display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 8 } },
+          e(SubModelBadge, { label: 'Basic + PSAD', score: asScore, style: asStyle }),
+          e(SubModelBadge, { label: 'Genomic', score: genomicAssessed ? genomicScore : null, style: genomicStyle }),
+          e(SubModelBadge, { label: 'PSMA PET/CT', score: psmaAssessed ? psmaScore : null, style: psmaStyle }),
+          e('div', {
+            style: { padding: '10px 12px', borderRadius: 12, background: monStyle.bg, border: `1px solid ${monStyle.color}33`, display: 'flex', flexDirection: 'column', gap: 3 },
+          },
+            e('span', { style: { fontSize: 11, fontWeight: 700, color: monStyle.color } }, 'Monitoring Protocol'),
+            e('span', { style: { fontSize: 12, fontWeight: 800, color: monStyle.color } }, monStyle.label)
+          )
+        )
+      ),
+
+      // Patient inputs
+      e('div', {},
+        e('p', { style: { fontSize: 11, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#94a3b8', marginBottom: 8, marginTop: 0 } }, 'Entered Data'),
+        e('div', { style: { display: 'flex', flexDirection: 'column' } },
+          e(InputRow, { label: 'Grade Group', value: inputs.ggg != null ? `GG${inputs.ggg}` : null }),
+          e(InputRow, { label: 'Positive / Total Cores', value: inputs.positiveCores != null && inputs.totalCores != null ? `${inputs.positiveCores} / ${inputs.totalCores}` : null }),
+          e(InputRow, { label: 'Max Core %', value: inputs.maxCorePercent != null ? `${inputs.maxCorePercent}%` : null }),
+          e(InputRow, { label: 'PSA', value: inputs.psa != null ? `${inputs.psa} ng/mL` : null }),
+          e(InputRow, { label: 'Prostate Volume', value: inputs.prostateVolume != null ? `${inputs.prostateVolume} cc` : null }),
+          e(InputRow, { label: 'PSAD', value: psadNum != null ? psadNum.toFixed(3) : null,
+            badge: psadNum != null ? (psadNum < 0.065 ? '< 0.065' : psadNum < 0.15 ? '0.065–0.15' : psadNum < 0.177 ? '0.15–0.177' : '> 0.177') : null,
+            badgeColor: psadNum != null ? (psadNum < 0.15 ? { bg: '#f0fdf4', border: '#16a34a', color: '#15803d' } : { bg: '#fef2f2', border: '#dc2626', color: '#b91c1c' }) : null,
+          }),
+          e(InputRow, { label: 'PI-RADS', value: inputs.pirads != null && inputs.pirads !== 0 ? `PI-RADS ${inputs.pirads}` : null }),
+          e(InputRow, { label: 'Age', value: inputs.age != null ? `${inputs.age} yr` : null }),
+          inputs.decipher != null  && e(InputRow, { label: 'Decipher', value: String(inputs.decipher) }),
+          inputs.gps      != null  && e(InputRow, { label: 'GPS (Oncotype)', value: String(inputs.gps) }),
+          inputs.prolaris != null  && e(InputRow, { label: 'Prolaris CCP', value: String(inputs.prolaris) }),
+          inputs.psmaFinding       && e(InputRow, { label: 'PSMA Finding', value: inputs.psmaFinding }),
+          inputs.hasECE            && e(InputRow, { label: 'ECE', value: 'Present' }),
+          inputs.hasAbutment       && e(InputRow, { label: 'Neurovascular Abutment', value: 'Present' }),
+          inputs.hasBroadContact   && e(InputRow, { label: 'Broad Capsular Contact', value: 'Present' }),
+        )
+      )
+    )
+  )
+}
+
 // ─── Upgrade Risk Panel ───────────────────────────────────────────────────────
 function UpgradeRiskPanel({ upgradeRisk, inputs }) {
   const [activeTab, setActiveTab] = useState(0)
@@ -706,7 +825,7 @@ function UpgradeRiskPanel({ upgradeRisk, inputs }) {
   }
   const bc = BAND_COLORS[upgradeRisk.bandColor] || BAND_COLORS.yellow
 
-  const tabLabels = ['Risk Calculator', 'Clinical Impact', 'Patient Report']
+  const tabLabels = ['Risk Calculator', 'Threshold Adjuster', 'Patient Report']
 
   function renderRiskCalculator() {
     if (!upgradeRisk.available) {
@@ -1175,10 +1294,19 @@ export default function PatientResults({ results, inputs, onBack, onDownloadData
       )
     ),
 
-    // ── 2. Personalized Upgrade Risk Panel ──────────────────────────────
+    // ── 2. Clinical Summary (sub-models + entered data) ─────────────────
+    e(ClinicalSummaryPanel, {
+      inputs, psad: psadNum, combinedTierKey,
+      asScore, asTierKey,
+      genomicAssessed, genomicRiskTier, genomicScore,
+      psmaAssessed, psmaFinding, psmaScore,
+      monitoringTier,
+    }),
+
+    // ── 3. Personalized Upgrade Risk Panel ──────────────────────────────
     e(UpgradeRiskPanel, { upgradeRisk, inputs }),
 
-    // ── 3. Key Drivers ───────────────────────────────────────────────────
+    // ── 4. Key Drivers ───────────────────────────────────────────────────
     e(KeyDrivers, {
       asFactors,
       genomicFactors: genomicFactors || [],
@@ -1187,7 +1315,7 @@ export default function PatientResults({ results, inputs, onBack, onDownloadData
       psmaAssessed,
     }),
 
-    // ── 4. Monitoring Schedule ───────────────────────────────────────────
+    // ── 5. Monitoring Schedule ───────────────────────────────────────────
     e(MonitoringSchedule, {
       monitoringSchedule,
       monitoringLabel,
