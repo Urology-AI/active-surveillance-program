@@ -15,7 +15,7 @@ const e = React.createElement
 
 const EXPORT_VERSION = 1
 
-export default function ClinicalCalculator() {
+export default function ClinicalCalculator({ onBack }) {
   const [view,              setView]              = useState('form') // 'form' | 'results'
   const [inputs,            setInputs]            = useState(null)
   const [results,           setResults]           = useState(null)
@@ -255,7 +255,7 @@ export default function ClinicalCalculator() {
     },
   },
 
-    // ── Action bar (Load / Export JSON only — branding is in the global header) ─
+    // ── Action bar (Load / Export JSON only) ─────────────────────────────────
     e('div', {
       style: {
         display: 'flex', alignItems: 'center', justifyContent: 'flex-end',

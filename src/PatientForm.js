@@ -501,53 +501,57 @@ const PIRADS_OPTIONS = [
 
 // ─── Main component ───────────────────────────────────────────────────────────
 export default function PatientForm({ onSubmit, initialValues = {} }) {
-  // Required fields
-  const [ggg,            setGgg]           = useState(null)
-  const [positiveCores,  setPositiveCores] = useState('')
-  const [totalCores,     setTotalCores]    = useState('')
-  const [maxCorePercent, setMaxCorePct]    = useState('')
-  const [psa,            setPsa]           = useState('')
-  const [prostateVolume, setVolume]        = useState('')
-  const [pirads,         setPirads]        = useState(null)
+  const iv = initialValues
+  // Required fields — initialised from initialValues so going back preserves data
+  const [ggg,            setGgg]           = useState(iv.ggg            ?? null)
+  const [positiveCores,  setPositiveCores] = useState(iv.positiveCores  != null ? String(iv.positiveCores)  : '')
+  const [totalCores,     setTotalCores]    = useState(iv.totalCores     != null ? String(iv.totalCores)     : '')
+  const [maxCorePercent, setMaxCorePct]    = useState(iv.maxCorePercent != null ? String(iv.maxCorePercent) : '')
+  const [psa,            setPsa]           = useState(iv.psa            != null ? String(iv.psa)            : '')
+  const [prostateVolume, setVolume]        = useState(iv.prostateVolume != null ? String(iv.prostateVolume) : '')
+  const [pirads,         setPirads]        = useState(iv.pirads         ?? null)
   // GG 3 explicit acknowledgement
   const [gg3Acknowledged, setGg3Acknowledged] = useState(false)
   // ePSA banner
   const [bannerDismissed, setBannerDismissed] = useState(false)
 
   useEffect(() => {
-    if (initialValues.psa            != null) setPsa(String(initialValues.psa))
-    if (initialValues.prostateVolume != null) setVolume(String(initialValues.prostateVolume))
-    if (initialValues.pirads         != null) setPirads(initialValues.pirads)
-    if (initialValues.age            != null) setAge(String(initialValues.age))
+    // ePSA pre-fill only — other fields are restored via useState initializers above
+    if (iv.psa            != null) setPsa(String(iv.psa))
+    if (iv.prostateVolume != null) setVolume(String(iv.prostateVolume))
+    if (iv.pirads         != null) setPirads(iv.pirads)
+    if (iv.age            != null) setAge(String(iv.age))
   }, [])
 
-  // Section visibility — auto-expand MRI if PI-RADS pre-filled from ePSA
-  const [showGenomic,    setShowGenomic]   = useState(false)
-  const [showPSMA,       setShowPSMA]      = useState(false)
-  const [showMRI,        setShowMRI]       = useState(initialValues.pirads != null)
+  // Section visibility — auto-expand if data was previously entered
+  const [showGenomic,    setShowGenomic]   = useState(
+    iv.decipher != null || iv.gps != null || iv.prolaris != null || !!iv.confirmMDx
+  )
+  const [showPSMA,       setShowPSMA]      = useState(!!iv.psmaFinding)
+  const [showMRI,        setShowMRI]       = useState(iv.pirads != null || !!iv.hasECE || !!iv.hasAbutment || !!iv.hasBroadContact)
   const [showExtra,      setShowExtra]     = useState(
-    initialValues.age != null || initialValues.epsaPreBiopsyTier != null
+    iv.age != null || !!iv.epsaPreBiopsyTier || !!iv.brca2 || !!iv.hoxb13 || iv.psaVelocity != null || iv.psaDoublingTime != null
   )
 
   // Info modal
   const [activeModal, setActiveModal] = useState(null)
 
   // Genomic
-  const [decipher,       setDecipher]      = useState('')
-  const [gps,            setGps]           = useState('')
-  const [prolaris,       setProlaris]      = useState('')
-  const [confirmMDx,     setConfirmMDx]    = useState('')
+  const [decipher,       setDecipher]      = useState(iv.decipher  != null ? String(iv.decipher)  : '')
+  const [gps,            setGps]           = useState(iv.gps       != null ? String(iv.gps)       : '')
+  const [prolaris,       setProlaris]      = useState(iv.prolaris  != null ? String(iv.prolaris)  : '')
+  const [confirmMDx,     setConfirmMDx]    = useState(iv.confirmMDx || '')
   // PSMA
-  const [psmaFinding,    setPsmaFinding]   = useState('')
-  const [lesionCount,    setLesionCount]   = useState('')
+  const [psmaFinding,    setPsmaFinding]   = useState(iv.psmaFinding || '')
+  const [lesionCount,    setLesionCount]   = useState(iv.lesionCount != null ? String(iv.lesionCount) : '')
   // Advanced MRI
-  const [ece,            setEce]           = useState('')
-  const [abutment,       setAbutment]      = useState('')
-  const [broadContact,   setBroadContact]  = useState('')
+  const [ece,            setEce]           = useState(iv.hasECE          === true ? 'yes' : iv.hasECE          === false ? 'no' : '')
+  const [abutment,       setAbutment]      = useState(iv.hasAbutment     === true ? 'yes' : iv.hasAbutment     === false ? 'no' : '')
+  const [broadContact,   setBroadContact]  = useState(iv.hasBroadContact === true ? 'yes' : iv.hasBroadContact === false ? 'no' : '')
   // Additional
-  const [age,            setAge]           = useState('')
-  const [brca2,          setBrca2]         = useState('')
-  const [hoxb13,         setHoxb13]        = useState('')
+  const [age,            setAge]           = useState(iv.age != null ? String(iv.age) : '')
+  const [brca2,          setBrca2]         = useState(iv.brca2  || '')
+  const [hoxb13,         setHoxb13]        = useState(iv.hoxb13 || '')
   // Validation
   const [attempted,      setAttempted]     = useState(false)
 

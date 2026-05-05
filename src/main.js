@@ -66,15 +66,19 @@ function ClinicianShell({ onChangeRole }) {
             )
           )
         )
-      : toolMode === 'pathway'
-        ? e(App, {
-            externalHeader: true,
-            onPathwayMetaChange: setPathwayMeta,
-            pathwayResetRef,
-          })
-        : e('div', { className: 'min-h-[calc(100vh-1px)] bg-sinai-page' },
-            e(ClinicalCalculator)
+      : e(React.Fragment, null,
+          // Keep both mounted so state is preserved when switching tabs
+          e('div', { style: { display: toolMode === 'pathway' ? 'block' : 'none' } },
+            e(App, {
+              externalHeader: true,
+              onPathwayMetaChange: setPathwayMeta,
+              pathwayResetRef,
+            })
           ),
+          e('div', { style: { display: toolMode === 'calculator' ? 'block' : 'none' }, className: 'min-h-[calc(100vh-1px)] bg-sinai-page' },
+            e(ClinicalCalculator, { onBack: onChangeRole })
+          )
+        ),
     e(ProgramDisclaimerFooter)
   )
 }
