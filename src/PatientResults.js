@@ -1347,7 +1347,7 @@ export default function PatientResults({ results, inputs, onBack, onDownloadData
         e('svg', { width: 15, height: 15, fill: 'none', viewBox: '0 0 24 24', stroke: 'currentColor', strokeWidth: 2 },
           e('path', { strokeLinecap: 'round', strokeLinejoin: 'round', d: 'M15 19l-7-7 7-7' })
         ),
-        'Edit Inputs'
+        'Back'
       ),
       e('button', {
         onClick: () => window.print(),
