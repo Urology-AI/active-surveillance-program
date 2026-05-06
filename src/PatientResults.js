@@ -467,10 +467,11 @@ function ModelValidationCard() {
       e('p', { className: 'text-[10px] text-purple-500' }, MV.composite.threshold_enhanced.note)
     ),
 
-    // Sub-model rows
+    // Sub-model validation basis
     e('div', { className: 'rounded-xl overflow-hidden', style: { border: '1px solid #e2e8f0' } },
       e('div', { className: 'px-3 py-2', style: { background: '#f1f5f9' } },
-        e('p', { className: 'text-xs font-bold text-slate-600 uppercase tracking-wide' }, 'Sub-Model Validation Summary')
+        e('p', { className: 'text-xs font-bold text-slate-600 uppercase tracking-wide' }, 'Validation Basis by Sub-Model'),
+        e('p', { className: 'text-[10px] text-slate-400 mt-0.5' }, 'Model-level performance metrics — not patient-specific scoring')
       ),
       e('div', { className: 'px-3' },
         e(SubModelRow, { model: { ...MV.basic_psad, auc: MV.basic_psad.auc_internal, auc_ci: `(Kadeer 2025: ${MV.basic_psad.auc_published})`, comparator: `PSA alone AUC ${MV.basic_psad.auc_psa_alone}` }, icon: '1', validationType: 'cohort_validated' }),
@@ -480,7 +481,7 @@ function ModelValidationCard() {
       )
     ),
 
-    // Validation status note
+    // Validation status
     e('div', { className: 'rounded-xl px-3 py-2.5', style: { background: '#fefce8', border: '1px solid #fde68a' } },
       e('p', { className: 'text-xs font-semibold text-amber-800 mb-0.5' }, 'Validation Status'),
       e('p', { className: 'text-xs text-amber-700 leading-snug' }, MV.composite.validation_status),
@@ -602,53 +603,49 @@ function ModelValidationModal({ onClose, isEpsa, epsaContext }) {
         },
       },
 
-        // ePSA transparency section (shown when ePSA data was used)
-        isEpsa && e('div', {
-          style: {
-            borderRadius: 14, padding: '14px 16px',
-            background: 'rgba(220,41,141,0.06)',
-            border: '1px solid rgba(220,41,141,0.25)',
-            borderLeft: '4px solid #DC298D',
-          },
+        // Intro
+        e('div', {
+          style: { borderRadius: 12, padding: '12px 14px', background: '#fff', border: '1px solid #e2e8f0' },
         },
-          e('div', { style: { display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 } },
-            e('div', {
-              style: {
-                width: 22, height: 22, borderRadius: 6, flexShrink: 0,
-                background: 'rgba(220,41,141,0.15)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                color: '#DC298D', fontSize: 11, fontWeight: 800,
-              },
-            }, 'ε'),
-            e('p', { style: { fontSize: 13, fontWeight: 700, color: '#00002D', margin: 0 } }, 'ePSA Pre-Biopsy Integration'),
-          ),
-          e('p', { style: { fontSize: 12, color: '#475569', lineHeight: 1.6, margin: '0 0 6px' } },
-            'This assessment was initiated from an ePSA export. The pre-biopsy risk tier from ePSA is used as an informational input — it does not directly modify the scoring algorithm but is surfaced alongside post-biopsy findings to support shared decision-making.'
-          ),
-          epsaContext?.epsaTierLabel && e('div', {
-            style: { display: 'inline-flex', alignItems: 'center', gap: 6, background: 'rgba(220,41,141,0.08)', borderRadius: 8, padding: '4px 10px', marginTop: 2 },
-          },
-            e('span', { style: { fontSize: 11, color: '#94a3b8' } }, 'Pre-biopsy tier:'),
-            e('span', { style: { fontSize: 12, fontWeight: 700, color: '#DC298D' } }, epsaContext.epsaTierLabel)
-          ),
-          epsaContext?.pathwayMode && e('p', { style: { fontSize: 11, color: '#94a3b8', marginTop: 4, margin: '4px 0 0' } },
-            `Pathway: ${epsaContext.pathwayMode === 'post_mri' ? 'Post-MRI' : 'Post-PSA'}`
+          e('p', { style: { fontSize: 13, color: '#334155', lineHeight: 1.65, margin: 0 } },
+            'This tool was developed and internally validated on the Mount Sinai Tewari Active Surveillance Program cohort (N=1,213 patients; endpoint: Grade Group upgrade on repeat biopsy). The metrics below document discriminatory performance, cutoff calibration, and the validation basis for each sub-model. External prospective validation is pending.'
           )
         ),
 
-        // Validation status warning
-        e('div', {
-          style: { borderRadius: 12, padding: '12px 14px', background: '#fefce8', border: '1px solid #fde68a' },
+        // ePSA transparency section (shown only when assessment was seeded from ePSA)
+        isEpsa && e('div', {
+          style: {
+            borderRadius: 12, padding: '14px 16px',
+            background: 'rgba(220,41,141,0.05)',
+            border: '1px solid rgba(220,41,141,0.22)',
+            borderLeft: '4px solid #DC298D',
+          },
         },
-          e('p', { style: { fontSize: 12, fontWeight: 700, color: '#92400e', margin: '0 0 4px' } }, 'Validation Status'),
-          e('p', { style: { fontSize: 12, color: '#b45309', lineHeight: 1.6, margin: 0 } }, MV.composite?.validation_status || 'Internal cohort validation — external prospective validation pending.'),
-          MV.composite?.calibration && e('p', { style: { fontSize: 11, color: '#d97706', marginTop: 4, lineHeight: 1.5, margin: '4px 0 0' } }, MV.composite.calibration)
+          e('p', { style: { fontSize: 12, fontWeight: 700, color: '#00002D', margin: '0 0 6px' } }, 'ePSA Pre-Biopsy Integration'),
+          e('p', { style: { fontSize: 12, color: '#475569', lineHeight: 1.6, margin: '0 0 8px' } },
+            'This assessment was seeded from an ePSA export. The pre-biopsy risk tier is carried forward as contextual information only — it does not modify the post-biopsy scoring algorithm. Both outputs are displayed together to support shared decision-making across the full care pathway.'
+          ),
+          e('div', { style: { display: 'flex', flexWrap: 'wrap', gap: 8 } },
+            epsaContext?.epsaTierLabel && e('div', {
+              style: { display: 'inline-flex', alignItems: 'center', gap: 6, background: 'rgba(220,41,141,0.08)', borderRadius: 8, padding: '4px 10px' },
+            },
+              e('span', { style: { fontSize: 11, color: '#94a3b8' } }, 'Pre-biopsy tier:'),
+              e('span', { style: { fontSize: 12, fontWeight: 700, color: '#DC298D' } }, epsaContext.epsaTierLabel)
+            ),
+            epsaContext?.pathwayMode && e('div', {
+              style: { display: 'inline-flex', alignItems: 'center', gap: 6, background: '#f1f5f9', borderRadius: 8, padding: '4px 10px' },
+            },
+              e('span', { style: { fontSize: 11, color: '#94a3b8' } }, 'Pathway:'),
+              e('span', { style: { fontSize: 12, fontWeight: 600, color: '#334155' } }, epsaContext.pathwayMode === 'post_mri' ? 'Post-MRI' : 'Post-PSA')
+            )
+          )
         ),
 
-        // Main ModelValidationCard content
+        // Validation metrics (ModelValidationCard — contains cohort overview, PSAD
+        // performance, tier table, composite engine, and per-sub-model summary)
         e(ModelValidationCard),
 
-        // Reference footer + Disclaimer
+        // References + Disclaimer
         e('div', {
           style: { borderRadius: 12, padding: '12px 14px', background: '#f1f5f9', border: '1px solid #e2e8f0', display: 'flex', flexDirection: 'column', gap: 8 },
         },
@@ -659,7 +656,7 @@ function ModelValidationModal({ onClose, isEpsa, epsaContext }) {
           e('div', { style: { borderTop: '1px solid #e2e8f0', paddingTop: 8, marginTop: 2 } },
             e('p', { style: { fontSize: 10, fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.12em', margin: '0 0 4px' } }, 'Clinical Disclaimer'),
             e('p', { style: { fontSize: 11, color: '#94a3b8', lineHeight: 1.6, margin: 0 } },
-              'This tool provides algorithmic decision-support output only. It does not constitute medical advice, a diagnosis, or a treatment recommendation. All clinical decisions must be made by a qualified healthcare provider in the context of the patient\'s full clinical history, institutional protocols, and shared decision-making.'
+              'This tool provides algorithmic decision-support output only. It does not constitute medical advice, a diagnosis, or a treatment recommendation. All clinical decisions must be made by a qualified healthcare provider in the context of the full clinical history, institutional protocols, and shared decision-making.'
             )
           )
         )
@@ -743,7 +740,7 @@ function EvidenceDetailModal({
               id: 'ev-modal-title',
               style: { fontSize: 20, fontWeight: 800, color: '#fff', margin: '6px 0 4px', letterSpacing: '-0.01em', lineHeight: 1.15 },
             }, 'Evidence & Full Detail'),
-            e('p', { style: { fontSize: 12, color: 'rgba(255,255,255,0.6)', margin: 0, lineHeight: 1.5 } }, 'Sub-model scoring breakdown, cohort calibration, and guideline evidence basis')
+            e('p', { style: { fontSize: 12, color: 'rgba(255,255,255,0.6)', margin: 0, lineHeight: 1.5 } }, "This patient's scoring across all four sub-models, the guideline evidence behind each threshold, and cohort calibration context")
           ),
           e('button', {
             type: 'button', onClick: onClose, 'aria-label': 'Close',
@@ -763,10 +760,19 @@ function EvidenceDetailModal({
         style: { flex: 1, overflowY: 'auto', overscrollBehavior: 'contain', background: '#f8fafc', padding: '20px 20px 32px', display: 'flex', flexDirection: 'column', gap: 20 },
       },
 
+        // Intro
+        e('div', {
+          style: { borderRadius: 12, padding: '12px 14px', background: '#fff', border: '1px solid #e2e8f0' },
+        },
+          e('p', { style: { fontSize: 13, color: '#334155', lineHeight: 1.65, margin: 0 } },
+            'The four sub-models below were each applied to the entered clinical data. Each section shows the individual factor contributions, the resulting tier, and the published evidence underlying the scoring thresholds. For model-level performance metrics and validation statistics, see Model Validation & Transparency.'
+          )
+        ),
+
         // Sub-model 1
         e('div', { style: { background: '#fff', borderRadius: 14, border: '1px solid #f1f5f9', padding: '14px 16px' } },
           e('div', { style: { display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10, flexWrap: 'wrap' } },
-            e('span', { style: { fontWeight: 700, fontSize: 13, color: '#00002D' } }, 'Sub-model 1 — Basic & PSAD'),
+            e('span', { style: { fontWeight: 700, fontSize: 13, color: '#00002D' } }, 'Sub-model 1 — Biopsy Pathology & PSA Density'),
             e('span', { style: { fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 999, background: '#e0f2fe', color: '#075985' } },
               `Score: ${asScore > 0 ? '+' : ''}${asScore}  ·  ${asTierKey?.replace(/_/g,' ')}`
             ),
@@ -782,7 +788,7 @@ function EvidenceDetailModal({
         // Sub-model 2
         e('div', { style: { background: '#fff', borderRadius: 14, border: '1px solid #f1f5f9', padding: '14px 16px' } },
           e('div', { style: { display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10, flexWrap: 'wrap' } },
-            e('span', { style: { fontWeight: 700, fontSize: 13, color: '#00002D' } }, 'Sub-model 2 — Genomic Biomarkers'),
+            e('span', { style: { fontWeight: 700, fontSize: 13, color: '#00002D' } }, 'Sub-model 2 — Genomic Biomarkers (Decipher / GPS / Prolaris)'),
             e('span', { style: { fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 999, ...genomicBadgeStyle } },
               genomicAssessed
                 ? `${genomicRiskTier?.charAt(0).toUpperCase() + genomicRiskTier?.slice(1)} risk · Score: ${genomicScore > 0 ? '+' : ''}${genomicScore}`
@@ -804,7 +810,7 @@ function EvidenceDetailModal({
         // Sub-model 3
         e('div', { style: { background: '#fff', borderRadius: 14, border: '1px solid #f1f5f9', padding: '14px 16px' } },
           e('div', { style: { display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10, flexWrap: 'wrap' } },
-            e('span', { style: { fontWeight: 700, fontSize: 13, color: '#00002D' } }, 'Sub-model 3 — PSMA PET/CT'),
+            e('span', { style: { fontWeight: 700, fontSize: 13, color: '#00002D' } }, 'Sub-model 3 — PSMA PET/CT Staging'),
             e('span', { style: { fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 999, ...psmaBadgeStyle } },
               psmaAssessed
                 ? psmaFinding === 'metastatic' ? 'Metastatic — OVERRIDE'
@@ -829,7 +835,7 @@ function EvidenceDetailModal({
         // Sub-model 4
         e('div', { style: { background: '#fff', borderRadius: 14, border: '1px solid #f1f5f9', padding: '14px 16px' } },
           e('div', { style: { display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10, flexWrap: 'wrap' } },
-            e('span', { style: { fontWeight: 700, fontSize: 13, color: '#00002D' } }, 'Sub-model 4 — Monitoring Protocol'),
+            e('span', { style: { fontWeight: 700, fontSize: 13, color: '#00002D' } }, 'Sub-model 4 — Monitoring Intensity & Protocol'),
             e('span', { style: { fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 999, background: monStyle.bg, color: monStyle.color } }, monStyle.label),
             e(ValidationBadge, { type: 'guideline_checklist' })
           ),
