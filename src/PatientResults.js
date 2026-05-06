@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { MODEL_VALIDATION, COHORT_CALIBRATION, CLINICAL_IMPACT_TABLE } from './asEngine.js'
 
 const e = React.createElement
@@ -482,6 +482,179 @@ function ModelValidationCard() {
       e('p', { className: 'text-xs font-semibold text-amber-800 mb-0.5' }, '⚠ Validation Status'),
       e('p', { className: 'text-xs text-amber-700 leading-snug' }, MV.composite.validation_status),
       e('p', { className: 'text-xs text-amber-600 mt-1 leading-snug' }, MV.composite.calibration)
+    )
+  )
+}
+
+// ─── Model Validation Modal ───────────────────────────────────────────────────
+function ModelValidationModal({ onClose, isEpsa, epsaContext }) {
+  useEffect(() => {
+    const prev = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    const onKey = (e) => { if (e.key === 'Escape') onClose() }
+    document.addEventListener('keydown', onKey)
+    return () => {
+      document.body.style.overflow = prev
+      document.removeEventListener('keydown', onKey)
+    }
+  }, [onClose])
+
+  const MV = MODEL_VALIDATION
+
+  return e('div', {
+    style: {
+      position: 'fixed', inset: 0, zIndex: 200,
+      display: 'flex', alignItems: 'flex-end', justifyContent: 'center',
+      padding: 0,
+    },
+    role: 'presentation',
+  },
+    // Backdrop
+    e('div', {
+      style: { position: 'absolute', inset: 0, background: 'rgba(15,23,42,0.55)', backdropFilter: 'blur(3px)' },
+      onClick: onClose,
+      'aria-hidden': true,
+    }),
+
+    // Panel
+    e('div', {
+      role: 'dialog',
+      'aria-modal': true,
+      'aria-labelledby': 'mv-modal-title',
+      onClick: (ev) => ev.stopPropagation(),
+      style: {
+        position: 'relative',
+        width: '100%', maxWidth: 720,
+        height: '92vh',
+        display: 'flex', flexDirection: 'column',
+        borderRadius: '20px 20px 0 0',
+        overflow: 'hidden',
+        boxShadow: '0 -12px 60px rgba(0,0,45,0.35)',
+        background: '#fff',
+      },
+    },
+
+      // ── Header ────────────────────────────────────────────────────────────
+      e('header', {
+        style: {
+          flexShrink: 0,
+          background: 'linear-gradient(118deg, #00002D 0%, #212070 60%, #06ABEB 160%)',
+          padding: '20px 22px 18px',
+          position: 'relative',
+          borderBottom: '1px solid rgba(255,255,255,0.1)',
+        },
+      },
+        // Decorative blob
+        e('div', {
+          style: {
+            position: 'absolute', top: -60, right: -60,
+            width: 200, height: 200, borderRadius: '50%',
+            background: 'radial-gradient(circle, rgba(220,41,141,0.22), transparent 70%)',
+            pointerEvents: 'none',
+          },
+        }),
+        e('div', { style: { position: 'relative', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 } },
+          e('div', {},
+            e('p', {
+              style: { fontSize: 10, fontWeight: 800, letterSpacing: '0.2em', color: '#06ABEB', textTransform: 'uppercase', margin: 0 },
+            }, 'Mount Sinai · Tewari AS Program'),
+            e('h2', {
+              id: 'mv-modal-title',
+              style: { fontSize: 20, fontWeight: 800, color: '#fff', margin: '6px 0 4px', letterSpacing: '-0.01em', lineHeight: 1.15 },
+            }, 'Model Validation & Transparency'),
+            e('div', { style: { display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 8 } },
+              e('span', {
+                style: { fontSize: 11, fontWeight: 700, padding: '3px 10px', borderRadius: 999, background: 'rgba(220,252,231,0.15)', color: '#6ee7b7', border: '1px solid rgba(110,231,183,0.3)' },
+              }, `N=${MV.cohort.n} cohort`),
+              e('span', {
+                style: { fontSize: 11, fontWeight: 700, padding: '3px 10px', borderRadius: 999, background: 'rgba(219,234,254,0.12)', color: '#93c5fd', border: '1px solid rgba(147,197,253,0.25)' },
+              }, MV.cohort.validation_type || 'Internal cohort validation'),
+              isEpsa && e('span', {
+                style: { fontSize: 11, fontWeight: 700, padding: '3px 10px', borderRadius: 999, background: 'rgba(220,41,141,0.15)', color: '#f9a8d4', border: '1px solid rgba(220,41,141,0.3)' },
+              }, 'Via ePSA'),
+            )
+          ),
+          // Close button
+          e('button', {
+            type: 'button', onClick: onClose,
+            'aria-label': 'Close',
+            style: {
+              width: 36, height: 36, borderRadius: '50%', flexShrink: 0,
+              border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(255,255,255,0.07)',
+              color: 'rgba(255,255,255,0.8)', cursor: 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontSize: 18, lineHeight: 1, fontFamily: 'inherit',
+              transition: 'background 0.15s',
+            },
+          }, '×')
+        )
+      ),
+
+      // ── Scrollable body ───────────────────────────────────────────────────
+      e('div', {
+        style: {
+          flex: 1, overflowY: 'auto', overscrollBehavior: 'contain',
+          background: '#f8fafc', padding: '20px 20px 32px',
+          display: 'flex', flexDirection: 'column', gap: 16,
+        },
+      },
+
+        // ePSA transparency section (shown when ePSA data was used)
+        isEpsa && e('div', {
+          style: {
+            borderRadius: 14, padding: '14px 16px',
+            background: 'rgba(220,41,141,0.06)',
+            border: '1px solid rgba(220,41,141,0.25)',
+            borderLeft: '4px solid #DC298D',
+          },
+        },
+          e('div', { style: { display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 } },
+            e('div', {
+              style: {
+                width: 22, height: 22, borderRadius: 6, flexShrink: 0,
+                background: 'rgba(220,41,141,0.15)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                color: '#DC298D', fontSize: 11, fontWeight: 800,
+              },
+            }, 'ε'),
+            e('p', { style: { fontSize: 13, fontWeight: 700, color: '#00002D', margin: 0 } }, 'ePSA Pre-Biopsy Integration'),
+          ),
+          e('p', { style: { fontSize: 12, color: '#475569', lineHeight: 1.6, margin: '0 0 6px' } },
+            'This assessment was initiated from an ePSA export. The pre-biopsy risk tier from ePSA is used as an informational input — it does not directly modify the scoring algorithm but is surfaced alongside post-biopsy findings to support shared decision-making.'
+          ),
+          epsaContext?.epsaTierLabel && e('div', {
+            style: { display: 'inline-flex', alignItems: 'center', gap: 6, background: 'rgba(220,41,141,0.08)', borderRadius: 8, padding: '4px 10px', marginTop: 2 },
+          },
+            e('span', { style: { fontSize: 11, color: '#94a3b8' } }, 'Pre-biopsy tier:'),
+            e('span', { style: { fontSize: 12, fontWeight: 700, color: '#DC298D' } }, epsaContext.epsaTierLabel)
+          ),
+          epsaContext?.pathwayMode && e('p', { style: { fontSize: 11, color: '#94a3b8', marginTop: 4, margin: '4px 0 0' } },
+            `Pathway: ${epsaContext.pathwayMode === 'post_mri' ? 'Post-MRI' : 'Post-PSA'}`
+          )
+        ),
+
+        // Validation status warning
+        e('div', {
+          style: { borderRadius: 12, padding: '12px 14px', background: '#fefce8', border: '1px solid #fde68a' },
+        },
+          e('p', { style: { fontSize: 12, fontWeight: 700, color: '#92400e', margin: '0 0 4px' } }, '⚠ Validation Status'),
+          e('p', { style: { fontSize: 12, color: '#b45309', lineHeight: 1.6, margin: 0 } }, MV.composite?.validation_status || 'Internal cohort validation — external prospective validation pending.'),
+          MV.composite?.calibration && e('p', { style: { fontSize: 11, color: '#d97706', marginTop: 4, lineHeight: 1.5, margin: '4px 0 0' } }, MV.composite.calibration)
+        ),
+
+        // Main ModelValidationCard content
+        e(ModelValidationCard),
+
+        // Reference footer
+        e('div', {
+          style: { borderRadius: 12, padding: '12px 14px', background: '#f1f5f9', border: '1px solid #e2e8f0' },
+        },
+          e('p', { style: { fontSize: 11, fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.08em', margin: '0 0 6px' } }, 'Key References'),
+          e('p', { style: { fontSize: 11, color: '#94a3b8', lineHeight: 1.7, margin: 0 } },
+            'Kadeer N et al., Eur Urol 2025 · NCCN Prostate Cancer Guidelines v3.2024 · EAU Guidelines 2024 · PRIAS (Bul et al., Eur Urol 2013) · Canary PASS (Newcomb et al., J Urol 2016) · Mount Sinai Tewari Active Surveillance Program N=1,213'
+          )
+        )
+      )
     )
   )
 }
@@ -1194,6 +1367,7 @@ export default function PatientResults({ results, inputs, onBack, onDownloadData
   const MV = MODEL_VALIDATION
   const psadNum = psad != null ? Number(psad) : null
   const isEpsa = inputs.epsaPreBiopsyTier || inputs.epsaContext?.source === 'epsa'
+  const [showValidationModal, setShowValidationModal] = useState(false)
 
   // Tone pill colors for dark backgrounds
   const tonePill =
@@ -1377,6 +1551,31 @@ export default function PatientResults({ results, inputs, onBack, onDownloadData
       combinedTierKey,
     }),
 
+    // ── Model Validation trigger ─────────────────────────────────────────
+    e('div', { className: 'no-print', style: { display: 'flex', justifyContent: 'center' } },
+      e('button', {
+        type: 'button',
+        onClick: () => setShowValidationModal(true),
+        style: {
+          display: 'inline-flex', alignItems: 'center', gap: 7,
+          padding: '9px 18px', borderRadius: 999,
+          background: '#fff', border: '1.5px solid #e2e8f0',
+          fontSize: 12, fontWeight: 700, color: '#334155',
+          cursor: 'pointer', fontFamily: 'inherit',
+          boxShadow: '0 1px 4px rgba(0,0,45,0.06)',
+          transition: 'border-color 0.15s, box-shadow 0.15s',
+        },
+      },
+        e('svg', { width: 14, height: 14, fill: 'none', viewBox: '0 0 24 24', stroke: '#06ABEB', strokeWidth: 2 },
+          e('path', { strokeLinecap: 'round', strokeLinejoin: 'round', d: 'M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z' })
+        ),
+        'Model Validation & Transparency',
+        e('svg', { width: 12, height: 12, fill: 'none', viewBox: '0 0 24 24', stroke: 'currentColor', strokeWidth: 2.5, style: { opacity: 0.4 } },
+          e('path', { strokeLinecap: 'round', strokeLinejoin: 'round', d: 'M9 5l7 7-7 7' })
+        )
+      )
+    ),
+
     // ── Disclaimer ───────────────────────────────────────────────────────
     e('div', { style: { borderRadius: 14, padding: '14px 16px', background: '#f8fafc', border: '1px solid #e2e8f0', display: 'flex', flexDirection: 'column', gap: 8 } },
       e('div', { style: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 } },
@@ -1391,6 +1590,13 @@ export default function PatientResults({ results, inputs, onBack, onDownloadData
       e('p', { style: { fontSize: 11, color: '#94a3b8', margin: 0 } },
         'Key references: NCCN Prostate Cancer Guidelines v3.2024 · EAU Guidelines 2024 · Kadeer et al., Eur Urol 2025 · PRIAS (Bul et al., 2013) · Mount Sinai Tewari AS Program N=1,213 cohort'
       )
-    )
+    ),
+
+    // ── Model Validation Modal ───────────────────────────────────────────
+    showValidationModal && e(ModelValidationModal, {
+      onClose: () => setShowValidationModal(false),
+      isEpsa,
+      epsaContext: inputs.epsaContext || null,
+    })
   )
 }
