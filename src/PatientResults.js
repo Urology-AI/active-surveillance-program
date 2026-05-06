@@ -341,7 +341,10 @@ function ModelValidationCard() {
   function SubModelRow({ model, icon, validationType }) {
     return e('div', { className: 'py-2.5 border-b border-slate-100 last:border-0' },
       e('div', { className: 'flex items-start gap-2' },
-        e('span', { className: 'text-base flex-shrink-0' }, icon),
+        e('span', {
+          className: 'flex-shrink-0 flex items-center justify-center text-[10px] font-bold text-slate-500 rounded-full',
+          style: { width: 20, height: 20, background: '#f1f5f9', border: '1px solid #e2e8f0', lineHeight: 1, marginTop: 2 },
+        }, icon),
         e('div', { className: 'flex-1 min-w-0' },
           e('div', { className: 'flex items-start justify-between gap-2 flex-wrap' },
             e('p', { className: 'text-xs font-semibold text-slate-800' }, model.label),
@@ -470,16 +473,16 @@ function ModelValidationCard() {
         e('p', { className: 'text-xs font-bold text-slate-600 uppercase tracking-wide' }, 'Sub-Model Validation Summary')
       ),
       e('div', { className: 'px-3' },
-        e(SubModelRow, { model: { ...MV.basic_psad, auc: MV.basic_psad.auc_internal, auc_ci: `(Kadeer 2025: ${MV.basic_psad.auc_published})`, comparator: `PSA alone AUC ${MV.basic_psad.auc_psa_alone}` }, icon: '📊', validationType: 'cohort_validated' }),
-        e(SubModelRow, { model: { ...MV.genomic, auc: MV.genomic.auc_internal }, icon: '🧬', validationType: 'literature_threshold' }),
-        e(SubModelRow, { model: { ...MV.psma, auc: MV.psma.auc_internal }, icon: '🔬', validationType: 'staging_classifier' }),
-        e(SubModelRow, { model: MV.monitoring, icon: '📋', validationType: 'guideline_checklist' }),
+        e(SubModelRow, { model: { ...MV.basic_psad, auc: MV.basic_psad.auc_internal, auc_ci: `(Kadeer 2025: ${MV.basic_psad.auc_published})`, comparator: `PSA alone AUC ${MV.basic_psad.auc_psa_alone}` }, icon: '1', validationType: 'cohort_validated' }),
+        e(SubModelRow, { model: { ...MV.genomic, auc: MV.genomic.auc_internal }, icon: '2', validationType: 'literature_threshold' }),
+        e(SubModelRow, { model: { ...MV.psma, auc: MV.psma.auc_internal }, icon: '3', validationType: 'staging_classifier' }),
+        e(SubModelRow, { model: MV.monitoring, icon: '4', validationType: 'guideline_checklist' }),
       )
     ),
 
     // Validation status note
     e('div', { className: 'rounded-xl px-3 py-2.5', style: { background: '#fefce8', border: '1px solid #fde68a' } },
-      e('p', { className: 'text-xs font-semibold text-amber-800 mb-0.5' }, '⚠ Validation Status'),
+      e('p', { className: 'text-xs font-semibold text-amber-800 mb-0.5' }, 'Validation Status'),
       e('p', { className: 'text-xs text-amber-700 leading-snug' }, MV.composite.validation_status),
       e('p', { className: 'text-xs text-amber-600 mt-1 leading-snug' }, MV.composite.calibration)
     )
@@ -637,7 +640,7 @@ function ModelValidationModal({ onClose, isEpsa, epsaContext }) {
         e('div', {
           style: { borderRadius: 12, padding: '12px 14px', background: '#fefce8', border: '1px solid #fde68a' },
         },
-          e('p', { style: { fontSize: 12, fontWeight: 700, color: '#92400e', margin: '0 0 4px' } }, '⚠ Validation Status'),
+          e('p', { style: { fontSize: 12, fontWeight: 700, color: '#92400e', margin: '0 0 4px' } }, 'Validation Status'),
           e('p', { style: { fontSize: 12, color: '#b45309', lineHeight: 1.6, margin: 0 } }, MV.composite?.validation_status || 'Internal cohort validation — external prospective validation pending.'),
           MV.composite?.calibration && e('p', { style: { fontSize: 11, color: '#d97706', marginTop: 4, lineHeight: 1.5, margin: '4px 0 0' } }, MV.composite.calibration)
         ),
@@ -645,13 +648,249 @@ function ModelValidationModal({ onClose, isEpsa, epsaContext }) {
         // Main ModelValidationCard content
         e(ModelValidationCard),
 
-        // Reference footer
+        // Reference footer + Disclaimer
         e('div', {
-          style: { borderRadius: 12, padding: '12px 14px', background: '#f1f5f9', border: '1px solid #e2e8f0' },
+          style: { borderRadius: 12, padding: '12px 14px', background: '#f1f5f9', border: '1px solid #e2e8f0', display: 'flex', flexDirection: 'column', gap: 8 },
         },
-          e('p', { style: { fontSize: 11, fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.08em', margin: '0 0 6px' } }, 'Key References'),
+          e('p', { style: { fontSize: 11, fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.08em', margin: 0 } }, 'Key References'),
           e('p', { style: { fontSize: 11, color: '#94a3b8', lineHeight: 1.7, margin: 0 } },
             'Kadeer N et al., Eur Urol 2025 · NCCN Prostate Cancer Guidelines v3.2024 · EAU Guidelines 2024 · PRIAS (Bul et al., Eur Urol 2013) · Canary PASS (Newcomb et al., J Urol 2016) · Mount Sinai Tewari Active Surveillance Program N=1,213'
+          ),
+          e('div', { style: { borderTop: '1px solid #e2e8f0', paddingTop: 8, marginTop: 2 } },
+            e('p', { style: { fontSize: 10, fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.12em', margin: '0 0 4px' } }, 'Clinical Disclaimer'),
+            e('p', { style: { fontSize: 11, color: '#94a3b8', lineHeight: 1.6, margin: 0 } },
+              'This tool provides algorithmic decision-support output only. It does not constitute medical advice, a diagnosis, or a treatment recommendation. All clinical decisions must be made by a qualified healthcare provider in the context of the patient\'s full clinical history, institutional protocols, and shared decision-making.'
+            )
+          )
+        )
+      )
+    )
+  )
+}
+
+// ─── Evidence & Full Detail Modal ────────────────────────────────────────────
+function EvidenceDetailModal({
+  onClose,
+  asFactors, asScore, asTierKey,
+  genomicAssessed, genomicRiskTier, genomicScore, genomicFactors,
+  psmaAssessed, psmaFinding, psmaScore, psmaFactors,
+  monitoringSchedule, monitoringLabel, monitoringTier, features, featureCount,
+  cohortContext, combinedTierKey,
+}) {
+  useEffect(() => {
+    const prev = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    const onKey = (ev) => { if (ev.key === 'Escape') onClose() }
+    document.addEventListener('keydown', onKey)
+    return () => {
+      document.body.style.overflow = prev
+      document.removeEventListener('keydown', onKey)
+    }
+  }, [onClose])
+
+  const monStyle = MONITORING_STYLES[monitoringTier] || MONITORING_STYLES.standard
+
+  const genomicBadgeStyle =
+    !genomicAssessed                       ? { background: '#f3f4f6', color: '#6b7280' }
+    : genomicRiskTier === 'high'           ? { background: '#fee2e2', color: '#991b1b' }
+    : genomicRiskTier === 'intermediate'   ? { background: '#fde68a', color: '#78350f' }
+    :                                        { background: '#dcfce7', color: '#166534' }
+
+  const psmaBadgeStyle =
+    !psmaAssessed                                                   ? { background: '#f3f4f6', color: '#6b7280' }
+    : psmaFinding === 'metastatic' || psmaFinding === 'regional'   ? { background: '#fee2e2', color: '#991b1b' }
+    : psmaFinding === 'local'                                       ? { background: '#fde68a', color: '#78350f' }
+    :                                                                  { background: '#dcfce7', color: '#166534' }
+
+  const TIER_COHORT_DATA = {
+    standard_as:   { rate: 0.292, n: 72,  source: 'N=218 internal validation sub-cohort' },
+    enhanced_as:   { rate: 0.194, n: 109, source: 'N=218 internal validation sub-cohort' },
+    intensive_as:  { rate: 0.121, n: 33,  source: 'N=218 internal validation sub-cohort' },
+  }
+  const tierCohortData = TIER_COHORT_DATA[combinedTierKey]
+
+  return e('div', {
+    style: { position: 'fixed', inset: 0, zIndex: 200, display: 'flex', alignItems: 'flex-end', justifyContent: 'center', padding: 0 },
+    role: 'presentation',
+  },
+    e('div', {
+      style: { position: 'absolute', inset: 0, background: 'rgba(15,23,42,0.55)', backdropFilter: 'blur(3px)' },
+      onClick: onClose, 'aria-hidden': true,
+    }),
+    e('div', {
+      role: 'dialog', 'aria-modal': true, 'aria-labelledby': 'ev-modal-title',
+      onClick: (ev) => ev.stopPropagation(),
+      style: {
+        position: 'relative', width: '100%', maxWidth: 720, height: '92vh',
+        display: 'flex', flexDirection: 'column',
+        borderRadius: '20px 20px 0 0', overflow: 'hidden',
+        boxShadow: '0 -12px 60px rgba(0,0,45,0.35)', background: '#fff',
+      },
+    },
+      // Header
+      e('header', {
+        style: {
+          flexShrink: 0,
+          background: 'linear-gradient(118deg, #00002D 0%, #0d4f6e 60%, #06ABEB 160%)',
+          padding: '20px 22px 18px', position: 'relative',
+          borderBottom: '1px solid rgba(255,255,255,0.1)',
+        },
+      },
+        e('div', { style: { position: 'relative', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 } },
+          e('div', {},
+            e('p', { style: { fontSize: 10, fontWeight: 800, letterSpacing: '0.2em', color: '#06ABEB', textTransform: 'uppercase', margin: 0 } }, 'Mount Sinai · Tewari AS Program'),
+            e('h2', {
+              id: 'ev-modal-title',
+              style: { fontSize: 20, fontWeight: 800, color: '#fff', margin: '6px 0 4px', letterSpacing: '-0.01em', lineHeight: 1.15 },
+            }, 'Evidence & Full Detail'),
+            e('p', { style: { fontSize: 12, color: 'rgba(255,255,255,0.6)', margin: 0, lineHeight: 1.5 } }, 'Sub-model scoring breakdown, cohort calibration, and guideline evidence basis')
+          ),
+          e('button', {
+            type: 'button', onClick: onClose, 'aria-label': 'Close',
+            style: {
+              width: 36, height: 36, borderRadius: '50%', flexShrink: 0,
+              border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(255,255,255,0.07)',
+              color: 'rgba(255,255,255,0.8)', cursor: 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontSize: 18, lineHeight: 1, fontFamily: 'inherit',
+            },
+          }, '×')
+        )
+      ),
+
+      // Scrollable body
+      e('div', {
+        style: { flex: 1, overflowY: 'auto', overscrollBehavior: 'contain', background: '#f8fafc', padding: '20px 20px 32px', display: 'flex', flexDirection: 'column', gap: 20 },
+      },
+
+        // Sub-model 1
+        e('div', { style: { background: '#fff', borderRadius: 14, border: '1px solid #f1f5f9', padding: '14px 16px' } },
+          e('div', { style: { display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10, flexWrap: 'wrap' } },
+            e('span', { style: { fontWeight: 700, fontSize: 13, color: '#00002D' } }, 'Sub-model 1 — Basic & PSAD'),
+            e('span', { style: { fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 999, background: '#e0f2fe', color: '#075985' } },
+              `Score: ${asScore > 0 ? '+' : ''}${asScore}  ·  ${asTierKey?.replace(/_/g,' ')}`
+            ),
+            e(ValidationBadge, { type: 'cohort_validated' })
+          ),
+          e('div', {}, ...asFactors.map((f, i) => e(FactorRow, { key: i, factor: f }))),
+          e('div', { style: { marginTop: 10, paddingTop: 10, borderTop: '1px solid #f1f5f9', fontSize: 11, color: '#94a3b8', lineHeight: 1.6 } },
+            e('strong', { style: { color: '#64748b' } }, 'Evidence basis: '),
+            'GGG: ISUP 2016 (Epstein et al., Eur Urol 2016). Core criteria: NCCN 2024 very low risk (Epstein 1994, Bastian 2004). PSAD thresholds: NCCN 2024 (0.15 ng/mL/cm³) and Kadeer et al. 2025 Youden optimal cutoff (0.177 ng/mL/cm³). PI-RADS v2.1: Turkbey et al., Eur Urol 2019.'
+          )
+        ),
+
+        // Sub-model 2
+        e('div', { style: { background: '#fff', borderRadius: 14, border: '1px solid #f1f5f9', padding: '14px 16px' } },
+          e('div', { style: { display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10, flexWrap: 'wrap' } },
+            e('span', { style: { fontWeight: 700, fontSize: 13, color: '#00002D' } }, 'Sub-model 2 — Genomic Biomarkers'),
+            e('span', { style: { fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 999, ...genomicBadgeStyle } },
+              genomicAssessed
+                ? `${genomicRiskTier?.charAt(0).toUpperCase() + genomicRiskTier?.slice(1)} risk · Score: ${genomicScore > 0 ? '+' : ''}${genomicScore}`
+                : 'Not assessed'
+            ),
+            e(ValidationBadge, { type: 'literature_threshold' })
+          ),
+          genomicAssessed
+            ? e('div', {},
+                e('div', {}, ...genomicFactors.map((f, i) => e(FactorRow, { key: i, factor: f }))),
+                e('div', { style: { marginTop: 10, paddingTop: 10, borderTop: '1px solid #f1f5f9', fontSize: 11, color: '#94a3b8', lineHeight: 1.6 } },
+                  e('strong', { style: { color: '#64748b' } }, 'Evidence basis: '),
+                  'Decipher thresholds (0.45/0.60): Spratt et al., Lancet Oncol 2014. Oncotype GPS thresholds (20/40): Klein et al., Eur Urol 2021. Prolaris CCP thresholds (1.5/2.1): Cooperberg et al., Cancer 2013. ConfirmMDx: Stewart et al., J Urol 2013.'
+                )
+              )
+            : e(NotAssessed, { message: 'Genomic data not entered' })
+        ),
+
+        // Sub-model 3
+        e('div', { style: { background: '#fff', borderRadius: 14, border: '1px solid #f1f5f9', padding: '14px 16px' } },
+          e('div', { style: { display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10, flexWrap: 'wrap' } },
+            e('span', { style: { fontWeight: 700, fontSize: 13, color: '#00002D' } }, 'Sub-model 3 — PSMA PET/CT'),
+            e('span', { style: { fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 999, ...psmaBadgeStyle } },
+              psmaAssessed
+                ? psmaFinding === 'metastatic' ? 'Metastatic — OVERRIDE'
+                : psmaFinding === 'regional'   ? 'Regional nodes'
+                : psmaFinding === 'local'      ? 'Local only'
+                : 'Negative'
+                : 'Not assessed'
+            ),
+            e(ValidationBadge, { type: 'staging_classifier' })
+          ),
+          psmaAssessed
+            ? e('div', {},
+                e('div', {}, ...psmaFactors.map((f, i) => e(FactorRow, { key: i, factor: f }))),
+                e('div', { style: { marginTop: 10, paddingTop: 10, borderTop: '1px solid #f1f5f9', fontSize: 11, color: '#94a3b8', lineHeight: 1.6 } },
+                  e('strong', { style: { color: '#64748b' } }, 'Evidence basis: '),
+                  'Staging classification and management implications: EAU-EANM-ESTRO-ESUR-SIOG Guidelines on Prostate Cancer, 2024 edition.'
+                )
+              )
+            : e(NotAssessed, { message: 'PSMA PET/CT not performed or data not entered' })
+        ),
+
+        // Sub-model 4
+        e('div', { style: { background: '#fff', borderRadius: 14, border: '1px solid #f1f5f9', padding: '14px 16px' } },
+          e('div', { style: { display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10, flexWrap: 'wrap' } },
+            e('span', { style: { fontWeight: 700, fontSize: 13, color: '#00002D' } }, 'Sub-model 4 — Monitoring Protocol'),
+            e('span', { style: { fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 999, background: monStyle.bg, color: monStyle.color } }, monStyle.label),
+            e(ValidationBadge, { type: 'guideline_checklist' })
+          ),
+          e('p', { style: { fontSize: 12, color: '#64748b', marginBottom: 8 } }, monitoringLabel),
+          e('ul', { style: { listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: 6 } },
+            ...monitoringSchedule.map((item, i) =>
+              e('li', { key: i, style: { display: 'flex', alignItems: 'flex-start', gap: 8 } },
+                e('div', { style: { flexShrink: 0, width: 18, height: 18, borderRadius: '50%', background: monStyle.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', marginTop: 2 } },
+                  e('div', { style: { width: 6, height: 6, borderRadius: '50%', background: monStyle.color } })
+                ),
+                e('span', { style: { fontSize: 13, color: '#374151', lineHeight: 1.5 } }, item)
+              )
+            )
+          ),
+          featureCount > 0 && e('div', { style: { marginTop: 10, paddingTop: 10, borderTop: '1px solid #f1f5f9' } },
+            e('p', { style: { fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#94a3b8', marginBottom: 6 } }, `High-Risk Features (${featureCount})`),
+            e('div', { style: { display: 'flex', flexDirection: 'column', gap: 4 } },
+              ...features.map((feat, i) =>
+                e('div', { key: i, style: { display: 'flex', alignItems: 'flex-start', gap: 6, fontSize: 13, color: '#374151' } },
+                  e('div', { style: { width: 4, height: 4, borderRadius: '50%', background: '#f59e0b', flexShrink: 0, marginTop: 6 } }),
+                  e('span', null, typeof feat === 'string' ? feat : feat.label)
+                )
+              )
+            )
+          ),
+          e('div', { style: { marginTop: 10, paddingTop: 10, borderTop: '1px solid #f1f5f9', fontSize: 11, color: '#94a3b8', lineHeight: 1.6 } },
+            e('strong', { style: { color: '#64748b' } }, 'Evidence basis: '),
+            'Feature list and monitoring intensity tiers derived from PRIAS protocol (Bul et al., Eur Urol 2013), NCCN 2024 active surveillance monitoring guidelines, and Canary PASS (Newcomb et al., J Urol 2016). Cohort calibration (Layer 2) from Mount Sinai Tewari AS Program N=1,213.'
+          )
+        ),
+
+        // Cohort Calibration
+        cohortContext && cohortContext.cohortItems && cohortContext.cohortItems.length > 0 && e('div', { style: { background: '#f0f9ff', borderRadius: 14, border: '1px solid #bfdbfe', overflow: 'hidden' } },
+          e('div', { style: { padding: '10px 16px', borderBottom: '1px solid #bfdbfe', background: '#e0f2fe' } },
+            e('p', { style: { fontSize: 12, fontWeight: 700, color: '#0369a1', margin: 0 } }, 'Cohort Calibration — Per-Variable Breakdown')
+          ),
+          e('div', { style: { padding: '0 16px' } },
+            ...cohortContext.cohortItems.map((item, idx) =>
+              e('div', { key: idx, style: { padding: '10px 0', borderBottom: idx < cohortContext.cohortItems.length - 1 ? '1px solid #e0f2fe' : 'none' } },
+                e('div', { style: { display: 'flex', alignItems: 'flex-start', gap: 8 } },
+                  e('div', { style: { width: 6, height: 6, borderRadius: '50%', background: '#06ABEB', flexShrink: 0, marginTop: 6 } }),
+                  e('div', { style: { flex: 1 } },
+                    e('p', { style: { fontSize: 11, fontWeight: 700, color: '#075985', margin: '0 0 2px' } }, item.label),
+                    e('p', { style: { fontSize: 13, color: '#0c4a6e', lineHeight: 1.5, margin: 0 } }, item.finding),
+                    item.note && e('p', { style: { fontSize: 11, color: '#0369a1', marginTop: 2, lineHeight: 1.5, fontStyle: 'italic', margin: '2px 0 0' } }, item.note)
+                  )
+                )
+              )
+            )
+          )
+        ),
+
+        // Selection effect
+        tierCohortData && e('div', { style: { borderRadius: 12, padding: '12px 14px', background: '#fafafa', border: '1px solid #e5e7eb' } },
+          e('p', { style: { fontSize: 12, fontWeight: 600, color: '#475569', margin: '0 0 4px' } },
+            `Observed upgrade rate in this tier: ${(tierCohortData.rate * 100).toFixed(1)}% (${tierCohortData.n} patients, ${tierCohortData.source})`
+          ),
+          e('p', { style: { fontSize: 12, color: '#64748b', lineHeight: 1.6, margin: 0 } },
+            'This figure reflects who was enrolled in this tier, not a prediction for this patient. ',
+            e('span', { style: { fontWeight: 600, color: '#b45309' } }, 'Note: higher tiers show lower observed upgrade rates in this cohort'),
+            ' — this is the expected selection effect: the highest-risk patients are appropriately directed to treatment rather than AS enrollment.'
           )
         )
       )
@@ -1092,7 +1331,7 @@ function UpgradeRiskPanel({ upgradeRisk, inputs }) {
           fontSize: 12, color: '#78350f', display: 'flex', gap: 8, alignItems: 'flex-start',
         },
       },
-        e('span', null, '⚠️'),
+        e('div', { style: { width: 4, height: 4, borderRadius: '50%', background: '#d97706', flexShrink: 0, marginTop: 6 } }),
         e('span', null, 'Add prostate volume for PSAD-enhanced estimate (AUC 0.668)')
       ),
 
@@ -1368,6 +1607,7 @@ export default function PatientResults({ results, inputs, onBack, onDownloadData
   const psadNum = psad != null ? Number(psad) : null
   const isEpsa = inputs.epsaPreBiopsyTier || inputs.epsaContext?.source === 'epsa'
   const [showValidationModal, setShowValidationModal] = useState(false)
+  const [showEvidenceModal,   setShowEvidenceModal]   = useState(false)
 
   // Tone pill colors for dark backgrounds
   const tonePill =
@@ -1541,58 +1781,55 @@ export default function PatientResults({ results, inputs, onBack, onDownloadData
       )
     ),
 
-    // ── 7. Detail Accordion ──────────────────────────────────────────────
-    e(DetailAccordion, {
-      asFactors, asScore, asTierKey,
-      genomicAssessed, genomicRiskTier, genomicScore, genomicFactors,
-      psmaAssessed, psmaFinding, psmaScore, psmaFactors,
-      monitoringSchedule, monitoringLabel, monitoringTier, features, featureCount,
-      cohortContext,
-      combinedTierKey,
-    }),
-
-    // ── Model Validation trigger ─────────────────────────────────────────
-    e('div', { className: 'no-print', style: { display: 'flex', justifyContent: 'center' } },
+    // ── 7. Detail buttons ────────────────────────────────────────────────
+    e('div', { className: 'no-print', style: { display: 'flex', gap: 8, flexWrap: 'wrap' } },
+      // Evidence & Full Detail
       e('button', {
         type: 'button',
-        onClick: () => setShowValidationModal(true),
+        onClick: () => setShowEvidenceModal(true),
         style: {
-          display: 'inline-flex', alignItems: 'center', gap: 7,
-          padding: '9px 18px', borderRadius: 999,
+          flex: '1 1 180px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7,
+          padding: '10px 16px', borderRadius: 12,
           background: '#fff', border: '1.5px solid #e2e8f0',
           fontSize: 12, fontWeight: 700, color: '#334155',
           cursor: 'pointer', fontFamily: 'inherit',
           boxShadow: '0 1px 4px rgba(0,0,45,0.06)',
-          transition: 'border-color 0.15s, box-shadow 0.15s',
         },
       },
         e('svg', { width: 14, height: 14, fill: 'none', viewBox: '0 0 24 24', stroke: '#06ABEB', strokeWidth: 2 },
+          e('path', { strokeLinecap: 'round', strokeLinejoin: 'round', d: 'M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z' })
+        ),
+        'Evidence & Full Detail'
+      ),
+      // Model Validation & Transparency
+      e('button', {
+        type: 'button',
+        onClick: () => setShowValidationModal(true),
+        style: {
+          flex: '1 1 180px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7,
+          padding: '10px 16px', borderRadius: 12,
+          background: '#fff', border: '1.5px solid #e2e8f0',
+          fontSize: 12, fontWeight: 700, color: '#334155',
+          cursor: 'pointer', fontFamily: 'inherit',
+          boxShadow: '0 1px 4px rgba(0,0,45,0.06)',
+        },
+      },
+        e('svg', { width: 14, height: 14, fill: 'none', viewBox: '0 0 24 24', stroke: '#DC298D', strokeWidth: 2 },
           e('path', { strokeLinecap: 'round', strokeLinejoin: 'round', d: 'M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z' })
         ),
-        'Model Validation & Transparency',
-        e('svg', { width: 12, height: 12, fill: 'none', viewBox: '0 0 24 24', stroke: 'currentColor', strokeWidth: 2.5, style: { opacity: 0.4 } },
-          e('path', { strokeLinecap: 'round', strokeLinejoin: 'round', d: 'M9 5l7 7-7 7' })
-        )
+        'Model Validation & Transparency'
       )
     ),
 
-    // ── Disclaimer ───────────────────────────────────────────────────────
-    e('div', { style: { borderRadius: 14, padding: '14px 16px', background: '#f8fafc', border: '1px solid #e2e8f0', display: 'flex', flexDirection: 'column', gap: 8 } },
-      e('div', { style: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 } },
-        e('p', { style: { fontSize: 10, fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.12em', margin: 0 } }, 'Clinical Disclaimer'),
-        isEpsa && e('span', {
-          style: { fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 999, background: '#dbeafe', color: '#1e40af' },
-        }, 'Via ePSA')
-      ),
-      e('p', { style: { fontSize: 11, color: '#94a3b8', lineHeight: 1.6, margin: 0 } },
-        'This tool provides algorithmic decision-support output only. It does not constitute medical advice, a diagnosis, or a treatment recommendation. All clinical decisions must be made by a qualified healthcare provider in the context of the patient\'s full clinical history, institutional protocols, and shared decision-making.'
-      ),
-      e('p', { style: { fontSize: 11, color: '#94a3b8', margin: 0 } },
-        'Key references: NCCN Prostate Cancer Guidelines v3.2024 · EAU Guidelines 2024 · Kadeer et al., Eur Urol 2025 · PRIAS (Bul et al., 2013) · Mount Sinai Tewari AS Program N=1,213 cohort'
-      )
-    ),
-
-    // ── Model Validation Modal ───────────────────────────────────────────
+    // ── Modals ───────────────────────────────────────────────────────────
+    showEvidenceModal && e(EvidenceDetailModal, {
+      onClose: () => setShowEvidenceModal(false),
+      asFactors, asScore, asTierKey,
+      genomicAssessed, genomicRiskTier, genomicScore, genomicFactors,
+      psmaAssessed, psmaFinding, psmaScore, psmaFactors,
+      monitoringSchedule, monitoringLabel, monitoringTier, features, featureCount,
+      cohortContext, combinedTierKey,
+    }),
     showValidationModal && e(ModelValidationModal, {
       onClose: () => setShowValidationModal(false),
       isEpsa,
