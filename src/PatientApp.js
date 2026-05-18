@@ -1,5 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react'
 import CareTeamModal from './components/CareTeamModal.js'
+import PSATracker from './components/PSATracker.js'
+import VisitPrep from './components/VisitPrep.js'
 import { Activity, BookOpen } from 'lucide-react'
 import { answerPatientEducationQuestion, checkPatientMessageForPii } from './patientGeminiService.js'
 import {
@@ -61,6 +63,32 @@ export const COHORT_FACTS = {
 // ─── Q&A knowledge base ──────────────────────────────────────────────────────
 
 const QA_TOPICS = [
+  {
+    category: 'Common Concerns',
+    railLabel: 'Concerns',
+    questions: [
+      {
+        q: 'My PSA went up — should I be worried?',
+        a: `A PSA rise does not automatically mean your cancer has grown. PSA can fluctuate due to infection, inflammation, recent ejaculation, or normal biological variation. A single elevated reading is typically confirmed with a repeat test before any decisions are made.\n\nWhat matters most is the pattern over time — PSA density and doubling time — not any single number. If your PSA has risen, your care team will put it in context. Bring it up at your next appointment, or call sooner if the rise is large or sudden.`,
+      },
+      {
+        q: 'I feel anxious about living with cancer — is that normal?',
+        a: `Yes — completely normal. Anxiety is one of the most common experiences for people on active surveillance, and it is a recognized reason that some men eventually choose treatment even when their cancer has not changed. In our Mount Sinai program (N=1,213), 19.1% of patients who left surveillance did so by personal choice — not because the cancer grew.\n\nStrategies that help: stay informed (understanding your results reduces uncertainty), maintain regular exercise, practice mindfulness, talk openly with your care team, and consider a prostate cancer support group. If anxiety is significantly affecting your quality of life, ask your doctor for a referral to a counselor.`,
+      },
+      {
+        q: 'I am having urinary symptoms — when should I call my doctor?',
+        a: `Call your care team promptly if you experience: inability to urinate or significant trouble starting a stream, blood in the urine that is heavy or does not resolve, pain or burning when urinating, fever with urinary symptoms (possible infection), or a sudden worsening of urinary flow.\n\nMild changes — slightly more frequent urination or occasional urgency — are often not cancer-related and can usually be discussed at your regular appointment. When in doubt, call. It is always better to check.`,
+      },
+      {
+        q: 'What should I expect at my next monitoring visit?',
+        a: `It depends on the visit type. PSA check (~every 6 months): blood draw, then a consultation to review results and discuss any concerns. Annual visit: typically adds a digital rectal exam (DRE). MRI: non-invasive, 30–60 minutes, no needles. Biopsy (every 2–5 years): about 30–45 minutes with mild discomfort; antibiotics are usually prescribed. Use the Visit Prep tab to prepare questions and know what to bring.`,
+      },
+      {
+        q: 'How do I know if active surveillance is working for me?',
+        a: `Active surveillance is working when your cancer remains stable — PSA is not rising rapidly, biopsies do not show progression to a higher grade, and imaging does not show new concerning findings. In our program, 59.7% of patients are currently stable and still on surveillance.\n\nThe goal is not to eliminate the cancer (it is there), but to catch any meaningful change early so that curative treatment can be given if and when it is truly needed. Your care team reviews all results at each visit to make that determination. Stability is the win.`,
+      },
+    ],
+  },
   {
     category: 'Understanding Your Options',
     railLabel: 'Understanding',
@@ -414,6 +442,31 @@ function ConsentCard({ onAccept }) {
   )
 }
 
+// ─── Cohort banner ────────────────────────────────────────────────────────────
+
+function CohortBanner() {
+  const pct = Math.round(COHORT_FACTS.currently_stable_pct * 100)
+  return e('div', {
+    style: {
+      background: 'linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%)',
+      border: '1px solid #bbf7d0', borderRadius: 12, padding: '12px 14px',
+    },
+  },
+    e('div', { style: { fontSize: 11, fontWeight: 700, color: '#166534', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 6 } },
+      'Mount Sinai Program · N=1,213 patients'
+    ),
+    e('div', { style: { display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 } },
+      e('div', { style: { flex: 1, height: 8, background: '#dcfce7', borderRadius: 999, overflow: 'hidden', border: '1px solid #86efac' } },
+        e('div', { style: { width: `${pct}%`, height: '100%', background: '#22c55e', borderRadius: 999, transition: 'width 0.6s ease' } })
+      ),
+      e('div', { style: { fontSize: 15, fontWeight: 800, color: '#166534', whiteSpace: 'nowrap' } }, `${pct}% still on AS`)
+    ),
+    e('div', { style: { fontSize: 12, color: '#15803d', lineHeight: 1.5 } },
+      'Of those who left, nearly half did so by personal choice — not because their cancer grew.'
+    )
+  )
+}
+
 // ─── Main component ───────────────────────────────────────────────────────────
 
 export default function PatientApp({ onBack }) {
@@ -423,6 +476,7 @@ export default function PatientApp({ onBack }) {
   const [consentAccepted,  setConsentAccepted]  = useState(false)
   const [chatLoading,      setChatLoading]      = useState(false)
   const [activeTopic,      setActiveTopic]      = useState(0) // index into QA_TOPICS
+  const [activeTab,        setActiveTab]        = useState('learn') // 'learn' | 'psa-log' | 'visit-prep'
   const bottomRef = useRef(null)
 
   useEffect(() => {
@@ -588,8 +642,36 @@ export default function PatientApp({ onBack }) {
       )
     ),
 
-    // ── Topic rail ─────────────────────────────────────────────────────────────
-    e('div', {
+    // ── Main tab nav ───────────────────────────────────────────────────────────
+    consentAccepted && e('div', {
+      style: { background: '#fff', borderBottom: '1px solid #e2e8f0', flexShrink: 0 },
+    },
+      e('div', {
+        style: { maxWidth: 640, margin: '0 auto', display: 'flex' },
+      },
+        [
+          { key: 'learn',      label: 'Learn'      },
+          { key: 'psa-log',    label: 'PSA Log'    },
+          { key: 'visit-prep', label: 'Visit Prep' },
+        ].map(tab =>
+          e('button', {
+            key: tab.key, type: 'button',
+            onClick: () => setActiveTab(tab.key),
+            style: {
+              flex: 1, padding: '11px 0', border: 'none',
+              background: 'transparent',
+              color: activeTab === tab.key ? '#06ABEB' : '#64748b',
+              fontSize: 12.5, fontWeight: 700,
+              borderBottom: activeTab === tab.key ? '2px solid #06ABEB' : '2px solid transparent',
+              cursor: 'pointer', transition: 'all 0.15s',
+            },
+          }, tab.label)
+        )
+      )
+    ),
+
+    // ── Topic rail (learn tab only) ────────────────────────────────────────────
+    consentAccepted && activeTab === 'learn' && e('div', {
       style: {
         background: '#fff', borderBottom: '1px solid #e2e8f0',
         padding: '10px 12px', display: 'flex', gap: 6,
@@ -620,14 +702,23 @@ export default function PatientApp({ onBack }) {
     e('div', {
       style: {
         flex: 1, overflowY: 'auto',
-        padding: '14px', display: 'flex', flexDirection: 'column', gap: 10,
-        maxWidth: 640, width: '100%', margin: '0 auto',
+        padding: activeTab === 'learn' ? '14px' : '0',
+        display: 'flex', flexDirection: 'column', gap: activeTab === 'learn' ? 10 : 0,
+        maxWidth: activeTab === 'learn' ? 640 : '100%',
+        width: '100%', margin: '0 auto',
         boxSizing: 'border-box',
       },
     },
       !consentAccepted
         ? e(ConsentCard, { onAccept: () => setConsentAccepted(true) })
+        : activeTab === 'psa-log'
+        ? e(PSATracker)
+        : activeTab === 'visit-prep'
+        ? e(VisitPrep, { onOpenCareTeam: () => setCareOpen(true) })
         : e(React.Fragment, null,
+
+            // Cohort reassurance banner
+            e(CohortBanner),
 
             // Topic intro card — always visible above the conversation
             e(TopicIntroCard, {
@@ -647,8 +738,8 @@ export default function PatientApp({ onBack }) {
           )
     ),
 
-    // ── Composer ───────────────────────────────────────────────────────────────
-    consentAccepted && e('div', {
+    // ── Composer (learn tab only) ──────────────────────────────────────────────
+    consentAccepted && activeTab === 'learn' && e('div', {
       style: {
         padding: '12px', borderTop: '1px solid #e2e8f0', background: '#fff',
         flexShrink: 0,
