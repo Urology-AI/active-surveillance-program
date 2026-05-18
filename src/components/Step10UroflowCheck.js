@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
-import { Droplets, ChevronRight, AlertTriangle } from 'lucide-react'
+import { Droplets, ChevronRight, AlertTriangle, ChevronDown, ChevronUp } from 'lucide-react'
 import StepNav from './StepNav.js'
+import { MonitoringContextEditor } from './ASMonitoringContext.js'
 
 const INDICATIONS = [
   'LUTS / BPH',
@@ -17,12 +18,30 @@ const INDICATIONS = [
 
 export default function Step10UroflowCheck({ onProceed, onBack, onForward, canGoBack, canGoForward }) {
   // Sub-state: null = asking indications, 'uroflow' = asking uroflow result, 'cystoscopy' = showing cystoscopy notice
-  const [subState, setSubState] = useState(null)
+  const [subState,     setSubState]     = useState(null)
+  const [showCtxPanel, setShowCtxPanel] = useState(false)
 
   return React.createElement('div', { className: 'bg-white rounded-xl shadow-sinai border border-slate-100 p-6 md:p-8' },
 
     React.createElement('div', { className: 'inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-sinai-magenta bg-sinai-magenta-light/50 border border-sinai-magenta/20 rounded-full px-3 py-1 mb-4' },
       'Part 3 · Standard Protocol'
+    ),
+
+    // ── Visit Context panel (collapsible) ──
+    React.createElement('div', { className: 'mb-5 border border-slate-200 rounded-xl overflow-hidden' },
+      React.createElement('button', {
+        type: 'button',
+        onClick: () => setShowCtxPanel(v => !v),
+        className: 'w-full flex items-center justify-between px-4 py-3 bg-slate-50 hover:bg-slate-100 transition-colors text-sm font-semibold text-slate-700',
+      },
+        React.createElement('span', null, 'Visit Context — PSA & Biopsy Data'),
+        showCtxPanel
+          ? React.createElement(ChevronUp,   { className: 'w-4 h-4 text-slate-400' })
+          : React.createElement(ChevronDown, { className: 'w-4 h-4 text-slate-400' })
+      ),
+      showCtxPanel && React.createElement('div', { className: 'p-4 border-t border-slate-200' },
+        React.createElement(MonitoringContextEditor, { onSaved: () => setShowCtxPanel(false) })
+      )
     ),
 
     React.createElement('div', { className: 'flex items-center gap-3 mb-6' },
