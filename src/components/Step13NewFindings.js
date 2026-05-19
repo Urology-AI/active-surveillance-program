@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
 import { TrendingUp, ChevronRight, ChevronDown, ChevronUp } from 'lucide-react'
 import StepNav from './StepNav.js'
+import { MonitoringContextPanel } from './ASMonitoringContext.js'
 
 export default function Step13NewFindings({ onYes, onNo, onBack, onForward, canGoBack, canGoForward }) {
   const [showFindings, setShowFindings] = useState(true)
@@ -18,6 +19,11 @@ export default function Step13NewFindings({ onYes, onNo, onBack, onForward, canG
       React.createElement('h2', { className: 'text-xl font-bold text-sinai-cetacean' }, 'Step 13: New Positive Findings?')
     ),
 
+    // ── Visit context: computed PSA metrics + biopsy schedule ──
+    React.createElement('div', { className: 'mb-5' },
+      React.createElement(MonitoringContextPanel)
+    ),
+
     React.createElement('div', { className: 'mb-6' },
       React.createElement('button', {
         type: 'button',
@@ -25,7 +31,7 @@ export default function Step13NewFindings({ onYes, onNo, onBack, onForward, canG
         className: 'flex items-center gap-1.5 text-sm font-semibold text-purple-700 mb-3 hover:underline'
       },
         React.createElement('span', { className: 'w-2 h-2 rounded-full bg-purple-400' }),
-        'New Positive Findings Reference',
+        'Positive Findings Thresholds',
         showFindings ? React.createElement(ChevronUp, { className: 'w-4 h-4' }) : React.createElement(ChevronDown, { className: 'w-4 h-4' })
       ),
 
