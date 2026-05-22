@@ -267,6 +267,25 @@ export default function PSATracker() {
           })
         )
       ),
+      (() => {
+        const livePsa = parseFloat(form.psa)
+        const liveVol = parseFloat(form.volume)
+        const livePsad = !isNaN(livePsa) && !isNaN(liveVol) && livePsa > 0 && liveVol > 0
+          ? (livePsa / liveVol).toFixed(3)
+          : null
+        return livePsad && e('div', {
+          style: {
+            padding: '8px 10px', background: '#f0f9ff', border: '1px solid #bae6fd',
+            borderRadius: 8, fontSize: 12, color: '#0369a1', marginBottom: 10,
+            display: 'flex', alignItems: 'center', gap: 6,
+          },
+        },
+          e('span', { style: { fontWeight: 700 } }, `PSA Density: ${livePsad} ng/mL/cc`),
+          e('span', { style: { color: '#64748b' } },
+            livePsad < 0.065 ? '· Low-risk range' : livePsad > 0.177 ? '· Elevated — discuss with care team' : '· Intermediate range'
+          )
+        )
+      })(),
       error && e('div', { style: { fontSize: 12, color: '#dc2626', marginBottom: 8 } }, error),
       e('div', { style: { display: 'flex', gap: 8 } },
         e('button', {

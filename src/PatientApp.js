@@ -469,6 +469,9 @@ function CohortBanner() {
 
 // ─── Main component ───────────────────────────────────────────────────────────
 
+const TEXT_SCALES = [1.0, 1.2, 1.4]
+const TEXT_SCALE_KEY = 'as_patient_text_scale'
+
 export default function PatientApp({ onBack }) {
   const [messages,         setMessages]         = useState([])
   const [input,            setInput]            = useState('')
@@ -477,13 +480,29 @@ export default function PatientApp({ onBack }) {
   const [chatLoading,      setChatLoading]      = useState(false)
   const [activeTopic,      setActiveTopic]      = useState(0) // index into QA_TOPICS
   const [activeTab,        setActiveTab]        = useState('learn') // 'learn' | 'psa-log' | 'visit-prep'
+  const [textScaleIdx,     setTextScaleIdx]     = useState(0)
   const bottomRef = useRef(null)
+
+  useEffect(() => {
+    try {
+      const saved = parseInt(localStorage.getItem(TEXT_SCALE_KEY), 10)
+      if (!isNaN(saved) && saved >= 0 && saved < TEXT_SCALES.length) setTextScaleIdx(saved)
+    } catch (_) {}
+  }, [])
 
   useEffect(() => {
     try {
       setConsentAccepted(localStorage.getItem(PATIENT_CONSENT_KEY) === 'true')
     } catch (_) {}
   }, [])
+
+  function cycleTextScale(dir) {
+    setTextScaleIdx(prev => {
+      const next = Math.max(0, Math.min(TEXT_SCALES.length - 1, prev + dir))
+      try { localStorage.setItem(TEXT_SCALE_KEY, String(next)) } catch (_) {}
+      return next
+    })
+  }
 
   useEffect(() => {
     try {
@@ -565,8 +584,10 @@ export default function PatientApp({ onBack }) {
     void handleAsk(input)
   }
 
+  const textScale = TEXT_SCALES[textScaleIdx]
+
   return e('div', {
-    style: { minHeight: '100vh', display: 'flex', flexDirection: 'column', background: '#f8fafc' },
+    style: { minHeight: '100vh', display: 'flex', flexDirection: 'column', background: '#f8fafc', zoom: textScale },
   },
     e(CareTeamModal, { open: careOpen, onClose: () => setCareOpen(false) }),
 
@@ -600,25 +621,60 @@ export default function PatientApp({ onBack }) {
         ),
         // BrandMark
         e(BrandMark),
-        // Care Team
-        e('button', {
-          type: 'button', onClick: () => setCareOpen(true),
-          style: {
-            background: 'transparent', border: '1px solid rgba(255,255,255,0.18)',
-            color: 'rgba(255,255,255,0.85)', padding: '4px 8px', borderRadius: 999,
-            fontSize: 11, fontWeight: 600, cursor: 'pointer',
-            display: 'flex', alignItems: 'center', gap: 4,
+        // Right side: text size + Care
+        e('div', { style: { display: 'flex', alignItems: 'center', gap: 6 } },
+          // Text size controls
+          e('div', {
+            style: {
+              display: 'flex', alignItems: 'center',
+              border: '1px solid rgba(255,255,255,0.18)', borderRadius: 999, overflow: 'hidden',
+            },
           },
-        },
-          e('svg', {
-            width: 11, height: 11, viewBox: '0 0 24 24', fill: 'none',
-            stroke: 'currentColor', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round',
-          },
-            e('circle', { cx: 12, cy: 12, r: 10 }),
-            e('line', { x1: 12, y1: 16, x2: 12, y2: 12 }),
-            e('line', { x1: 12, y1: 8, x2: '12.01', y2: 8 })
+            e('button', {
+              type: 'button',
+              onClick: () => cycleTextScale(-1),
+              disabled: textScaleIdx === 0,
+              'aria-label': 'Decrease text size',
+              style: {
+                background: 'transparent', border: 'none', borderRight: '1px solid rgba(255,255,255,0.18)',
+                color: textScaleIdx === 0 ? 'rgba(255,255,255,0.25)' : 'rgba(255,255,255,0.85)',
+                padding: '5px 9px', cursor: textScaleIdx === 0 ? 'default' : 'pointer',
+                fontSize: 11, fontWeight: 700, lineHeight: 1,
+              },
+            }, 'A−'),
+            e('button', {
+              type: 'button',
+              onClick: () => cycleTextScale(1),
+              disabled: textScaleIdx === TEXT_SCALES.length - 1,
+              'aria-label': 'Increase text size',
+              style: {
+                background: 'transparent', border: 'none',
+                color: textScaleIdx === TEXT_SCALES.length - 1 ? 'rgba(255,255,255,0.25)' : 'rgba(255,255,255,0.85)',
+                padding: '5px 9px', cursor: textScaleIdx === TEXT_SCALES.length - 1 ? 'default' : 'pointer',
+                fontSize: 14, fontWeight: 700, lineHeight: 1,
+              },
+            }, 'A+')
           ),
-          'Care'
+          // Care Team
+          e('button', {
+            type: 'button', onClick: () => setCareOpen(true),
+            style: {
+              background: 'transparent', border: '1px solid rgba(255,255,255,0.18)',
+              color: 'rgba(255,255,255,0.85)', padding: '4px 8px', borderRadius: 999,
+              fontSize: 11, fontWeight: 600, cursor: 'pointer',
+              display: 'flex', alignItems: 'center', gap: 4,
+            },
+          },
+            e('svg', {
+              width: 11, height: 11, viewBox: '0 0 24 24', fill: 'none',
+              stroke: 'currentColor', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round',
+            },
+              e('circle', { cx: 12, cy: 12, r: 10 }),
+              e('line', { x1: 12, y1: 16, x2: 12, y2: 12 }),
+              e('line', { x1: 12, y1: 8, x2: '12.01', y2: 8 })
+            ),
+            'Care'
+          )
         )
       ),
       // AI status bar
