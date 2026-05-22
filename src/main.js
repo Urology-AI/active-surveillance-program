@@ -11,7 +11,7 @@ import './index.css'
 const e = React.createElement
 const CLINICIAN_CONSENT_KEY = 'as_clinician_consent_accepted'
 
-function ClinicianShell({ onChangeRole }) {
+function ClinicianShell({ onChangeRole, epsaPrefill }) {
   const [toolMode, setToolMode] = useState('calculator')
   const [clinicianConsentAccepted, setClinicianConsentAccepted] = useState(false)
   const [pathwayMeta, setPathwayMeta] = useState({
@@ -76,7 +76,7 @@ function ClinicianShell({ onChangeRole }) {
             })
           ),
           e('div', { style: { display: toolMode === 'calculator' ? 'block' : 'none' }, className: 'min-h-[calc(100vh-1px)] bg-sinai-page' },
-            e(ClinicalCalculator, { onBack: onChangeRole })
+            e(ClinicalCalculator, { onBack: onChangeRole, epsaPrefill })
           )
         ),
     e(ProgramDisclaimerFooter)
@@ -84,14 +84,30 @@ function ClinicianShell({ onChangeRole }) {
 }
 
 function Root() {
-  const [role, setRole] = useState(null)
+  const [role,        setRole]        = useState(null)
+  const [epsaPrefill, setEpsaPrefill] = useState(null)
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const raw = params.get('epsa')
+    if (!raw) return
+    try {
+      const decoded = JSON.parse(decodeURIComponent(raw))
+      setEpsaPrefill(decoded)
+      setRole('clinician')
+      // Clean the URL so a page refresh doesn't re-trigger
+      const clean = new URL(window.location.href)
+      clean.searchParams.delete('epsa')
+      window.history.replaceState({}, '', clean.toString())
+    } catch (_) {}
+  }, [])
 
   if (role === 'patient') {
     return e(PatientApp, { onBack: () => setRole(null) })
   }
 
   if (role === 'clinician') {
-    return e(ClinicianShell, { onChangeRole: () => setRole(null) })
+    return e(ClinicianShell, { onChangeRole: () => { setRole(null); setEpsaPrefill(null) }, epsaPrefill })
   }
 
   return e(RoleSelector, { onSelectRole: setRole })

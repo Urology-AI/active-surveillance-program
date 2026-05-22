@@ -6,7 +6,7 @@
  * Clinicians enter biopsy / imaging / genomic data and get the
  * multi-model AS risk assessment with cohort probability context.
  */
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import PatientForm from '../PatientForm.js'
 import PatientResults from '../PatientResults.js'
 import { runAssessment } from '../asEngine.js'
@@ -15,7 +15,7 @@ const e = React.createElement
 
 const EXPORT_VERSION = 1
 
-export default function ClinicalCalculator({ onBack }) {
+export default function ClinicalCalculator({ onBack, epsaPrefill }) {
   const [view,              setView]              = useState('form') // 'form' | 'results'
   const [inputs,            setInputs]            = useState(null)
   const [results,           setResults]           = useState(null)
@@ -23,6 +23,33 @@ export default function ClinicalCalculator({ onBack }) {
   const [uploadNotice,      setUploadNotice]      = useState('')
   const [epsaBannerDismissed, setEpsaBannerDismissed] = useState(false)
   const [formKey,           setFormKey]           = useState(0)
+
+  // ── URL-param ePSA pre-fill ────────────────────────────────────────────────
+  useEffect(() => {
+    if (!epsaPrefill) return
+    try {
+      const nextInputs = normalizePayload(epsaPrefill)
+      if (nextInputs._epsaPreFill) {
+        const { _epsaPreFill: _, ...prefillValues } = nextInputs
+        setInputs(prefillValues)
+        setResults(null)
+        setFormKey(k => k + 1)
+        setView('form')
+        const tierLabel = prefillValues.epsaContext?.epsaTierLabel
+          || prefillValues.epsaPreBiopsyTier
+          || 'see ePSA'
+        setUploadNotice(`ePSA data loaded · Pre-biopsy tier: ${tierLabel} — enter biopsy results to complete assessment.`)
+      } else {
+        const assessment = runAssessment(nextInputs)
+        setInputs(nextInputs)
+        setResults(assessment)
+        setUploadNotice('ePSA data loaded.')
+        setView('results')
+      }
+    } catch (err) {
+      setUploadError(err instanceof Error ? err.message : 'Unable to process ePSA data from URL.')
+    }
+  }, [epsaPrefill])
 
   // ── Submit ──────────────────────────────────────────────────────────────────
   function handleSubmit(formInputs) {
