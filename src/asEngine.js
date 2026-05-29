@@ -1265,7 +1265,40 @@ export function calcOutcomesPrediction(inputs) {
 // ═══════════════════════════════════════════════════════════════════════════════
 
 export const UPGRADE_RISK_MODEL = {
-  // Primary model — requires PSAD (N=781 subset, AUC 0.668)
+  // Full cohort model — all 18 features, N=1,213, AUC 0.65
+  // Trained on Mount Sinai AS cohort; categorical encodings match LabelEncoder output
+  // Missing comorbidity/family hx inputs default to "No" (encoded 0) — most common value in cohort
+  fullModel: {
+    intercept: 0.2011,
+    coef: {
+      bmi:                                              -0.0011,
+      age_first_diagnosis:                               0.0128,
+      total_positive_cores:                              0.0565,
+      perc_highest_core_involvement_for_highest_gleason: 0.0036,
+      psa_result_ng:                                     0.0213,
+      as_mri_prostate_vol:                              -0.0159,
+      race_category_2:                                  -0.6089,
+      current_smoking_category:                         -0.7248,
+      htn_category:                                     -0.0261,
+      hld_category:                                     -0.2339,
+      diabetes_category:                                 0.2072,
+      fhx_breast_category:                               0.2385,
+      fhx_ovarian_category:                             -0.4996,
+      fhx_prostate_category:                            -0.0858,
+      first_positive_bx_ggg_named:                      -1.5655,
+      ece_category:                                      0.2367,
+      abut_category:                                     0.0314,
+      highest_pirads_category:                           0.0391,
+    },
+    // LabelEncoder ordinals — values not supplied default to 0 ("No" for binary, GG1 for ggg, No PIRADS for pirads)
+    enc: {
+      race:    { 'African American': 0, 'Caucasian': 1, 'Other': 2 },   // default: 1 (Caucasian)
+      ggg:     { 1: 0, 2: 1, 3: 2 },                                    // GG1=0, GG2=1, GG3=2
+      pirads:  { 0: 0, 1: 1, 2: 2, 3: 3, 4: 4, 5: 5 },                 // null→0 (No PIRADS)
+    },
+    auc: 0.65, n: 1213, n_upgraded: 305, base_rate: 0.251,
+  },
+  // Legacy PSAD model — requires prostate volume (N=781 subset, AUC 0.668)
   withPsad: {
     intercept:  -1.993554,
     is_gg2:     -2.151274,
@@ -1327,12 +1360,98 @@ export function calcUpgradeRisk(inputs) {
     return { available: false, reason: 'GGG and positive core count required' }
   }
 
-  const isGG2 = ggg === 2 ? 1 : 0
-  const psaVal = inputs.psa != null ? Number(inputs.psa) : null
-  const volVal = inputs.prostateVolume != null ? Number(inputs.prostateVolume) : null
-  const psad = (psaVal != null && volVal != null && volVal > 0) ? psaVal / volVal : null
-
   const sig = x => 1 / (1 + Math.exp(-x))
+  const psaVal = inputs.psa        != null ? Number(inputs.psa)           : null
+  const volVal = inputs.prostateVolume != null ? Number(inputs.prostateVolume) : null
+  const ageVal = inputs.age        != null ? Number(inputs.age)           : null
+  const maxCoreVal = inputs.maxCorePercent != null ? Number(inputs.maxCorePercent) : null
+
+  // ── Full cohort model (N=1,213, AUC 0.65) — primary ─────────────────────────
+  // Requires GGG + positive cores (minimum); all other inputs optional
+  {
+    const FM = UPGRADE_RISK_MODEL.fullModel
+    const C  = FM.coef
+
+    // Numeric features — use cohort-median fallback when not supplied
+    const bmi     = 27                          // cohort median approx
+    const age     = ageVal    ?? 63             // cohort mean 63.2
+    const cores   = positiveCores
+    const maxCore = maxCoreVal ?? 30            // cohort median approx
+    const psa     = psaVal    ?? 6.5            // cohort median approx
+    const vol     = volVal    ?? 40             // cohort median approx
+
+    // Categorical encodings (LabelEncoder ordinals)
+    const gggEnc    = FM.enc.ggg[ggg]  ?? 0    // GG1=0, GG2=1, GG3=2
+    const piradsRaw = inputs.pirads != null ? Number(inputs.pirads) : null
+    const piradsEnc = piradsRaw != null ? (FM.enc.pirads[piradsRaw] ?? 0) : 0
+    const eceEnc    = inputs.hasECE      === true ? 1 : 0
+    const abutEnc   = inputs.hasAbutment === true ? 1 : 0
+
+    // Comorbidities / family hx — default to 0 ("No") when not collected
+    const race = 1, smoking = 0, htn = 0, hld = 0, diabetes = 0
+    const fhxBreast = 0, fhxOvarian = 0, fhxProstate = 0
+
+    const logit = FM.intercept
+      + C.bmi                                              * bmi
+      + C.age_first_diagnosis                              * age
+      + C.total_positive_cores                             * cores
+      + C.perc_highest_core_involvement_for_highest_gleason * maxCore
+      + C.psa_result_ng                                    * psa
+      + C.as_mri_prostate_vol                              * vol
+      + C.race_category_2                                  * race
+      + C.current_smoking_category                         * smoking
+      + C.htn_category                                     * htn
+      + C.hld_category                                     * hld
+      + C.diabetes_category                                * diabetes
+      + C.fhx_breast_category                              * fhxBreast
+      + C.fhx_ovarian_category                             * fhxOvarian
+      + C.fhx_prostate_category                            * fhxProstate
+      + C.first_positive_bx_ggg_named                      * gggEnc
+      + C.ece_category                                     * eceEnc
+      + C.abut_category                                    * abutEnc
+      + C.highest_pirads_category                          * piradsEnc
+
+    const prob = sig(logit)
+
+    // Percentile rank vs N=1,213 cohort (using legacy table as approximation)
+    const keys = Object.keys(RISK_PERCENTILES).map(Number).sort((a, b) => a - b)
+    let pctBelow = 0
+    for (let i = 0; i < keys.length - 1; i++) {
+      const lo = RISK_PERCENTILES[keys[i]], hi = RISK_PERCENTILES[keys[i + 1]]
+      if (prob >= lo && prob < hi) {
+        pctBelow = keys[i] + (keys[i + 1] - keys[i]) * (prob - lo) / (hi - lo)
+        break
+      }
+    }
+    if (prob >= RISK_PERCENTILES[95]) pctBelow = 95 + (prob - RISK_PERCENTILES[95]) / (RISK_PERCENTILES[100] - RISK_PERCENTILES[95]) * 5
+    if (prob <= RISK_PERCENTILES[0])  pctBelow = 0
+
+    let band, bandColor
+    if      (prob < 0.15) { band = 'Very Low';  bandColor = 'green'  }
+    else if (prob < 0.20) { band = 'Low';       bandColor = 'green'  }
+    else if (prob < 0.28) { band = 'Average';   bandColor = 'yellow' }
+    else if (prob < 0.40) { band = 'Elevated';  bandColor = 'orange' }
+    else                  { band = 'High';      bandColor = 'red'    }
+
+    return {
+      available: true,
+      probability: prob,
+      pct: Math.round(prob * 100),
+      ciLo: null, ciHi: null, hasCi: false,
+      pctBelow: Math.round(pctBelow),
+      band, bandColor,
+      psadUsed: volVal != null,
+      modelKey: 'fullModel',
+      auc: FM.auc,
+      modelN: FM.n,
+      cohortAvgPct: Math.round(FM.base_rate * 100),
+      inputs: { ggg, positiveCores, psa: psaVal, psad: volVal != null && psaVal != null ? psaVal / volVal : null },
+    }
+  }
+
+  // (legacy models below are no longer reached — kept for reference)
+  const isGG2 = ggg === 2 ? 1 : 0
+  const psad = (psaVal != null && volVal != null && volVal > 0) ? psaVal / volVal : null
   let prob, ciLo, ciHi, modelKey
 
   if (psad != null) {
@@ -1359,7 +1478,6 @@ export function calcUpgradeRisk(inputs) {
     modelKey = 'noPsad'
   }
 
-  // Percentile rank vs N=781 cohort
   const keys = Object.keys(RISK_PERCENTILES).map(Number).sort((a, b) => a - b)
   let pctBelow = 0
   for (let i = 0; i < keys.length - 1; i++) {

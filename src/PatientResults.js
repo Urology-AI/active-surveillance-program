@@ -1338,7 +1338,7 @@ function UpgradeRiskPanel({ upgradeRisk, inputs }) {
         },
       },
         e('div', { style: { width: 4, height: 4, borderRadius: '50%', background: '#d97706', flexShrink: 0, marginTop: 6 } }),
-        e('span', null, 'Add prostate volume for PSAD-enhanced estimate (AUC 0.668)')
+        e('span', null, 'Add prostate volume for more accurate estimate')
       ),
 
       // Model note
@@ -1549,7 +1549,7 @@ function UpgradeRiskPanel({ upgradeRisk, inputs }) {
     },
       e('div', {},
         e('div', { style: { fontSize: 16, fontWeight: 800, color: '#00002D', letterSpacing: '-0.005em' } }, 'Personalized Upgrade Risk'),
-        e('div', { style: { fontSize: 12, color: '#94a3b8', marginTop: 2 } }, 'Mount Sinai logistic regression · N=781')
+        e('div', { style: { fontSize: 12, color: '#94a3b8', marginTop: 2 } }, 'Mount Sinai logistic regression · N=1,213 · AUC 0.65')
       ),
       upgradeRisk.available && e('span', {
         style: {
