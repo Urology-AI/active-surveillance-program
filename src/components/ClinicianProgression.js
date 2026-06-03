@@ -189,15 +189,15 @@ function AddVisitPanel({ onAdd, onCancel }) {
 }
 
 // ─── Enrollment / Edit patient form ──────────────────────────────────────────
-function PatientForm({ initial, onSave, onCancel, isNew }) {
+function PatientForm({ initial, onSave, onCancel, isNew, prefill }) {
   const def = initial ?? newPatientRecord()
   const [form, setForm] = useState({
     label: def.label ?? '',
-    enrollmentDate: def.enrollmentDate ?? '',
-    enrollmentGG: String(def.enrollmentGG ?? 1),
-    enrollmentPSA: String(def.enrollmentPSA ?? ''),
-    prostateVolume: String(def.prostateVolume ?? ''),
-    age: String(def.age ?? ''),
+    enrollmentDate: def.enrollmentDate ?? new Date().toISOString().slice(0, 10),
+    enrollmentGG: String(prefill?.ggg ?? def.enrollmentGG ?? 1),
+    enrollmentPSA: prefill?.psa != null ? String(prefill.psa) : String(def.enrollmentPSA ?? ''),
+    prostateVolume: prefill?.prostateVolume != null ? String(prefill.prostateVolume) : String(def.prostateVolume ?? ''),
+    age: prefill?.age != null ? String(prefill.age) : String(def.age ?? ''),
     race: def.race ?? 'unknown',
   })
   const set = (k, v) => setForm(p => ({ ...p, [k]: v }))
@@ -218,8 +218,35 @@ function PatientForm({ initial, onSave, onCancel, isNew }) {
     onSave(patch)
   }
 
+  const prefillFields = prefill && isNew ? (() => {
+    const parts = []
+    if (prefill.ggg != null) parts.push(`GGG ${prefill.ggg}`)
+    if (prefill.psa != null) parts.push(`PSA ${prefill.psa} ng/mL`)
+    if (prefill.prostateVolume != null) parts.push(`Vol ${prefill.prostateVolume} cc`)
+    if (prefill.age != null) parts.push(`Age ${prefill.age}`)
+    return parts
+  })() : null
+
   return e('form', { onSubmit: submit, style: { display: 'flex', flexDirection: 'column', gap: 12 } },
     e('div', { style: sectionHead }, isNew ? 'New Patient' : 'Edit Patient'),
+    prefillFields && prefillFields.length > 0 && e('div', {
+      style: {
+        padding: '8px 12px', borderRadius: 8,
+        background: 'rgb(6 171 235 / 0.07)', border: '1px solid rgb(6 171 235 / 0.25)',
+        fontSize: 12, color: '#334155', display: 'flex', alignItems: 'center', gap: 8,
+      },
+    },
+      e('svg', {
+        width: 13, height: 13, viewBox: '0 0 24 24', fill: 'none',
+        stroke: '#06ABEB', strokeWidth: 2.5, strokeLinecap: 'round', strokeLinejoin: 'round', flexShrink: 0,
+      },
+        e('polyline', { points: '20 6 9 17 4 12' })
+      ),
+      e('span', null,
+        e('strong', null, 'Pre-filled from AS Tool: '),
+        prefillFields.join(' · ')
+      )
+    ),
     e('div', null,
       e('label', { style: labelStyle }, 'Patient ID / Alias *'),
       e('input', { type: 'text', value: form.label, onChange: ev => set('label', ev.target.value), placeholder: 'e.g. MRN-4821 or J.D.', style: inputStyle, required: true }),
@@ -356,7 +383,7 @@ function Toast({ message, type = 'success', onDone }) {
 }
 
 // ─── Main component ───────────────────────────────────────────────────────────
-export default function ClinicianProgression({ onBack, onGoToFlow }) {
+export default function ClinicianProgression({ onBack, onGoToFlow, patientData }) {
   const [roster,        setRoster]       = useState(() => loadRoster())
   const [showRoster,    setShowRoster]   = useState(false)
   const [showAddVisit,  setShowAddVisit] = useState(false)
@@ -523,6 +550,7 @@ export default function ClinicianProgression({ onBack, onGoToFlow }) {
         e(PatientForm, {
           initial: editingPatient === 'new' ? null : editingPatient,
           isNew: editingPatient === 'new',
+          prefill: editingPatient === 'new' ? patientData : null,
           onSave: handleSavePatientForm,
           onCancel: () => setEditingPatient(null),
         }),
@@ -544,11 +572,31 @@ export default function ClinicianProgression({ onBack, onGoToFlow }) {
         e('div', { style: { fontSize: 32 } }, '📋'),
         e('div', { style: { fontSize: 17, fontWeight: 700, color: '#1e293b' } }, 'No patients in roster'),
         e('div', { style: { fontSize: 13, color: '#64748b', textAlign: 'center', maxWidth: 340 } }, 'Create a new patient record or import an existing JSON file to begin tracking.'),
+        patientData?.ggg != null && e('div', {
+          style: {
+            padding: '10px 16px', borderRadius: 10, maxWidth: 400,
+            background: 'rgb(6 171 235 / 0.07)', border: '1px solid rgb(6 171 235 / 0.25)',
+            fontSize: 13, color: '#334155', textAlign: 'left',
+          },
+        },
+          e('div', { style: { display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 } },
+            e('svg', {
+              width: 13, height: 13, viewBox: '0 0 24 24', fill: 'none',
+              stroke: '#06ABEB', strokeWidth: 2.5, strokeLinecap: 'round', strokeLinejoin: 'round',
+            },
+              e('polyline', { points: '20 6 9 17 4 12' })
+            ),
+            e('span', { style: { fontWeight: 700, color: '#06ABEB', fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.05em' } },
+              'AS Tool data ready'
+            )
+          ),
+          e('span', null, `GGG ${patientData.ggg}${patientData.psa != null ? ` · PSA ${patientData.psa} ng/mL` : ''} — click New Patient and enrollment fields will be pre-filled.`)
+        ),
         e('div', { style: { display: 'flex', gap: 10, flexWrap: 'wrap', justifyContent: 'center' } },
           e('button', {
             type: 'button', onClick: handleNewPatient,
             style: { padding: '10px 20px', background: C.cerulean, color: '#fff', border: 'none', borderRadius: 8, fontSize: 14, fontWeight: 700, cursor: 'pointer' },
-          }, '+ New Patient'),
+          }, patientData?.ggg != null ? '+ New Patient (pre-fill from AS Tool)' : '+ New Patient'),
           e('button', {
             type: 'button', onClick: () => fileRef.current?.click(),
             style: { padding: '10px 20px', background: '#f1f5f9', color: C.navy, border: '1px solid #e2e8f0', borderRadius: 8, fontSize: 14, fontWeight: 600, cursor: 'pointer' },
@@ -597,6 +645,30 @@ export default function ClinicianProgression({ onBack, onGoToFlow }) {
 
       // ── TIMELINE TAB ────────────────────────────────────────────────────
       activePanel === 'timeline' && e('div', { style: { maxWidth: 800, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 16 } },
+
+        // AS Tool data banner (shown when calculator data is loaded for a different patient)
+        patientData?.ggg != null && e('div', {
+          style: {
+            padding: '8px 14px', borderRadius: 10,
+            background: 'rgb(6 171 235 / 0.07)', border: '1px solid rgb(6 171 235 / 0.25)',
+            fontSize: 12, color: '#334155', display: 'flex', alignItems: 'center', gap: 8,
+          },
+        },
+          e('svg', {
+            width: 12, height: 12, viewBox: '0 0 24 24', fill: 'none',
+            stroke: '#06ABEB', strokeWidth: 2.5, strokeLinecap: 'round', strokeLinejoin: 'round', flexShrink: 0,
+          },
+            e('polyline', { points: '20 6 9 17 4 12' })
+          ),
+          e('span', null,
+            e('strong', null, 'AS Tool data loaded: '),
+            `GGG ${patientData.ggg}${patientData.psa != null ? ` · PSA ${patientData.psa} ng/mL` : ''}${patientData.prostateVolume != null ? ` · Vol ${patientData.prostateVolume} cc` : ''}`
+          ),
+          e('button', {
+            type: 'button', onClick: handleNewPatient,
+            style: { marginLeft: 'auto', fontSize: 11, fontWeight: 700, color: '#06ABEB', background: 'transparent', border: 'none', cursor: 'pointer', whiteSpace: 'nowrap' },
+          }, '+ Add as new patient →')
+        ),
 
         // Status bar
         e('div', { style: { background: tierConfig.bg, border: `1px solid ${tierConfig.border}`, borderRadius: 12, padding: '12px 18px', display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap' } },

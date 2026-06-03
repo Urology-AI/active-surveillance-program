@@ -15,7 +15,7 @@ const e = React.createElement
 
 const EXPORT_VERSION = 1
 
-export default function ClinicalCalculator({ onBack, epsaPrefill }) {
+export default function ClinicalCalculator({ onBack, epsaPrefill, onAssessmentRun }) {
   const [view,              setView]              = useState('form') // 'form' | 'results'
   const [inputs,            setInputs]            = useState(null)
   const [results,           setResults]           = useState(null)
@@ -59,6 +59,7 @@ export default function ClinicalCalculator({ onBack, epsaPrefill }) {
       setResults(assessment)
       setView('results')
       window.scrollTo({ top: 0, behavior: 'smooth' })
+      onAssessmentRun?.(formInputs)
     } catch (err) {
       setUploadError(err?.message || 'Assessment failed — check required fields.')
     }

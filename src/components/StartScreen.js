@@ -7,7 +7,39 @@ const PARTS = [
   { num: '3', title: 'Standard AS Protocol', color: '#10b981', steps: 'Steps 10 – 14' },
 ]
 
-export default function StartScreen({ onStart, onProgression }) {
+function PatientDataBadge({ patientData }) {
+  if (!patientData || patientData.ggg == null) return null
+  const gggLabels = { 1: 'Gleason 6 (3+3)', 2: 'Gleason 7 (3+4)', 3: 'Gleason 7 (4+3)', 4: 'Gleason 8', 5: 'Gleason 9–10' }
+  const psaNum = patientData.psa != null && patientData.psa !== '' ? Number(patientData.psa) : null
+  return React.createElement('div', {
+    style: {
+      padding: '10px 14px', borderRadius: 10, marginBottom: 16,
+      background: 'rgb(16 185 129 / 0.07)', border: '1px solid rgb(16 185 129 / 0.3)',
+    },
+  },
+    React.createElement('div', { style: { display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 } },
+      React.createElement('svg', {
+        width: 13, height: 13, viewBox: '0 0 24 24', fill: 'none',
+        stroke: '#10b981', strokeWidth: 2.5, strokeLinecap: 'round', strokeLinejoin: 'round',
+      },
+        React.createElement('polyline', { points: '20 6 9 17 4 12' })
+      ),
+      React.createElement('span', { style: { fontSize: 11, fontWeight: 700, color: '#10b981', textTransform: 'uppercase', letterSpacing: '0.06em' } },
+        'AS Tool data loaded — pathway will auto-populate'
+      )
+    ),
+    React.createElement('div', { style: { display: 'flex', gap: 16, flexWrap: 'wrap' } },
+      React.createElement('span', { style: { fontSize: 12, color: '#334155' } },
+        React.createElement('strong', null, 'GGG: '), `${patientData.ggg} · ${gggLabels[patientData.ggg] || ''}`
+      ),
+      psaNum != null && React.createElement('span', { style: { fontSize: 12, color: '#334155' } },
+        React.createElement('strong', null, 'PSA: '), `${psaNum} ng/mL`
+      ),
+    )
+  )
+}
+
+export default function StartScreen({ onStart, onProgression, patientData }) {
   return React.createElement('div', { className: 'max-w-xl mx-auto' },
 
     // Hero card
@@ -43,6 +75,8 @@ export default function StartScreen({ onStart, onProgression }) {
 
       // Content body
       React.createElement('div', { className: 'p-6 md:p-8' },
+
+        React.createElement(PatientDataBadge, { patientData }),
 
         // Trigger callout
         React.createElement('div', {
