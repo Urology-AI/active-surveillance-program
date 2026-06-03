@@ -1,0 +1,346 @@
+/**
+ * progressionEngine.js — Longitudinal progression detection for AS patients
+ *
+ * AUA/NCCN trigger criteria implemented here:
+ *  · Grade Group upgrade on repeat biopsy (primary endpoint)
+ *  · PSA doubling time < 3 years (PRIAS exit criterion)
+ *  · PSA velocity > 0.75 ng/mL/yr
+ *  · New PI-RADS 4–5 lesion or radiographic progression
+ *  · DRE change (new palpable nodule)
+ *
+ * Cohort calibration uses N=1,213 Mount Sinai Tewari AS Program data
+ * (same source as asEngine.js COHORT_CALIBRATION).
+ */
+
+export const PROGRESSION_STORAGE_KEY  = 'as_progression_data'   // legacy single-patient key
+export const ROSTER_STORAGE_KEY       = 'as_progression_roster'  // multi-patient roster
+
+// ─── Patient ID generator ─────────────────────────────────────────────────────
+export function generatePatientId() {
+  return `pt_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`
+}
+
+// ─── Roster helpers ───────────────────────────────────────────────────────────
+export function loadRoster() {
+  try {
+    const raw = localStorage.getItem(ROSTER_STORAGE_KEY)
+    if (raw) return JSON.parse(raw)
+  } catch (_) {}
+  // Migrate legacy single-patient data if it exists
+  const legacy = loadProgressionData()
+  if (legacy) {
+    const migrated = {
+      patients: [{ ...legacy, id: generatePatientId(), label: 'Patient 1', createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() }],
+      activeId: null,
+    }
+    migrated.activeId = migrated.patients[0].id
+    saveRoster(migrated)
+    try { localStorage.removeItem(PROGRESSION_STORAGE_KEY) } catch (_) {}
+    return migrated
+  }
+  return { patients: [], activeId: null }
+}
+
+export function saveRoster(roster) {
+  try {
+    localStorage.setItem(ROSTER_STORAGE_KEY, JSON.stringify({ ...roster, updatedAt: new Date().toISOString() }))
+  } catch (_) {}
+}
+
+export function getActivePatient(roster) {
+  if (!roster?.patients?.length) return null
+  return roster.patients.find(p => p.id === roster.activeId) ?? roster.patients[0] ?? null
+}
+
+export function upsertPatient(roster, patient) {
+  const now = new Date().toISOString()
+  const existing = roster.patients.findIndex(p => p.id === patient.id)
+  const updated = { ...patient, updatedAt: now }
+  const patients = existing >= 0
+    ? roster.patients.map((p, i) => i === existing ? updated : p)
+    : [...roster.patients, { ...updated, createdAt: now }]
+  return { ...roster, patients, activeId: patient.id }
+}
+
+export function deletePatient(roster, id) {
+  const patients = roster.patients.filter(p => p.id !== id)
+  const activeId = roster.activeId === id
+    ? (patients[0]?.id ?? null)
+    : roster.activeId
+  return { ...roster, patients, activeId }
+}
+
+export function newPatientRecord(label = '') {
+  return {
+    ...defaultProgressionData(),
+    id: generatePatientId(),
+    label: label || '',
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  }
+}
+
+// Export roster or single patient as a downloadable JSON file
+export function exportJSON(data, filename) {
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
+  const url  = URL.createObjectURL(blob)
+  const a    = document.createElement('a')
+  a.href = url; a.download = filename; a.click()
+  URL.revokeObjectURL(url)
+}
+
+// Parse imported JSON — returns { ok, data, error }
+export function parseImportJSON(text) {
+  try {
+    const data = JSON.parse(text)
+    // Accept roster export ({ patients: [...] }) or single patient record
+    if (data.patients && Array.isArray(data.patients)) return { ok: true, type: 'roster', data }
+    if (data.enrollmentDate !== undefined || data.id) return { ok: true, type: 'patient', data }
+    return { ok: false, error: 'Unrecognized JSON structure.' }
+  } catch (_) {
+    return { ok: false, error: 'Invalid JSON file.' }
+  }
+}
+
+// ─── Default data shape ───────────────────────────────────────────────────────
+export function defaultProgressionData() {
+  return {
+    enrollmentDate: '',       // ISO date string
+    enrollmentGG: 1,          // Grade Group at enrollment (1–5)
+    enrollmentPSA: '',        // ng/mL
+    prostateVolume: '',       // cc — for PSAD
+    age: '',                  // years at enrollment
+    race: 'unknown',          // 'caucasian' | 'african_american' | 'other' | 'unknown'
+    visits: [],               // array of VisitEntry (see below)
+  }
+}
+
+// VisitEntry shape:
+// {
+//   id: string,
+//   date: ISO string,
+//   psa: number | null,
+//   prostateVolume: number | null,   // if measured at this visit
+//   biopsy: null | { gg: number, totalCores: number | null, positiveCores: number | null },
+//   mri: null | { pirads: number | null, newLesion: boolean, notes: string },
+//   dre: 'normal' | 'abnormal' | 'not_done' | null,
+//   notes: string,
+// }
+
+// ─── PSA doubling time (log-linear regression, returns months) ────────────────
+export function computePSADT(psaPoints) {
+  // psaPoints: [{ date: ISO, psa: number }]
+  if (!psaPoints || psaPoints.length < 2) return null
+  const sorted = [...psaPoints]
+    .filter(p => p.psa > 0)
+    .sort((a, b) => new Date(a.date) - new Date(b.date))
+  if (sorted.length < 2) return null
+
+  const t0 = new Date(sorted[0].date).getTime()
+  const pts = sorted.map(p => ({
+    x: (new Date(p.date).getTime() - t0) / (1000 * 60 * 60 * 24 * 30.44),
+    y: Math.log(p.psa),
+  }))
+
+  const n = pts.length
+  const sumX  = pts.reduce((s, p) => s + p.x, 0)
+  const sumY  = pts.reduce((s, p) => s + p.y, 0)
+  const sumXY = pts.reduce((s, p) => s + p.x * p.y, 0)
+  const sumX2 = pts.reduce((s, p) => s + p.x * p.x, 0)
+  const denom = n * sumX2 - sumX * sumX
+  if (Math.abs(denom) < 1e-10) return null
+  const slope = (n * sumXY - sumX * sumY) / denom
+  if (slope <= 0) return null
+  return Math.log(2) / slope
+}
+
+// ─── PSA velocity (ng/mL/yr, annualized slope) ───────────────────────────────
+export function computePSAVelocity(psaPoints) {
+  if (!psaPoints || psaPoints.length < 2) return null
+  const sorted = [...psaPoints]
+    .filter(p => p.psa > 0)
+    .sort((a, b) => new Date(a.date) - new Date(b.date))
+  if (sorted.length < 2) return null
+
+  const first = sorted[0]
+  const last  = sorted[sorted.length - 1]
+  const years = (new Date(last.date) - new Date(first.date)) / (1000 * 60 * 60 * 24 * 365.25)
+  if (years < 0.08) return null // < ~1 month gap — not meaningful
+  return (last.psa - first.psa) / years
+}
+
+// ─── Format PSADT for display ─────────────────────────────────────────────────
+export function formatPSADT(months) {
+  if (months === null) return null
+  if (months > 120) return '> 10 years'
+  if (months > 24) return `~${(months / 12).toFixed(1)} years`
+  return `~${Math.round(months)} months`
+}
+
+// ─── Months on AS from enrollment ────────────────────────────────────────────
+export function monthsOnAS(enrollmentDate) {
+  if (!enrollmentDate) return null
+  const ms = Date.now() - new Date(enrollmentDate).getTime()
+  return ms / (1000 * 60 * 60 * 24 * 30.44)
+}
+
+// ─── Primary progression analysis ────────────────────────────────────────────
+// Returns { flags, psadt, psaVelocity, latestGG, upgradeEvent, summaryTier }
+export function analyzeProgression(data) {
+  const { enrollmentGG, enrollmentDate, enrollmentPSA, visits = [] } = data
+  const flags = []
+
+  // Build PSA series from enrollment + visits
+  const psaPoints = []
+  if (enrollmentDate && parseFloat(enrollmentPSA) > 0) {
+    psaPoints.push({ date: enrollmentDate, psa: parseFloat(enrollmentPSA) })
+  }
+  visits.forEach(v => {
+    if (v.date && v.psa > 0) psaPoints.push({ date: v.date, psa: v.psa })
+  })
+
+  const psadt = computePSADT(psaPoints)
+  const psaVelocity = computePSAVelocity(psaPoints)
+
+  // — Grade upgrade detection (most important)
+  let upgradeEvent = null
+  let latestGG = enrollmentGG
+  const biopsyVisits = visits.filter(v => v.biopsy && v.biopsy.gg != null).sort((a, b) => new Date(a.date) - new Date(b.date))
+  if (biopsyVisits.length > 0) {
+    const latest = biopsyVisits[biopsyVisits.length - 1]
+    latestGG = latest.biopsy.gg
+    if (latest.biopsy.gg > enrollmentGG) {
+      upgradeEvent = { date: latest.date, fromGG: enrollmentGG, toGG: latest.biopsy.gg }
+      flags.push({
+        severity: 'critical',
+        code: 'grade_upgrade',
+        label: `Grade Group Upgrade: GG${enrollmentGG} → GG${latest.biopsy.gg}`,
+        detail: `Biopsy on ${formatDate(latest.date)} showed Grade Group ${latest.biopsy.gg}. Primary AUA/NCCN trigger for treatment discussion.`,
+        source: 'AUA/NCCN 2024',
+      })
+    }
+  }
+
+  // — PSA doubling time < 3 years (PRIAS exit criterion)
+  if (psadt !== null && psadt < 36) {
+    const severity = psadt < 18 ? 'critical' : 'warning'
+    flags.push({
+      severity,
+      code: 'psadt_short',
+      label: `Short PSA Doubling Time: ${formatPSADT(psadt)}`,
+      detail: `PRIAS exit criterion: PSADT < 3 years. Current PSADT ${formatPSADT(psadt)}. Discuss biopsy timing and treatment options.`,
+      source: 'PRIAS (Bul 2013); AUA/NCCN 2024',
+    })
+  }
+
+  // — PSA velocity > 0.75 ng/mL/yr
+  if (psaVelocity !== null && psaVelocity > 0.75) {
+    flags.push({
+      severity: 'warning',
+      code: 'psa_velocity',
+      label: `Elevated PSA Velocity: +${psaVelocity.toFixed(2)} ng/mL/yr`,
+      detail: `PSA rising at > 0.75 ng/mL/yr. Secondary marker — correlate with PSADT and biopsy timing.`,
+      source: 'Carter 2006; AUA 2022',
+    })
+  }
+
+  // — MRI progression
+  const mriVisits = visits.filter(v => v.mri).sort((a, b) => new Date(a.date) - new Date(b.date))
+  if (mriVisits.length >= 2) {
+    const first = mriVisits[0].mri
+    const latest = mriVisits[mriVisits.length - 1].mri
+    if (first.pirads != null && latest.pirads != null && latest.pirads > first.pirads && latest.pirads >= 4) {
+      flags.push({
+        severity: 'warning',
+        code: 'mri_progression',
+        label: `MRI Progression: PI-RADS ${first.pirads} → ${latest.pirads}`,
+        detail: `Radiographic worsening to PI-RADS ${latest.pirads} on ${formatDate(mriVisits[mriVisits.length - 1].date)}. Targeted biopsy indicated if not already performed.`,
+        source: 'NCCN 2024',
+      })
+    }
+  }
+  const latestMRI = mriVisits[mriVisits.length - 1]
+  if (latestMRI?.mri?.newLesion) {
+    flags.push({
+      severity: 'warning',
+      code: 'mri_new_lesion',
+      label: 'New MRI Lesion Detected',
+      detail: `New suspicious lesion on MRI (${formatDate(latestMRI.date)}). Targeted biopsy required.`,
+      source: 'NCCN 2024',
+    })
+  }
+
+  // — DRE change
+  const dreAbnormal = visits.filter(v => v.dre === 'abnormal').sort((a, b) => new Date(a.date) - new Date(b.date))
+  if (dreAbnormal.length > 0) {
+    flags.push({
+      severity: 'warning',
+      code: 'dre_abnormal',
+      label: 'Abnormal DRE Finding',
+      detail: `New palpable abnormality on DRE (${formatDate(dreAbnormal[dreAbnormal.length - 1].date)}). Clinical upstaging — biopsy indicated.`,
+      source: 'AUA/NCCN 2024',
+    })
+  }
+
+  // — Summary tier
+  let summaryTier = 'stable'
+  if (flags.some(f => f.severity === 'critical')) summaryTier = 'progressed'
+  else if (flags.some(f => f.severity === 'warning')) summaryTier = 'watch'
+
+  return { flags, psadt, psaVelocity, latestGG, upgradeEvent, summaryTier, psaPoints }
+}
+
+// ─── Cohort risk contextualization (N=1,213 Mount Sinai) ─────────────────────
+export function getCohortContext(data, analysisResult) {
+  const { enrollmentGG, race } = data
+  const { latestGG } = analysisResult
+  const months = monthsOnAS(data.enrollmentDate)
+  const lines = []
+
+  // Overall upgrade rate
+  lines.push(`In the Mount Sinai Tewari AS Program (N=1,213), overall upgrade rate is 25.1% at any follow-up biopsy.`)
+
+  // By current GG
+  const ggRates = { 1: 0.267, 2: 0.080 }
+  if (ggRates[enrollmentGG] !== undefined) {
+    lines.push(`For GG${enrollmentGG} at enrollment: ${(ggRates[enrollmentGG] * 100).toFixed(0)}% upgrade rate in our cohort.`)
+  }
+
+  // By race
+  const raceRates = { african_american: { label: 'African American', rate: 0.341, n: 129 }, caucasian: { label: 'Caucasian', rate: 0.292, n: 708 } }
+  if (raceRates[race]) {
+    const r = raceRates[race]
+    lines.push(`${r.label} patients in our cohort (N=${r.n}): ${(r.rate * 100).toFixed(0)}% upgrade rate.`)
+  }
+
+  // Currently stable
+  lines.push(`59.7% of our 1,213 patients remain on active surveillance today. Of those who left, 47.4% did so by personal preference rather than clinical progression.`)
+
+  return lines
+}
+
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+export function formatDate(iso) {
+  if (!iso) return ''
+  try {
+    return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+  } catch (_) { return iso }
+}
+
+export function generateVisitId() {
+  return `visit_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`
+}
+
+export function loadProgressionData() {
+  try {
+    const raw = localStorage.getItem(PROGRESSION_STORAGE_KEY)
+    if (!raw) return null
+    return JSON.parse(raw)
+  } catch (_) { return null }
+}
+
+export function saveProgressionData(data) {
+  try {
+    localStorage.setItem(PROGRESSION_STORAGE_KEY, JSON.stringify(data))
+  } catch (_) {}
+}

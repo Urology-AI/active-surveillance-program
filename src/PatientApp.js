@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react'
 import CareTeamModal from './components/CareTeamModal.js'
 import PSATracker from './components/PSATracker.js'
 import VisitPrep from './components/VisitPrep.js'
+import PatientJourney from './components/PatientJourney.js'
 import { Activity, BookOpen } from 'lucide-react'
 import { answerPatientEducationQuestion, checkPatientMessageForPii } from './patientGeminiService.js'
 import {
@@ -479,7 +480,7 @@ export default function PatientApp({ onBack }) {
   const [consentAccepted,  setConsentAccepted]  = useState(false)
   const [chatLoading,      setChatLoading]      = useState(false)
   const [activeTopic,      setActiveTopic]      = useState(0) // index into QA_TOPICS
-  const [activeTab,        setActiveTab]        = useState('learn') // 'learn' | 'psa-log' | 'visit-prep'
+  const [activeTab,        setActiveTab]        = useState('journey') // 'journey' | 'learn' | 'psa-log' | 'visit-prep'
   const [textScaleIdx,     setTextScaleIdx]     = useState(0)
   const bottomRef = useRef(null)
 
@@ -706,6 +707,7 @@ export default function PatientApp({ onBack }) {
         style: { maxWidth: 640, margin: '0 auto', display: 'flex' },
       },
         [
+          { key: 'journey',    label: 'My Journey' },
           { key: 'learn',      label: 'Learn'      },
           { key: 'psa-log',    label: 'PSA Log'    },
           { key: 'visit-prep', label: 'Visit Prep' },
@@ -767,6 +769,8 @@ export default function PatientApp({ onBack }) {
     },
       !consentAccepted
         ? e(ConsentCard, { onAccept: () => setConsentAccepted(true) })
+        : activeTab === 'journey'
+        ? e(PatientJourney, { textScale: TEXT_SCALES[textScaleIdx] })
         : activeTab === 'psa-log'
         ? e(PSATracker)
         : activeTab === 'visit-prep'

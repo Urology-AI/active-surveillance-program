@@ -7,7 +7,7 @@ const PARTS = [
   { num: '3', title: 'Standard AS Protocol', color: '#10b981', steps: 'Steps 10 – 14' },
 ]
 
-export default function StartScreen({ onStart }) {
+export default function StartScreen({ onStart, onProgression }) {
   return React.createElement('div', { className: 'max-w-xl mx-auto' },
 
     // Hero card
@@ -80,14 +80,32 @@ export default function StartScreen({ onStart }) {
           )
         ),
 
-        // CTA button
-        React.createElement('button', {
-          onClick: onStart,
-          className: 'btn-primary w-full flex items-center justify-center gap-2 py-4 rounded-xl font-bold text-white text-base',
-          style: { background: 'linear-gradient(135deg, #06ABEB 0%, #0596c7 100%)', boxShadow: '0 4px 18px rgba(6,171,235,0.35)' },
-        },
-          'Begin Assessment',
-          React.createElement(ChevronRight, { className: 'w-5 h-5' })
+        // CTA buttons
+        React.createElement('div', { style: { display: 'flex', flexDirection: 'column', gap: 10 } },
+          React.createElement('button', {
+            onClick: onStart,
+            className: 'btn-primary w-full flex items-center justify-center gap-2 py-4 rounded-xl font-bold text-white text-base',
+            style: { background: 'linear-gradient(135deg, #06ABEB 0%, #0596c7 100%)', boxShadow: '0 4px 18px rgba(6,171,235,0.35)' },
+          },
+            'Begin New Assessment',
+            React.createElement(ChevronRight, { className: 'w-5 h-5' })
+          ),
+          onProgression && React.createElement('button', {
+            onClick: onProgression,
+            className: 'w-full flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-base',
+            style: {
+              background: 'rgba(33,32,112,0.05)', border: '1.5px solid rgba(33,32,112,0.18)',
+              color: '#212070', cursor: 'pointer',
+            },
+          },
+            React.createElement('svg', {
+              width: 16, height: 16, viewBox: '0 0 24 24', fill: 'none',
+              stroke: 'currentColor', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round',
+            },
+              React.createElement('polyline', { points: '22 12 18 12 15 21 9 3 6 12 2 12' })
+            ),
+            'Progression Tracker'
+          )
         )
       )
     )

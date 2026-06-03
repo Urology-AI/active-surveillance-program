@@ -29,6 +29,7 @@ import FlowChartDebug from './components/FlowChartDebug.js'
 import ChartPrintView from './components/ChartPrintView.js'
 import AppHeader from './components/AppHeader.js'
 import ProgramDisclaimerFooter from './components/ProgramDisclaimerFooter.js'
+import ClinicianProgression from './components/ClinicianProgression.js'
 
 const STORAGE_KEY = 'sinai-pathway-progress'
 
@@ -347,11 +348,12 @@ function FlowchartPanel({ currentStepKey, stepHistory, onExpand }) {
 // ── Main App ─────────────────────────────────────────────────────────────────
 
 function App({ externalHeader, onPathwayMetaChange, pathwayResetRef } = {}) {
-  const [currentStep,      setCurrentStep]      = useState(STEPS.START)
-  const [stepHistory,      setStepHistory]      = useState([])
-  const [forwardStack,     setForwardStack]      = useState([])
-  const [showResumePrompt, setShowResumePrompt] = useState(false)
-  const [showChartForPrint, setShowChartForPrint] = useState(false)
+  const [currentStep,        setCurrentStep]        = useState(STEPS.START)
+  const [stepHistory,        setStepHistory]        = useState([])
+  const [forwardStack,       setForwardStack]       = useState([])
+  const [showResumePrompt,   setShowResumePrompt]   = useState(false)
+  const [showChartForPrint,  setShowChartForPrint]  = useState(false)
+  const [showProgression,    setShowProgression]    = useState(false)
 
   useEffect(() => {
     try {
@@ -643,6 +645,16 @@ function App({ externalHeader, onPathwayMetaChange, pathwayResetRef } = {}) {
   )
 
   // ── START: centered single-column layout ────────────────────────────────────
+  // ── PROGRESSION TRACKER mode ────────────────────────────────────────────────
+  if (showProgression) {
+    return React.createElement('div', { style: { height: '100vh', display: 'flex', flexDirection: 'column' } },
+      React.createElement(ClinicianProgression, {
+        onBack: () => setShowProgression(false),
+        onGoToFlow: () => { setShowProgression(false); goToStep(STEPS.STEP1) },
+      })
+    )
+  }
+
   if (currentStep === STEPS.START) {
     return React.createElement('div', { className: 'min-h-screen bg-sinai-page' },
       resumePromptEl,
@@ -650,7 +662,10 @@ function App({ externalHeader, onPathwayMetaChange, pathwayResetRef } = {}) {
         currentPart: null, stepLabel: null, onReset: reset, showReset: false,
       }),
       React.createElement('div', { className: 'max-w-xl mx-auto px-4 pt-6 pb-12' },
-        React.createElement(StartScreen, { onStart: () => goToStep(STEPS.STEP1) })
+        React.createElement(StartScreen, {
+          onStart: () => goToStep(STEPS.STEP1),
+          onProgression: () => setShowProgression(true),
+        })
       ),
       !externalHeader && React.createElement(ProgramDisclaimerFooter),
       floatingPanels
