@@ -89,6 +89,63 @@ export function exportJSON(data, filename) {
   URL.revokeObjectURL(url)
 }
 
+// Export one patient or entire roster as a CSV (one row per visit)
+export function exportCSV(patientsOrPatient, filename) {
+  const patients = Array.isArray(patientsOrPatient)
+    ? patientsOrPatient
+    : patientsOrPatient.patients
+      ? patientsOrPatient.patients
+      : [patientsOrPatient]
+
+  const cols = [
+    'patient_id', 'patient_label',
+    'enrollment_date', 'enrollment_gg', 'enrollment_psa', 'prostate_volume_cc', 'age', 'race',
+    'visit_id', 'visit_date',
+    'psa', 'visit_prostate_volume',
+    'biopsy_gg', 'biopsy_total_cores', 'biopsy_positive_cores',
+    'mri_pirads', 'mri_new_lesion', 'mri_notes',
+    'dre', 'notes',
+  ]
+
+  function esc(v) {
+    if (v === null || v === undefined) return ''
+    const s = String(v)
+    if (s.includes(',') || s.includes('"') || s.includes('\n')) return `"${s.replace(/"/g, '""')}"`
+    return s
+  }
+
+  const rows = [cols.join(',')]
+  for (const pt of patients) {
+    const base = [
+      pt.id ?? '', pt.label ?? '',
+      pt.enrollmentDate ?? '', pt.enrollmentGG ?? '', pt.enrollmentPSA ?? '',
+      pt.prostateVolume ?? '', pt.age ?? '', pt.race ?? '',
+    ]
+    const visits = pt.visits ?? []
+    if (visits.length === 0) {
+      rows.push([...base, '', '', '', '', '', '', '', '', '', '', '', '', ''].map(esc).join(','))
+    } else {
+      for (const v of visits) {
+        rows.push([
+          ...base,
+          v.id ?? '', v.date ?? '',
+          v.psa ?? '', v.prostateVolume ?? '',
+          v.biopsy?.gg ?? '', v.biopsy?.totalCores ?? '', v.biopsy?.positiveCores ?? '',
+          v.mri?.pirads ?? '', v.mri?.newLesion != null ? (v.mri.newLesion ? 'yes' : 'no') : '',
+          v.mri?.notes ?? '',
+          v.dre ?? '', v.notes ?? '',
+        ].map(esc).join(','))
+      }
+    }
+  }
+
+  const blob = new Blob([rows.join('\n')], { type: 'text/csv' })
+  const url  = URL.createObjectURL(blob)
+  const a    = document.createElement('a')
+  a.href = url; a.download = filename; a.click()
+  URL.revokeObjectURL(url)
+}
+
 // Parse imported JSON — returns { ok, data, error }
 export function parseImportJSON(text) {
   try {
@@ -202,7 +259,16 @@ export function analyzeProgression(data) {
   const psadt = computePSADT(psaPoints)
   const psaVelocity = computePSAVelocity(psaPoints)
 
-  // — Grade upgrade detection (most important)
+  // Compute time span of PSA data in months (needed for reliability gating)
+  const psaSorted = [...psaPoints].sort((a, b) => new Date(a.date) - new Date(b.date))
+  const psaSpanMonths = psaSorted.length >= 2
+    ? (new Date(psaSorted[psaSorted.length - 1].date) - new Date(psaSorted[0].date)) / (1000 * 60 * 60 * 24 * 30.44)
+    : 0
+
+  // ── Grade upgrade on biopsy ───────────────────────────────────────────────────
+  // AUA/ASTRO 2026 §18: "Detection of significantly higher-volume or higher-grade disease
+  // on surveillance biopsy should then prompt discussion of definitive therapy."
+  // This is the ONLY criterion that alone warrants a treatment discussion.
   let upgradeEvent = null
   let latestGG = enrollmentGG
   const biopsyVisits = visits.filter(v => v.biopsy && v.biopsy.gg != null).sort((a, b) => new Date(a.date) - new Date(b.date))
@@ -215,36 +281,62 @@ export function analyzeProgression(data) {
         severity: 'critical',
         code: 'grade_upgrade',
         label: `Grade Group Upgrade: GG${enrollmentGG} → GG${latest.biopsy.gg}`,
-        detail: `Biopsy on ${formatDate(latest.date)} showed Grade Group ${latest.biopsy.gg}. Primary AUA/NCCN trigger for treatment discussion.`,
-        source: 'AUA/NCCN 2024',
+        detail: `Biopsy on ${formatDate(latest.date)} showed Grade Group ${latest.biopsy.gg}. Per AUA/ASTRO 2026 §18: "Detection of higher-grade disease on surveillance biopsy should prompt discussion of definitive therapy." Incorporate patient age, comorbidity, life expectancy, and preference into SDM.`,
+        source: 'AUA/ASTRO 2026 (Amended) §18; NCCN 2024',
       })
     }
   }
 
-  // — PSA doubling time < 3 years (PRIAS exit criterion)
-  if (psadt !== null && psadt < 36) {
-    const severity = psadt < 18 ? 'critical' : 'warning'
-    flags.push({
-      severity,
-      code: 'psadt_short',
-      label: `Short PSA Doubling Time: ${formatPSADT(psadt)}`,
-      detail: `PRIAS exit criterion: PSADT < 3 years. Current PSADT ${formatPSADT(psadt)}. Discuss biopsy timing and treatment options.`,
-      source: 'PRIAS (Bul 2013); AUA/NCCN 2024',
-    })
+  // ── PSA kinetics ──────────────────────────────────────────────────────────────
+  // AUA/ASTRO 2026 §18 exact language:
+  //   "An increase in PSA should initially prompt re-testing of PSA as transient
+  //    PSA elevations are common and PSA kinetics have variably been associated
+  //    with pathology among patients on surveillance."
+  //   "Serial PSA increases… should prompt re-evaluation with MRI and possible
+  //    prostate biopsy; less frequently, direct conversion to treatment may be
+  //    considered."
+  // The guideline cites NO specific PSADT or velocity threshold. PRIAS dropped
+  // PSADT < 3 yrs as an exit criterion in 2014 (not predictive of RP pathology).
+  // We require ≥ 6 months of PSA data before any kinetics flag is actionable.
+  if (psadt !== null) {
+    if (psaSpanMonths < 6) {
+      // Insufficient window — note it but do not raise an actionable flag
+      flags.push({
+        severity: 'info',
+        code: 'psadt_insufficient_data',
+        label: `PSA-DT: ${formatPSADT(psadt)} (preliminary — ${Math.round(psaSpanMonths)} months data)`,
+        detail: `Apparent PSADT ${formatPSADT(psadt)}, but calculated over only ${Math.round(psaSpanMonths)} months. AUA/ASTRO 2026 §18 notes transient PSA elevations are common — re-test PSA before acting on kinetics. At least 6 months of serial values are needed for a reliable estimate.`,
+        source: 'AUA/ASTRO 2026 (Amended) §18',
+      })
+    } else if (psadt < 36) {
+      flags.push({
+        severity: 'warning',
+        code: 'psadt_short',
+        label: `Short PSA Doubling Time: ${formatPSADT(psadt)}`,
+        detail: `PSADT ${formatPSADT(psadt)} (< 3 years). AUA/ASTRO 2026 §18: serial PSA increases warrant "re-evaluation with MRI and possible prostate biopsy." PSA kinetics are NOT a standalone trigger for treatment — biopsy is required to assess grade. Note: PRIAS removed PSADT as an exit criterion in 2014 after it was found not predictive of unfavorable RP pathology.`,
+        source: 'AUA/ASTRO 2026 (Amended) §18; Drost 2018 (Eur Urol 74:1002)',
+      })
+    }
   }
 
-  // — PSA velocity > 0.75 ng/mL/yr
-  if (psaVelocity !== null && psaVelocity > 0.75) {
+  // ── PSA velocity > 0.75 ng/mL/yr ─────────────────────────────────────────────
+  // Not cited in AUA/ASTRO 2026. UCSF institutional criterion only.
+  // Requires ≥ 6 months window for reliability.
+  if (psaVelocity !== null && psaVelocity > 0.75 && psaSpanMonths >= 6) {
     flags.push({
       severity: 'warning',
       code: 'psa_velocity',
       label: `Elevated PSA Velocity: +${psaVelocity.toFixed(2)} ng/mL/yr`,
-      detail: `PSA rising at > 0.75 ng/mL/yr. Secondary marker — correlate with PSADT and biopsy timing.`,
-      source: 'Carter 2006; AUA 2022',
+      detail: `PSA rising at > 0.75 ng/mL/yr. UCSF institutional marker — not cited in AUA/ASTRO 2026. Warrants re-testing PSA, then MRI and biopsy consideration per §18. Not a standalone treatment trigger.`,
+      source: 'Carter 2006 (J Urol 176:2416); AUA/ASTRO 2026 §18',
     })
   }
 
-  // — MRI progression
+  // ── MRI: PI-RADS 4–5 or new lesion ───────────────────────────────────────────
+  // AUA/ASTRO 2026 §19: "If MRI demonstrates findings suspicious for clinically
+  // significant prostate cancer (PI-RADS 4 or 5), then timely repeat (confirmatory)
+  // targeted biopsy is recommended… MRI cannot be recommended as a stand-alone
+  // replacement for periodic repeat biopsy."
   const mriVisits = visits.filter(v => v.mri).sort((a, b) => new Date(a.date) - new Date(b.date))
   if (mriVisits.length >= 2) {
     const first = mriVisits[0].mri
@@ -254,40 +346,60 @@ export function analyzeProgression(data) {
         severity: 'warning',
         code: 'mri_progression',
         label: `MRI Progression: PI-RADS ${first.pirads} → ${latest.pirads}`,
-        detail: `Radiographic worsening to PI-RADS ${latest.pirads} on ${formatDate(mriVisits[mriVisits.length - 1].date)}. Targeted biopsy indicated if not already performed.`,
-        source: 'NCCN 2024',
+        detail: `PI-RADS worsened to ${latest.pirads} (${formatDate(mriVisits[mriVisits.length - 1].date)}). AUA/ASTRO 2026 §19: "PI-RADS 4 or 5 → timely repeat targeted biopsy recommended." MRI cannot replace biopsy — histological confirmation required before any treatment decision.`,
+        source: 'AUA/ASTRO 2026 (Amended) §19',
       })
     }
   }
+  // Single MRI with PI-RADS 4–5 also triggers biopsy
   const latestMRI = mriVisits[mriVisits.length - 1]
+  if (latestMRI?.mri?.pirads >= 4) {
+    const alreadyFlagged = flags.some(f => f.code === 'mri_progression')
+    if (!alreadyFlagged) {
+      flags.push({
+        severity: 'warning',
+        code: 'mri_pirads_high',
+        label: `PI-RADS ${latestMRI.mri.pirads} on MRI`,
+        detail: `PI-RADS ${latestMRI.mri.pirads} on ${formatDate(latestMRI.date)}. AUA/ASTRO 2026 §19: "PI-RADS 4 or 5 → timely repeat (confirmatory) targeted biopsy recommended." Biopsy required to confirm grade — MRI alone does not define progression.`,
+        source: 'AUA/ASTRO 2026 (Amended) §19',
+      })
+    }
+  }
   if (latestMRI?.mri?.newLesion) {
     flags.push({
       severity: 'warning',
       code: 'mri_new_lesion',
       label: 'New MRI Lesion Detected',
-      detail: `New suspicious lesion on MRI (${formatDate(latestMRI.date)}). Targeted biopsy required.`,
-      source: 'NCCN 2024',
+      detail: `New suspicious lesion on ${formatDate(latestMRI.date)}. AUA/ASTRO 2026 §19: targeted biopsy required. MRI cannot replace biopsy — histological confirmation needed before any treatment decision.`,
+      source: 'AUA/ASTRO 2026 (Amended) §19',
     })
   }
 
-  // — DRE change
+  // ── DRE: new abnormality ──────────────────────────────────────────────────────
+  // AUA/ASTRO 2026 §18: "new DRE abnormalities… should prompt re-evaluation
+  // with MRI and possible prostate biopsy."
   const dreAbnormal = visits.filter(v => v.dre === 'abnormal').sort((a, b) => new Date(a.date) - new Date(b.date))
   if (dreAbnormal.length > 0) {
     flags.push({
       severity: 'warning',
       code: 'dre_abnormal',
       label: 'Abnormal DRE Finding',
-      detail: `New palpable abnormality on DRE (${formatDate(dreAbnormal[dreAbnormal.length - 1].date)}). Clinical upstaging — biopsy indicated.`,
-      source: 'AUA/NCCN 2024',
+      detail: `New palpable abnormality on DRE (${formatDate(dreAbnormal[dreAbnormal.length - 1].date)}). AUA/ASTRO 2026 §18: DRE changes warrant "re-evaluation with MRI and possible prostate biopsy." Biopsy-confirmed upgrade — not DRE alone — triggers treatment discussion.`,
+      source: 'AUA/ASTRO 2026 (Amended) §18',
     })
   }
 
-  // — Summary tier
+  // ── Summary tier ──────────────────────────────────────────────────────────────
+  // progressed = biopsy-confirmed GG upgrade (AUA/ASTRO 2026 §18 — only criterion
+  //              for treatment discussion)
+  // watch      = PSA kinetics / MRI / DRE changes → biopsy re-evaluation required
+  // stable     = no flags
+  // info flags do not elevate tier
   let summaryTier = 'stable'
   if (flags.some(f => f.severity === 'critical')) summaryTier = 'progressed'
   else if (flags.some(f => f.severity === 'warning')) summaryTier = 'watch'
 
-  return { flags, psadt, psaVelocity, latestGG, upgradeEvent, summaryTier, psaPoints }
+  return { flags, psadt, psaVelocity, latestGG, upgradeEvent, summaryTier, psaPoints, psaSpanMonths }
 }
 
 // ─── Cohort risk contextualization (N=1,213 Mount Sinai) ─────────────────────
