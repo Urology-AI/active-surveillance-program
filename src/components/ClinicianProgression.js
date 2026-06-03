@@ -15,6 +15,7 @@ import {
   deletePatient,
   newPatientRecord,
   exportJSON,
+  exportCSV,
   parseImportJSON,
   generatePatientId,
 } from '../progressionEngine.js'
@@ -87,13 +88,14 @@ function StatusDot({ tier, size = 8 }) {
 }
 
 // ─── Stat chip ────────────────────────────────────────────────────────────────
-function StatChip({ label, value, sub, color = '#1e293b' }) {
+function StatChip({ label, value, sub, color = '#1e293b', footnote }) {
   return e('div', {
     style: { background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 10, padding: '12px 16px', minWidth: 110 },
   },
     e('div', { style: { fontSize: 10, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 4 } }, label),
     e('div', { style: { fontSize: 20, fontWeight: 800, color } }, value),
-    sub && e('div', { style: { fontSize: 10, color: '#94a3b8', marginTop: 2 } }, sub)
+    sub && e('div', { style: { fontSize: 10, color: '#94a3b8', marginTop: 2 } }, sub),
+    footnote && e('div', { style: { fontSize: 9, color: C.amber, marginTop: 3, fontStyle: 'italic' } }, footnote)
   )
 }
 
@@ -243,7 +245,7 @@ function PatientForm({ initial, onSave, onCancel, isNew }) {
 }
 
 // ─── Patient roster drawer ────────────────────────────────────────────────────
-function RosterDrawer({ roster, onSelect, onNew, onImport, onExportAll, onClose }) {
+function RosterDrawer({ roster, onSelect, onNew, onImport, onExportAll, onExportAllCSV, onClose }) {
   const fileRef = useRef(null)
 
   function handleFileChange(ev) {
@@ -294,7 +296,11 @@ function RosterDrawer({ roster, onSelect, onNew, onImport, onExportAll, onClose 
           e('button', {
             type: 'button', onClick: onExportAll,
             style: { flex: 1, padding: '7px', background: '#f1f5f9', color: C.navy, border: '1px solid #e2e8f0', borderRadius: 8, fontSize: 11, fontWeight: 700, cursor: 'pointer' },
-          }, '↓ Export All'),
+          }, '↓ JSON'),
+          e('button', {
+            type: 'button', onClick: onExportAllCSV,
+            style: { flex: 1, padding: '7px', background: '#f1f5f9', color: C.navy, border: '1px solid #e2e8f0', borderRadius: 8, fontSize: 11, fontWeight: 700, cursor: 'pointer' },
+          }, '↓ CSV'),
           e('input', { type: 'file', accept: '.json,application/json', ref: fileRef, onChange: handleFileChange, style: { display: 'none' } })
         )
       ),
@@ -466,6 +472,18 @@ export default function ClinicianProgression({ onBack, onGoToFlow }) {
     showToast(`Exported ${roster.patients.length} patients`)
   }
 
+  function handleExportPatientCSV() {
+    if (!patient) return
+    const filename = `as-patient-${(patient.label ?? patient.id).replace(/\s+/g, '_')}-${new Date().toISOString().slice(0, 10)}.csv`
+    exportCSV(patient, filename)
+    showToast('Exported patient CSV')
+  }
+
+  function handleExportAllCSV() {
+    exportCSV({ patients: roster.patients }, `as-roster-${new Date().toISOString().slice(0, 10)}.csv`)
+    showToast(`Exported ${roster.patients.length} patients as CSV`)
+  }
+
   // ── Shared header ─────────────────────────────────────────────────────────
   const header = e('div', {
     style: { background: C.cetacean, padding: '10px 14px', display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0, flexWrap: 'wrap' },
@@ -507,7 +525,11 @@ export default function ClinicianProgression({ onBack, onGoToFlow }) {
       patient && e('button', {
         type: 'button', onClick: handleExportPatient,
         style: { background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', color: 'rgba(255,255,255,0.7)', padding: '5px 10px', borderRadius: 6, fontSize: 11, fontWeight: 600, cursor: 'pointer' },
-      }, '↓ Save JSON'),
+      }, '↓ JSON'),
+      patient && e('button', {
+        type: 'button', onClick: handleExportPatientCSV,
+        style: { background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', color: 'rgba(255,255,255,0.7)', padding: '5px 10px', borderRadius: 6, fontSize: 11, fontWeight: 600, cursor: 'pointer' },
+      }, '↓ CSV'),
       onGoToFlow && patient && e('button', {
         type: 'button', onClick: onGoToFlow,
         style: { background: C.cerulean, border: 'none', color: '#fff', padding: '6px 12px', borderRadius: 6, fontSize: 11, fontWeight: 700, cursor: 'pointer' },
@@ -556,7 +578,7 @@ export default function ClinicianProgression({ onBack, onGoToFlow }) {
           e('input', { type: 'file', accept: '.json,application/json', ref: fileRef, onChange: ev => { const f = ev.target.files?.[0]; if (!f) return; const r = new FileReader(); r.onload = re => handleImport(re.target.result); r.readAsText(f); ev.target.value = '' }, style: { display: 'none' } })
         )
       ),
-      showRoster && e(RosterDrawer, { roster, onSelect: handleSelectPatient, onNew: handleNewPatient, onImport: handleImport, onExportAll: handleExportAll, onClose: () => setShowRoster(false) }),
+      showRoster && e(RosterDrawer, { roster, onSelect: handleSelectPatient, onNew: handleNewPatient, onImport: handleImport, onExportAll: handleExportAll, onExportAllCSV: handleExportAllCSV, onClose: () => setShowRoster(false) }),
       toast && e(Toast, { ...toast, onDone: () => setToast(null) })
     )
   }
@@ -605,16 +627,27 @@ export default function ClinicianProgression({ onBack, onGoToFlow }) {
             e('div', { style: { fontSize: 16, fontWeight: 800, color: tierConfig.color } }, tierConfig.label)
           ),
           e('div', { style: { fontSize: 12, color: '#475569', flex: 1 } },
-            analysis.summaryTier === 'stable'     ? 'No AUA/NCCN progression triggers detected.'
-            : analysis.summaryTier === 'watch'    ? `${analysis.flags.length} concern${analysis.flags.length !== 1 ? 's' : ''} flagged — review in Analysis tab.`
-            : 'AUA/NCCN progression criteria met — treatment discussion indicated.'
+            analysis.summaryTier === 'stable'
+              ? 'No AUA/NCCN/PRIAS progression triggers detected.'
+            : analysis.summaryTier === 'watch'
+              ? `${analysis.flags.filter(f => f.severity === 'warning').length} concern${analysis.flags.filter(f => f.severity === 'warning').length !== 1 ? 's' : ''} flagged — biopsy re-evaluation indicated. See Analysis tab.`
+            : 'Biopsy-confirmed grade upgrade — AUA/ASTRO §33: offer definitive treatment.'
           )
         ),
 
         // Stat chips
         e('div', { style: { display: 'flex', gap: 10, flexWrap: 'wrap' } },
           e(StatChip, { label: 'Time on AS', value: mos != null ? (mos < 24 ? `${Math.round(mos)}mo` : `${(mos / 12).toFixed(1)}yr`) : '—' }),
-          e(StatChip, { label: 'PSA Doubling Time', value: analysis.psadt != null ? formatPSADT(analysis.psadt) : '≥2 PSAs needed', color: analysis.psadt != null ? (analysis.psadt < 36 ? C.red : analysis.psadt < 60 ? C.amber : C.green) : '#94a3b8' }),
+          e(StatChip, {
+            label: 'PSA Doubling Time',
+            value: analysis.psadt != null
+              ? (analysis.psaSpanMonths < 6 ? `~${formatPSADT(analysis.psadt)}*` : formatPSADT(analysis.psadt))
+              : '≥2 PSAs needed',
+            color: analysis.psadt != null && analysis.psaSpanMonths >= 6
+              ? (analysis.psadt < 36 ? C.amber : analysis.psadt < 60 ? C.amber : C.green)
+              : '#94a3b8',
+            footnote: analysis.psadt != null && analysis.psaSpanMonths < 6 ? '* < 6 months data — unreliable' : null,
+          }),
           e(StatChip, { label: 'PSA Velocity', value: analysis.psaVelocity != null ? `${analysis.psaVelocity > 0 ? '+' : ''}${analysis.psaVelocity.toFixed(2)}` : '—', sub: 'ng/mL/yr', color: analysis.psaVelocity != null && analysis.psaVelocity > 0.75 ? C.amber : '#1e293b' }),
           e(StatChip, { label: 'Grade Group', value: `GG${analysis.latestGG}`, color: analysis.upgradeEvent ? C.red : C.green, sub: analysis.upgradeEvent ? `↑ from GG${patient.enrollmentGG}` : 'Unchanged' }),
           e(StatChip, { label: 'Visits', value: sortedVisits.length, sub: 'follow-up visits' })
@@ -711,6 +744,7 @@ export default function ClinicianProgression({ onBack, onGoToFlow }) {
       onNew: handleNewPatient,
       onImport: handleImport,
       onExportAll: handleExportAll,
+      onExportAllCSV: handleExportAllCSV,
       onClose: () => setShowRoster(false),
     }),
 
