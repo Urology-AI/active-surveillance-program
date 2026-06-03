@@ -13,6 +13,7 @@ const CLINICIAN_CONSENT_KEY = 'as_clinician_consent_accepted'
 
 function ClinicianShell({ onChangeRole, epsaPrefill }) {
   const [toolMode, setToolMode] = useState('calculator')
+  const [calculatorInputs, setCalculatorInputs] = useState(null)
   const [clinicianConsentAccepted, setClinicianConsentAccepted] = useState(false)
   const [pathwayMeta, setPathwayMeta] = useState({
     currentPart: null,
@@ -73,10 +74,11 @@ function ClinicianShell({ onChangeRole, epsaPrefill }) {
               externalHeader: true,
               onPathwayMetaChange: setPathwayMeta,
               pathwayResetRef,
+              patientData: calculatorInputs,
             })
           ),
           e('div', { style: { display: toolMode === 'calculator' ? 'block' : 'none' }, className: 'min-h-[calc(100vh-1px)] bg-sinai-page' },
-            e(ClinicalCalculator, { onBack: onChangeRole, epsaPrefill })
+            e(ClinicalCalculator, { onBack: onChangeRole, epsaPrefill, onAssessmentRun: setCalculatorInputs })
           )
         ),
     e(ProgramDisclaimerFooter)

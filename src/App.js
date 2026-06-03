@@ -347,13 +347,56 @@ function FlowchartPanel({ currentStepKey, stepHistory, onExpand }) {
 
 // ── Main App ─────────────────────────────────────────────────────────────────
 
-function App({ externalHeader, onPathwayMetaChange, pathwayResetRef } = {}) {
+// ── Auto-advance logic ────────────────────────────────────────────────────────
+
+function deriveAutoPath(patientData) {
+  if (!patientData || patientData.ggg == null) return null
+  const { ggg, positiveCores, totalCores, psa } = patientData
+  const intermediateSteps = [STEPS.STEP2]
+  const summary = []
+
+  if (ggg === 1) {
+    summary.push({ label: 'Step 2 · Gleason Score', value: 'Gleason 6 (3+3) — Grade Group 1' })
+    return { intermediateSteps, targetStep: STEPS.STEP4, summary }
+  }
+
+  if (ggg === 2) {
+    summary.push({ label: 'Step 2 · Gleason Score', value: 'Gleason 7 (3+4) — Grade Group 2' })
+    const pc    = positiveCores !== '' && positiveCores != null ? Number(positiveCores) : null
+    const tc    = totalCores    !== '' && totalCores    != null ? Number(totalCores)    : null
+    const psaNum = psa          !== '' && psa           != null ? Number(psa)           : null
+
+    if (pc != null && tc != null && psaNum != null && tc > 0) {
+      intermediateSteps.push(STEPS.STEP3)
+      const coreRatio = pc / tc
+      const irfCount  = 1 + (psaNum >= 10 && psaNum <= 20 ? 1 : 0) // GGG 2 = 1 IRF; PSA 10–20 = another
+      if (irfCount === 1 && coreRatio < 0.5) {
+        summary.push({ label: 'Step 3 · Risk Stratification', value: 'Favorable Intermediate (1 IRF, <50% positive cores)' })
+        return { intermediateSteps, targetStep: STEPS.STEP4, summary }
+      } else {
+        summary.push({ label: 'Step 3 · Risk Stratification', value: 'Unfavorable Intermediate → Definitive Treatment' })
+        return { intermediateSteps, targetStep: STEPS.END_DEFINITIVE_TREATMENT, summary }
+      }
+    }
+    return { intermediateSteps, targetStep: STEPS.STEP3, summary }
+  }
+
+  if (ggg >= 3) {
+    summary.push({ label: 'Step 2 · Gleason Score', value: `Gleason 7 (4+3) or higher — Grade Group ${ggg}` })
+    return { intermediateSteps, targetStep: STEPS.END_DEFINITIVE_TREATMENT, summary }
+  }
+
+  return null
+}
+
+function App({ externalHeader, onPathwayMetaChange, pathwayResetRef, patientData } = {}) {
   const [currentStep,        setCurrentStep]        = useState(STEPS.START)
   const [stepHistory,        setStepHistory]        = useState([])
   const [forwardStack,       setForwardStack]       = useState([])
   const [showResumePrompt,   setShowResumePrompt]   = useState(false)
   const [showChartForPrint,  setShowChartForPrint]  = useState(false)
   const [showProgression,    setShowProgression]    = useState(false)
+  const [autoAdvanceSummary, setAutoAdvanceSummary] = useState(null)
 
   useEffect(() => {
     try {
@@ -386,6 +429,7 @@ function App({ externalHeader, onPathwayMetaChange, pathwayResetRef } = {}) {
       const prev = stepHistory[stepHistory.length - 1]
       setStepHistory(h => h.slice(0, -1))
       setCurrentStep(prev)
+      setAutoAdvanceSummary(null)
     }
   }
 
@@ -398,10 +442,19 @@ function App({ externalHeader, onPathwayMetaChange, pathwayResetRef } = {}) {
     }
   }
 
+  // Jump to a target step, inserting intermediateSteps into history as if visited
+  const jumpToStep = (targetStep, intermediateSteps = [], summary = null) => {
+    setStepHistory(prev => [...prev, currentStep, ...intermediateSteps])
+    setCurrentStep(targetStep)
+    setForwardStack([])
+    setAutoAdvanceSummary(summary)
+  }
+
   const reset = useCallback(() => {
     setCurrentStep(STEPS.START)
     setStepHistory([])
     setForwardStack([])
+    setAutoAdvanceSummary(null)
     try { localStorage.removeItem(STORAGE_KEY) } catch (_) {}
   }, [])
 
@@ -507,13 +560,55 @@ function App({ externalHeader, onPathwayMetaChange, pathwayResetRef } = {}) {
   // Step content (same logic as before, extracted for reuse in both layouts)
   const stepNum = stepKeyToNum(currentStep)
 
+  // Auto-advance summary banner shown after auto-population
+  const autoAdvanceBanner = autoAdvanceSummary && autoAdvanceSummary.length > 0 &&
+    React.createElement('div', {
+      style: {
+        marginBottom: 14, padding: '10px 14px',
+        background: 'rgb(6 171 235 / 0.07)',
+        border: '1px solid rgb(6 171 235 / 0.25)',
+        borderRadius: 12,
+      },
+    },
+      React.createElement('div', {
+        style: { display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 },
+      },
+        React.createElement('svg', {
+          width: 14, height: 14, viewBox: '0 0 24 24', fill: 'none',
+          stroke: '#06ABEB', strokeWidth: 2.5, strokeLinecap: 'round', strokeLinejoin: 'round',
+          style: { flexShrink: 0 },
+        },
+          React.createElement('polyline', { points: '20 6 9 17 4 12' })
+        ),
+        React.createElement('span', {
+          style: { fontSize: 11.5, fontWeight: 700, color: '#06ABEB', textTransform: 'uppercase', letterSpacing: '0.05em' },
+        }, 'Auto-populated from AS Tool')
+      ),
+      autoAdvanceSummary.map((item, i) =>
+        React.createElement('div', {
+          key: i,
+          style: { display: 'flex', gap: 6, fontSize: 12, color: '#334155', marginBottom: i < autoAdvanceSummary.length - 1 ? 3 : 0 },
+        },
+          React.createElement('span', { style: { color: '#64748b', fontWeight: 600, minWidth: 160 } }, item.label + ':'),
+          React.createElement('span', null, item.value)
+        )
+      )
+    )
+
   const stepContent = React.createElement('div', { className: 'step-card', key: currentStep },
 
     // ── PART 1 ──
     currentStep === STEPS.STEP1 &&
       React.createElement(Step1PatientIntent, {
         onRefuseDefer: () => goToStep(STEPS.END_REFUSE_DEFER),
-        onProceed: () => goToStep(STEPS.STEP2),
+        onProceed: () => {
+          const autoPath = deriveAutoPath(patientData)
+          if (autoPath) {
+            jumpToStep(autoPath.targetStep, autoPath.intermediateSteps, autoPath.summary)
+          } else {
+            goToStep(STEPS.STEP2)
+          }
+        },
         ...navProps,
       }),
 
@@ -651,6 +746,7 @@ function App({ externalHeader, onPathwayMetaChange, pathwayResetRef } = {}) {
       React.createElement(ClinicianProgression, {
         onBack: () => setShowProgression(false),
         onGoToFlow: () => { setShowProgression(false); goToStep(STEPS.STEP1) },
+        patientData,
       })
     )
   }
@@ -665,6 +761,7 @@ function App({ externalHeader, onPathwayMetaChange, pathwayResetRef } = {}) {
         React.createElement(StartScreen, {
           onStart: () => goToStep(STEPS.STEP1),
           onProgression: () => setShowProgression(true),
+          patientData,
         })
       ),
       !externalHeader && React.createElement(ProgramDisclaimerFooter),
@@ -743,6 +840,7 @@ function App({ externalHeader, onPathwayMetaChange, pathwayResetRef } = {}) {
       // Center step content
       React.createElement('main', { className: 'pathway-grid-center' },
         navRow,
+        autoAdvanceBanner,
         stepContent,
         !externalHeader && React.createElement(ProgramDisclaimerFooter)
       ),
