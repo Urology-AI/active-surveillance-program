@@ -118,6 +118,13 @@ export const COHORT_CALIBRATION = {
     intensive_as: { risk: 0.20,  ci: '15–30%', source: 'Literature — high-feature AS programs; short-interval biopsy recommended' },
   },
 
+  // NVB abutment — N=1,213 full cohort
+  abutment: {
+    n_yes: 196,
+    upgrade_rate_yes: 0.140,
+    note: 'Abutment present in 196/1,213 patients (16%). Upgrade rate 14.0% — lower than overall 25.1% cohort rate, likely reflecting selection effect (higher-risk abutment patients directed to treatment).',
+  },
+
   // ePSA pre-biopsy tier → % of that tier found to be AS-eligible (GG1–2) on biopsy
   epsa_to_as_eligible: {
     low:                { pct: 0.89, note: 'ePSA score 0–10, N≈14' },
@@ -328,6 +335,7 @@ export const MODEL_VALIDATION = {
     cohort_feature_prevalence: {
       age_under_50: '4.1% (50/1213) — N=50 patients under 50; upgrade rate 30.0%, progression rate 46.0%',
       pirads_4_5: '27.1% (329/1213 with PI-RADS 4–5)',
+      ece: '<1% (4/1,213)',
     },
     note: 'Feature-count model based on guideline criteria. Age <50 now has N=50 cohort data (upgrade rate 30.0%); this is the highest-progression-rate age group. ECE: included per guidelines.',
     source: 'PRIAS protocol; NCCN 2024; D\'Amico et al., JAMA 2004',
@@ -582,8 +590,8 @@ function calcBasic({ ggg, positiveCores, totalCores, maxCorePercent, psa, prosta
         : p === 3
         ? 'PI-RADS v2.1: equivocal — requires clinical judgment'
         : p === 4
-        ? 'PI-RADS v2.1: high probability of clinically significant cancer'
-        : 'PI-RADS v2.1: very high probability — biopsy/treatment discussion urgently recommended',
+        ? 'PI-RADS v2.1: high probability of clinically significant cancer. Note: PI-RADS was not an independent predictor of GG upgrade in multivariable analysis (p=0.397) after adjusting for PSAD, GGG, and positive core count (N=781). Retained as a monitoring intensity trigger, not a standalone risk score.'
+        : 'PI-RADS v2.1: very high probability — biopsy/treatment discussion urgently recommended. Note: PI-RADS was not an independent predictor of GG upgrade in multivariable analysis (p=0.397) after adjusting for PSAD, GGG, and positive core count (N=781). Retained as a monitoring intensity trigger, not a standalone risk score.',
     })
   }
 
@@ -606,7 +614,29 @@ function calcBasic({ ggg, positiveCores, totalCores, maxCorePercent, psa, prosta
   else if (score <= 45) asTierKey = 'intensive_as'
   else                  asTierKey = 'treatment'
 
-  return { asTierKey, asScore: score, asFactors: factors, psad }
+  // Logistic regression upgrade probability (N=781, AUC 0.668 with PSAD; N=1,197, AUC 0.609 without)
+  let upgradeProbability = null
+  let upgradeProbabilityModel = null
+  const hasPsad = psad !== null
+  const hasCores = positiveCores != null
+  const hasGgg = ggg != null
+  if (hasGgg || hasCores) {
+    const intercept = -1.994
+    const ggg2Term = (Number(ggg) === 2) ? -2.151 : 0
+    const coresTerm = hasCores ? 0.114 * Number(positiveCores) : 0
+    if (hasPsad) {
+      const psadTerm = 3.866 * psad
+      const logit = intercept + ggg2Term + psadTerm + coresTerm
+      upgradeProbability = Math.round((1 / (1 + Math.exp(-logit))) * 1000) / 1000
+      upgradeProbabilityModel = 'GGG + PSAD + Cores (AUC 0.668, N=781)'
+    } else {
+      const logit = intercept + ggg2Term + coresTerm
+      upgradeProbability = Math.round((1 / (1 + Math.exp(-logit))) * 1000) / 1000
+      upgradeProbabilityModel = 'GGG + Cores (AUC 0.609, N=1,197)'
+    }
+  }
+
+  return { asTierKey, asScore: score, asFactors: factors, psad, upgradeProbability, upgradeProbabilityModel }
 }
 
 // ─── Sub-model 2: Genomic ─────────────────────────────────────────────────────
@@ -785,7 +815,7 @@ function calcMonitoring({
     features.push({ label: 'No mpMRI performed — confirmatory MRI required before AS enrollment (NCCN 2024)', source: 'NCCN 2024; EAU 2024: mpMRI required before AS initiation. In internal validation cohort (N=218), no-MRI patients upgraded at 35.3%.' })
 
   if (ece === 'yes')
-    features.push({ label: 'Extracapsular extension (ECE) on imaging', source: 'NCCN 2024 staging; EAU 2024 · Guideline-only: internal validation cohort had only N=1 ECE-positive patient — no statistical calibration possible' })
+    features.push({ label: 'Extracapsular extension (ECE) on imaging', source: 'NCCN 2024 staging; EAU 2024 · Guideline-only: N=1,213 cohort had N=4 ECE-positive patients — too small for statistical calibration.' })
 
   if (broadContact === 'yes')
     features.push({ label: 'Broad capsular contact > 10 mm on mpMRI', source: 'EAU Guidelines 2024' })
@@ -1128,13 +1158,24 @@ function calcCohortContext(inputs, combinedTierKey, psad) {
     cohortNote: C.overview.note,
     interventionData: C.intervention,
     chips: {
-      ggg_rate: gggChipRate,
-      ggg_label: gggNum2 ? `GG${gggNum2} upgrade rate` : 'GGG upgrade rate',
-      psad_tier_rate: psadChipRate,
-      psad_tier_label: psadChipLabel,
+      cohort_n: C.overview.n,
+      ggg_rate: C.by_ggg[gggNum] ? C.by_ggg[gggNum].upgrade_rate : C.overview.overall_upgrade_rate,
+      ggg_label: C.by_ggg[gggNum] ? `GG${gggNum} upgrade rate` : 'Overall upgrade rate',
+      psad_tier_rate: (() => {
+        if (psad === null) return null
+        if (psad > C.psad.youden_optimal) return C.psad.tier_high ? C.psad.tier_high.upgrade_rate : C.psad.tiers.high.upgrade_rate
+        if (psad > C.psad.nccn_vlow)      return C.psad.tier_nccn ? C.psad.tier_nccn.upgrade_rate : C.psad.tiers.nccn_zone.upgrade_rate
+        if (psad > 0.10)                   return C.psad.tier_low ? C.psad.tier_low.upgrade_rate : C.psad.tiers.intermediate.upgrade_rate
+        return C.psad.tier_below_youden ? C.psad.tier_below_youden.upgrade_rate : C.psad.tiers.very_low.upgrade_rate
+      })(),
+      psad_tier_label: psad !== null ? `Your PSAD tier: ${((() => {
+        if (psad > C.psad.youden_optimal) return C.psad.tier_high ? C.psad.tier_high.upgrade_rate : C.psad.tiers.high.upgrade_rate
+        if (psad > C.psad.nccn_vlow)      return C.psad.tier_nccn ? C.psad.tier_nccn.upgrade_rate : C.psad.tiers.nccn_zone.upgrade_rate
+        if (psad > 0.10)                   return C.psad.tier_low ? C.psad.tier_low.upgrade_rate : C.psad.tiers.intermediate.upgrade_rate
+        return C.psad.tier_below_youden ? C.psad.tier_below_youden.upgrade_rate : C.psad.tiers.very_low.upgrade_rate
+      })() * 100).toFixed(1)}% upgrade rate` : null,
       pirads_rate: piradsChipRate,
       pirads_label: piradsChipLabel,
-      cohort_n: C.overview.n,
     },
   }
 }
