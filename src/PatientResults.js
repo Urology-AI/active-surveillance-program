@@ -151,7 +151,7 @@ function KeyDrivers({ asFactors, genomicFactors, genomicAssessed, psmaFactors, p
     },
       e('div', {},
         e('div', { style: { fontSize: 16, fontWeight: 800, color: '#00002D', letterSpacing: '-0.005em' } }, 'Key Drivers'),
-        e('div', { style: { fontSize: 12, color: '#64748b', marginTop: 2 } }, 'What\'s pushing the score')
+        e('div', { style: { fontSize: 12, color: '#64748b', marginTop: 2 } }, 'Clinical factors that most influenced your score — tap any to learn why it matters')
       ),
       e('span', { style: { fontSize: 11, fontWeight: 700, color: '#DC298D' } }, 'Tap to explain')
     ),
@@ -191,7 +191,7 @@ function KeyDrivers({ asFactors, genomicFactors, genomicAssessed, psmaFactors, p
               }, f.basis),
               open && !f.basis && e('div', {
                 style: { paddingTop: 8, paddingLeft: 32, paddingBottom: 4, fontSize: 13, color: '#94a3b8', lineHeight: 1.55, fontStyle: 'italic' },
-              }, f.tier === 'low' ? 'Pushes toward AS eligibility.' : f.tier === 'high' ? 'Pulls away from AS — surface during shared decision-making.' : 'Worth monitoring at next imaging cycle.')
+              }, f.tier === 'low' ? 'This factor is favorable — it supports continued active surveillance and lowers your overall risk score.' : f.tier === 'high' ? 'This factor raises concern — it increases your risk score and should be discussed with your care team at your next visit.' : 'This factor is in an intermediate range — worth monitoring, but not immediately alarming on its own.')
             )
           })
     ),
@@ -1277,6 +1277,25 @@ function UpgradeRiskPanel({ upgradeRisk, inputs }) {
         )
       ),
 
+      // Plain-language interpretation
+      e('div', {
+        style: {
+          padding: '12px 16px', borderRadius: 10,
+          background: '#f8fafc', border: '1px solid #e2e8f0',
+          fontSize: 13, color: '#334155', lineHeight: 1.6,
+        },
+      },
+        e('p', { style: { margin: '0 0 6px', fontWeight: 700, color: '#00002D' } }, 'What this means'),
+        e('p', { style: { margin: 0 } },
+          `In patients from the Mount Sinai AS program with similar features (GG${ggg}${psad != null ? `, PSAD ${psad.toFixed(3)}` : ''}, ${positiveCores} positive ${positiveCores === 1 ? 'core' : 'cores'}), approximately `,
+          e('strong', null, `${upgradeRisk.pct} out of every 100`),
+          ' had their cancer reclassified to a higher grade group on their next biopsy.'
+        ),
+        e('p', { style: { margin: '6px 0 0', fontSize: 12, color: '#64748b' } },
+          '"Upgrade" means the biopsy found a higher Gleason/Grade Group than before — it does not necessarily mean the cancer spread or that treatment is required right away.'
+        )
+      ),
+
       // Progress bar
       e('div', { style: { display: 'flex', flexDirection: 'column', gap: 0 } },
         e('div', { style: { position: 'relative', height: 12, borderRadius: 6, background: '#f1f5f9', overflow: 'visible' } },
@@ -1322,10 +1341,13 @@ function UpgradeRiskPanel({ upgradeRisk, inputs }) {
         e('p', { style: { fontSize: 13, color: bc.text, fontWeight: 600, margin: 0 } },
           `${upgradeRisk.pctBelow}% of Mount Sinai AS patients have lower risk`
         ),
-        e('p', { style: { fontSize: 12, color: bc.text, margin: 0 } },
+        e('p', { style: { fontSize: 12, color: bc.text, margin: '2px 0 0' } },
           'Band: ',
           e('span', { style: { fontWeight: 700 } }, upgradeRisk.band),
           ` — ${upgradeRisk.pct < cohortAvgPct ? 'below' : upgradeRisk.pct === cohortAvgPct ? 'at' : 'above'} cohort average (${cohortAvgPct}%)`
+        ),
+        e('p', { style: { fontSize: 11, color: bc.text, margin: '4px 0 0', opacity: 0.8, lineHeight: 1.5 } },
+          'The gray tick on the bar above marks the cohort average. Your score to the left of it means your risk is lower than most patients in this program.'
         )
       ),
 
