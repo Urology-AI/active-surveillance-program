@@ -22,15 +22,27 @@ export default function Step7ProviderActions({ onConfirm, onBack, onForward, can
         React.createElement('div', { className: 'flex items-start gap-2' },
           React.createElement('span', { className: 'text-sinai-cerulean font-bold mt-0.5' }, '1.'),
           React.createElement('div', null,
-            React.createElement('span', { className: 'font-semibold' }, 'Schedule confirmatory biopsy '),
-            'within ',
-            React.createElement('span', { className: 'font-bold text-sinai-magenta' }, '3–6 months')
+            React.createElement('span', { className: 'font-semibold' }, 'Order mpMRI '),
+            'if patient has not had a prior prostate MRI — ',
+            React.createElement('span', { className: 'font-bold text-sinai-magenta' }, 'required before repeat biopsy'),
+            React.createElement('span', { className: 'text-xs text-slate-400 ml-1' }, '(AUA 2026 Stmt 30 — Strong Recommendation, Grade C)')
           )
         ),
         React.createElement('div', { className: 'flex items-start gap-2' },
           React.createElement('span', { className: 'text-sinai-cerulean font-bold mt-0.5' }, '2.'),
           React.createElement('div', null,
-            React.createElement('span', { className: 'font-semibold' }, 'Order genomic tests')
+            React.createElement('span', { className: 'font-semibold' }, 'Schedule repeat biopsy '),
+            'within ',
+            React.createElement('span', { className: 'font-bold text-sinai-magenta' }, '3–6 months'),
+            ' — targeted (if MRI lesion ≥PI-RADS 3) + systematic; transrectal or transperineal route acceptable',
+            React.createElement('span', { className: 'text-xs text-slate-400 ml-1' }, '(Stmts 31–32, 35)')
+          )
+        ),
+        React.createElement('div', { className: 'flex items-start gap-2' },
+          React.createElement('span', { className: 'text-sinai-cerulean font-bold mt-0.5' }, '3.'),
+          React.createElement('div', null,
+            React.createElement('span', { className: 'font-semibold' }, 'Order genomic tests'),
+            ' (if applicable — per SDM)'
           )
         )
       )
@@ -73,7 +85,7 @@ export default function Step7ProviderActions({ onConfirm, onBack, onForward, can
       },
         React.createElement('div', { className: 'text-left' },
           React.createElement('div', { className: 'font-semibold text-slate-800' }, 'Confirmed — Actions completed'),
-          React.createElement('div', { className: 'text-sm text-slate-500 mt-0.5' }, 'Proceed to TR Confirmatory Biopsy')
+          React.createElement('div', { className: 'text-sm text-slate-500 mt-0.5' }, 'Proceed to Repeat Biopsy Results')
         ),
         React.createElement(ChevronRight, { className: 'w-5 h-5 text-sinai-cerulean shrink-0' })
       )
