@@ -15,20 +15,32 @@ export default function Step8ConfirmatoryBx({ onNegative, onGleason6, onGleason7
       React.createElement('div', { className: 'bg-sinai-cerulean/10 p-2 rounded-lg' },
         React.createElement(Microscope, { className: 'w-6 h-6 text-sinai-cerulean' })
       ),
-      React.createElement('h2', { className: 'text-xl font-bold text-sinai-cetacean' }, 'Step 8: TR Confirmatory Biopsy Results')
+      React.createElement('h2', { className: 'text-xl font-bold text-sinai-cetacean' }, 'Step 8: Repeat Biopsy Results')
     ),
 
     React.createElement('div', { className: 'mb-4' },
       React.createElement('p', { className: 'text-base text-slate-700' },
-        'Select the result from the transrectal confirmatory biopsy:'
+        'Select the Grade Group result from the repeat biopsy:'
+      ),
+      React.createElement('p', { className: 'text-xs text-slate-400 mt-1' },
+        'AUA/SUO 2026 Guideline Stmt 30–32: obtain mpMRI before repeat biopsy; use targeted + systematic biopsy if suspicious lesion on MRI.'
       )
     ),
 
     // 6-month alert
-    React.createElement('div', { className: 'mb-6 p-3 bg-red-50 border border-red-200 rounded-xl flex items-start gap-2' },
+    React.createElement('div', { className: 'mb-4 p-3 bg-red-50 border border-red-200 rounded-xl flex items-start gap-2' },
       React.createElement(AlertTriangle, { className: 'w-4 h-4 text-red-500 shrink-0 mt-0.5' }),
       React.createElement('p', { className: 'text-xs text-red-700 font-medium' },
         'If patient not seen in ≥ 6 months, immediate return-to-office (RTO) required before proceeding.'
+      )
+    ),
+
+    // MRI-first reminder
+    React.createElement('div', { className: 'mb-6 p-3 bg-sky-50 border border-sky-200 rounded-xl flex items-start gap-2' },
+      React.createElement(AlertTriangle, { className: 'w-4 h-4 text-sky-500 shrink-0 mt-0.5' }),
+      React.createElement('p', { className: 'text-xs text-sky-800' },
+        React.createElement('span', { className: 'font-bold' }, 'AUA 2026 Statement 30 (Strong Recommendation): '),
+        'If patient has not had a prior prostate MRI, obtain mpMRI before proceeding to repeat biopsy. If MRI shows a suspicious lesion (PI-RADS ≥3), perform targeted plus systematic biopsy (Statement 32). If MRI is negative, systematic biopsy may still proceed based on clinical risk (Statement 31).'
       )
     ),
 
@@ -42,8 +54,8 @@ export default function Step8ConfirmatoryBx({ onNegative, onGleason6, onGleason7
       ),
       React.createElement('button', { onClick: onGleason6, className: optionClass },
         React.createElement('div', { className: 'text-left' },
-          React.createElement('div', { className: 'font-semibold text-slate-800' }, 'Gleason 6 (3+3)'),
-          React.createElement('div', { className: 'text-sm text-slate-500 mt-0.5' }, 'Continue to concerning features check')
+          React.createElement('div', { className: 'font-semibold text-slate-800' }, 'Grade Group 1 — Gleason 6 (3+3)'),
+          React.createElement('div', { className: 'text-sm text-slate-500 mt-0.5' }, 'Clinically insignificant — continue to concerning features check')
         ),
         React.createElement(ChevronRight, { className: 'w-5 h-5 text-slate-400 group-hover:text-sinai-cerulean shrink-0' })
       ),
@@ -52,8 +64,8 @@ export default function Step8ConfirmatoryBx({ onNegative, onGleason6, onGleason7
         className: 'option-card w-full p-4 pl-5 text-left bg-slate-50/80 border-2 border-slate-200 rounded-xl hover:border-amber-400 hover:bg-amber-50/80 flex items-center justify-between gap-3 group'
       },
         React.createElement('div', { className: 'text-left' },
-          React.createElement('div', { className: 'font-semibold text-slate-800' }, 'Gleason 7 (3+4) or higher'),
-          React.createElement('div', { className: 'text-sm text-slate-500 mt-0.5' }, 'Reclassified — Proceed to Definitive Treatment')
+          React.createElement('div', { className: 'font-semibold text-slate-800' }, 'Grade Group ≥2 — Gleason ≥7 (3+4 or higher)'),
+          React.createElement('div', { className: 'text-sm text-slate-500 mt-0.5' }, 'Clinically significant (GG2+) — reclassified, proceed to Definitive Treatment')
         ),
         React.createElement(ChevronRight, { className: 'w-5 h-5 text-slate-400 group-hover:text-amber-500 shrink-0' })
       )
