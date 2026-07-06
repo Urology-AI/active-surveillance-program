@@ -397,6 +397,7 @@ function App({ externalHeader, onPathwayMetaChange, pathwayResetRef, patientData
   const [showChartForPrint,  setShowChartForPrint]  = useState(false)
   const [showProgression,    setShowProgression]    = useState(false)
   const [autoAdvanceSummary, setAutoAdvanceSummary] = useState(null)
+  const [patientId,          setPatientId]          = useState('')
 
   useEffect(() => {
     try {
@@ -517,6 +518,9 @@ function App({ externalHeader, onPathwayMetaChange, pathwayResetRef, patientData
     onBack: goBack,
     canGoBack,
     onPrintChart: () => setShowChartForPrint(true),
+    patientId,
+    patientData,
+    endState: STEP_LABELS[currentStep] || currentStep,
   }
 
   // Resume prompt modal
@@ -681,6 +685,7 @@ function App({ externalHeader, onPathwayMetaChange, pathwayResetRef, patientData
       React.createElement(Step11ASProtocol, {
         onMRIPossible: () => goToStep(STEPS.STEP13),
         onNoMRI: () => goToStep(STEPS.STEP12),
+        patientId,
         ...navProps,
       }),
 
@@ -694,6 +699,7 @@ function App({ externalHeader, onPathwayMetaChange, pathwayResetRef, patientData
       React.createElement(Step13NewFindings, {
         onYes: () => goToStep(STEPS.STEP14),
         onNo: () => goToStep(STEPS.END_CONTINUE_AS),
+        patientId,
         ...navProps,
       }),
 
@@ -718,25 +724,19 @@ function App({ externalHeader, onPathwayMetaChange, pathwayResetRef, patientData
       React.createElement(EndStateRefuseDefer, endStateProps),
 
     currentStep === STEPS.END_WATCHFUL_WAITING &&
-      React.createElement(EndStateWatchfulWaiting, {
-        onReset: reset, pathSummary: pathSummaryFull, onBack: goBack, canGoBack,
-      }),
+      React.createElement(EndStateWatchfulWaiting, endStateProps),
 
     currentStep === STEPS.END_HIGH_INTENSITY_AS &&
-      React.createElement(EndStateHighIntensityAS, {
-        onReset: reset, pathSummary: pathSummaryFull, onBack: goBack, canGoBack,
-      }),
+      React.createElement(EndStateHighIntensityAS, endStateProps),
 
     currentStep === STEPS.END_STANDARD_AS_ENROLLMENT &&
       React.createElement(EndStateStandardASEnrollment, {
-        onReset: reset, pathSummary: pathSummaryFull, onBack: goBack, canGoBack,
+        ...endStateProps,
         onContinuePart3: () => goToStep(STEPS.STEP10),
       }),
 
     currentStep === STEPS.END_CONTINUE_AS &&
-      React.createElement(EndStateContinueAS, {
-        onReset: reset, pathSummary: pathSummaryFull, onBack: goBack, canGoBack,
-      }),
+      React.createElement(EndStateContinueAS, endStateProps),
   )
 
   // ── START: centered single-column layout ────────────────────────────────────
@@ -762,6 +762,9 @@ function App({ externalHeader, onPathwayMetaChange, pathwayResetRef, patientData
           onStart: () => goToStep(STEPS.STEP1),
           onProgression: () => setShowProgression(true),
           patientData,
+          patientId,
+          onPatientIdChange: setPatientId,
+          onLoadSession: () => {},
         })
       ),
       !externalHeader && React.createElement(ProgramDisclaimerFooter),

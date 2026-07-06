@@ -1,8 +1,9 @@
 import React from 'react'
 import { ClipboardList, ChevronRight, AlertTriangle } from 'lucide-react'
 import StepNav from './StepNav.js'
+import PSAHistorySparkline from './PSAHistorySparkline.js'
 
-export default function Step11ASProtocol({ onMRIPossible, onNoMRI, onBack, onForward, canGoBack, canGoForward }) {
+export default function Step11ASProtocol({ onMRIPossible, onNoMRI, onBack, onForward, canGoBack, canGoForward, patientId }) {
   return React.createElement('div', { className: 'bg-white rounded-xl shadow-sinai border border-slate-100 p-6 md:p-8' },
 
     React.createElement('div', { className: 'inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-sinai-magenta bg-sinai-magenta-light/50 border border-sinai-magenta/20 rounded-full px-3 py-1 mb-4' },
@@ -14,6 +15,10 @@ export default function Step11ASProtocol({ onMRIPossible, onNoMRI, onBack, onFor
         React.createElement(ClipboardList, { className: 'w-6 h-6 text-sinai-cerulean' })
       ),
       React.createElement('h2', { className: 'text-xl font-bold text-sinai-cetacean' }, 'Step 11: Initiate AS Standard Protocol')
+    ),
+
+    patientId && React.createElement('div', { className: 'mb-5' },
+      React.createElement(PSAHistorySparkline, { patientId })
     ),
 
     // 6-month RTO warning
