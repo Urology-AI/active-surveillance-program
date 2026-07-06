@@ -1,7 +1,8 @@
 import React, { useState } from 'react'
 import { RefreshCw, RotateCcw, Copy, FileText, ArrowLeft } from 'lucide-react'
+import SaveVisitSummaryButton from './SaveVisitSummaryButton.js'
 
-export default function EndStateContinueAS({ onReset, pathSummary, onBack, canGoBack }) {
+export default function EndStateContinueAS({ onReset, pathSummary, onBack, canGoBack , patientId, patientData, endState }) {
   const [copied, setCopied] = useState(false)
   const [showResetConfirm, setShowResetConfirm] = useState(false)
 
@@ -78,6 +79,8 @@ export default function EndStateContinueAS({ onReset, pathSummary, onBack, canGo
           onClick: handleCopy,
           className: 'flex items-center gap-1.5 px-3 py-2.5 text-sm text-slate-600 border border-slate-200 rounded-lg hover:border-sinai-cerulean hover:text-sinai-navy transition-colors'
         }, React.createElement(Copy, { className: 'w-4 h-4' }), copied ? 'Copied!' : 'Copy summary'),
+
+        React.createElement(SaveVisitSummaryButton, { patientId, patientData, endState, recommendation: pathSummary }),
 
         React.createElement('button', {
           onClick: () => window.print(),

@@ -1,5 +1,6 @@
 import React from 'react'
 import { Activity, ChevronRight } from 'lucide-react'
+import PatientSessionPanel from './PatientSessionPanel.js'
 
 const PARTS = [
   { num: '1', title: 'Initial Risk Stratification', color: '#06ABEB', steps: 'Steps 1 – 5' },
@@ -39,7 +40,7 @@ function PatientDataBadge({ patientData }) {
   )
 }
 
-export default function StartScreen({ onStart, onProgression, patientData }) {
+export default function StartScreen({ onStart, onProgression, patientData, patientId, onPatientIdChange, onLoadSession }) {
   return React.createElement('div', { className: 'max-w-xl mx-auto' },
 
     // Hero card
@@ -77,6 +78,10 @@ export default function StartScreen({ onStart, onProgression, patientData }) {
       React.createElement('div', { className: 'p-6 md:p-8' },
 
         React.createElement(PatientDataBadge, { patientData }),
+
+        onPatientIdChange && React.createElement(PatientSessionPanel, {
+          patientId, onPatientIdChange, onLoadSession,
+        }),
 
         // Trigger callout
         React.createElement('div', {

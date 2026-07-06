@@ -2,8 +2,9 @@ import React, { useState } from 'react'
 import { TrendingUp, ChevronRight, ChevronDown, ChevronUp } from 'lucide-react'
 import StepNav from './StepNav.js'
 import { MonitoringContextPanel } from './ASMonitoringContext.js'
+import PSAHistorySparkline from './PSAHistorySparkline.js'
 
-export default function Step13NewFindings({ onYes, onNo, onBack, onForward, canGoBack, canGoForward }) {
+export default function Step13NewFindings({ onYes, onNo, onBack, onForward, canGoBack, canGoForward, patientId }) {
   const [showFindings, setShowFindings] = useState(true)
 
   return React.createElement('div', { className: 'bg-white rounded-xl shadow-sinai border border-slate-100 p-6 md:p-8' },
@@ -22,6 +23,10 @@ export default function Step13NewFindings({ onYes, onNo, onBack, onForward, canG
     // ── Visit context: computed PSA metrics + biopsy schedule ──
     React.createElement('div', { className: 'mb-5' },
       React.createElement(MonitoringContextPanel)
+    ),
+
+    patientId && React.createElement('div', { className: 'mb-5' },
+      React.createElement(PSAHistorySparkline, { patientId })
     ),
 
     React.createElement('div', { className: 'mb-6' },
