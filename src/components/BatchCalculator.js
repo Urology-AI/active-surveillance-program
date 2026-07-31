@@ -354,23 +354,36 @@ export default function BatchCalculator() {
     fileInputRef.current?.click()
   }
 
+  // A patient entry is only skipped if it isn't an object at all (e.g. null,
+  // a bare number/string in a malformed array). Missing or partial fields
+  // within an otherwise-valid entry are fine — rowFromInputs fills gaps with
+  // blanks, and Calculate All will just flag that row as incomplete.
+  function safeRowFromEntry(p) {
+    if (p == null || typeof p !== 'object') return null
+    return rowFromInputs(p.inputs && typeof p.inputs === 'object' ? p.inputs : p, p.results)
+  }
+
   // Accepts three shapes: a batch export ({exportType:'as-batch-calculator', patients:[...]}),
   // a single-patient calculator export ({exportType:'as-clinical-calculator', inputs, results}),
-  // or a bare array of {inputs, results} / raw-input objects.
+  // or a bare array of {inputs, results} / raw-input objects. Any shape may
+  // have missing/partial fields — those come through as blank inputs.
   function rowsFromImportedJson(parsed) {
+    let entries
     if (parsed && parsed.exportType === SINGLE_EXPORT_TYPE) {
-      return [rowFromInputs(parsed.inputs, parsed.results)]
+      entries = [parsed]
+    } else if (parsed && parsed.exportType === BATCH_EXPORT_TYPE && Array.isArray(parsed.patients)) {
+      entries = parsed.patients
+    } else if (Array.isArray(parsed)) {
+      entries = parsed
+    } else if (parsed && typeof parsed === 'object') {
+      entries = [parsed]
+    } else {
+      throw new Error('Unrecognized file format')
     }
-    if (parsed && parsed.exportType === BATCH_EXPORT_TYPE && Array.isArray(parsed.patients)) {
-      return parsed.patients.map(p => rowFromInputs(p.inputs, p.results))
-    }
-    if (Array.isArray(parsed)) {
-      return parsed.map(p => rowFromInputs(p.inputs || p, p.results))
-    }
-    if (parsed && typeof parsed === 'object') {
-      return [rowFromInputs(parsed.inputs || parsed, parsed.results)]
-    }
-    throw new Error('Unrecognized file format')
+
+    const rows = entries.map(safeRowFromEntry).filter(Boolean)
+    if (rows.length === 0) throw new Error('No usable patient data found in file')
+    return rows
   }
 
   function importJson(ev) {
