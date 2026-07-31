@@ -460,9 +460,23 @@ function checkHardStops(inputs) {
  * Evidence basis:
  *  · GGG (ISUP 2016): Epstein JI et al., Eur Urol 2016;69(3):428–435
  *  · Core burden (NCCN 2024 VLOW): ≤2 positive cores, no core > 50%
- *    Bastian PJ et al., J Urol 2004; Epstein JI et al., J Urol 1994
+ *    Bastian PJ et al., Cancer 2004;101(9):2001-2005 [journal corrected from
+ *    prior "J Urol 2004" — verified]; Epstein JI et al., J Urol 1994
  *  · PSAD 0.15 ng/mL/cm³ — NCCN 2024 very low risk upper bound
- *  · PSAD 0.177 ng/mL/cm³ — Kadeer et al. 2025 Youden optimal (N=94 cohort, AUC 0.624)
+ *  · PSAD 0.177 ng/mL/cm³ — Kadeer A et al., Front Oncol 2025;15:1602134
+ *    ("Diagnostic accuracy of PSA derivatives for prostate cancer in patients
+ *    with low PSA levels"), doi:10.3389/fonc.2025.1602134. Corrected citation
+ *    (previously misattributed to "Eur Urol 2025", which does not exist).
+ *    CAUTION — population/outcome mismatch: Kadeer's 0.177 cutoff (sens 77.3%,
+ *    spec 94.7%) was derived from N=60 biopsy-naive men (38 BPH, 22 PCa, all
+ *    PSA≤10) to DIAGNOSE cancer vs. benign disease — a different clinical
+ *    question than this tool's use of it to PROGNOSTICATE upgrade risk in
+ *    already-diagnosed GG1 patients on active surveillance. It is not
+ *    externally validated for that use case. This file's own internally-
+ *    computed Youden-optimal PSAD cutoff of 0.065 (COHORT_CALIBRATION.psad.
+ *    youden_optimal) is derived from the actually-matching population/outcome
+ *    (N=704 GG1 AS patients, real upgrade-on-rebiopsy endpoint) and is the
+ *    more defensible threshold for this specific use case.
  *  · PI-RADS v2.1: Turkbey B et al., Eur Urol 2019;76(3):340–351
  */
 function calcBasic({ ggg, positiveCores, totalCores, maxCorePercent, psa, prostateVolume, pirads, epsaPreBiopsyTier }) {
@@ -492,26 +506,35 @@ function calcBasic({ ggg, positiveCores, totalCores, maxCorePercent, psa, prosta
     })
   }
 
-  // Core ratio — GUIDELINE CRITERION ONLY
+  // Core count / ratio — GUIDELINE CRITERION ONLY
   // N=218 cohort: pos-core count AUC = 0.465 (not discriminatory for upgrade).
   // Retained as NCCN 2024 eligibility gate, NOT as a weighted risk score.
   // Points reduced to reflect guideline eligibility (pass/fail) rather than risk.
+  //
+  // NCCN's very-low-risk criterion is an ABSOLUTE COUNT — "< 3 positive cores" —
+  // not a ratio. Gating on ratio alone misclassifies patients: e.g. 2/4 positive
+  // (50% ratio) meets NCCN by count but was previously flagged "outside very low
+  // risk" by ratio; 3/24 positive (12.5% ratio) fails NCCN by count but was
+  // previously treated as favorable. Core count is now the primary gate; ratio
+  // is used only to grade severity among patients who already fail that gate.
   if (positiveCores != null && totalCores != null && Number(totalCores) > 0) {
-    const ratio = Number(positiveCores) / Number(totalCores)
+    const posCores = Number(positiveCores)
+    const ratio = posCores / Number(totalCores)
+    const meetsNccnCoreCount = posCores < 3
     let pts = 0; let tier = 'low'
-    if      (ratio > 0.50) { pts = 6; tier = 'high' }
-    else if (ratio > 0.33) { pts = 3; tier = 'intermediate' }
-    else if (ratio > 0.17) { pts = 1; tier = 'low' }
+    if (!meetsNccnCoreCount) {
+      if      (ratio > 0.50) { pts = 6; tier = 'high' }
+      else if (ratio > 0.33) { pts = 3; tier = 'intermediate' }
+      else                   { pts = 1; tier = 'low' }
+    }
     score += pts
     factors.push({
-      label: `Core ratio ${positiveCores}/${totalCores} (${Math.round(ratio * 100)}%)`,
+      label: `Positive cores ${positiveCores}/${totalCores} (${Math.round(ratio * 100)}%)`,
       points: pts,
       tier,
-      basis: ratio <= 0.17
-        ? 'Meets NCCN 2024 very low risk criterion (< 3 of 12 cores) · Guideline eligibility gate only — AUC 0.465 in internal validation cohort (not independently discriminatory)'
-        : ratio <= 0.33
-        ? 'Approaching NCCN very low risk core number limit · Guideline criterion only — not validated as upgrade predictor in internal validation cohort (AUC 0.465)'
-        : 'Outside NCCN 2024 very low risk core criterion · Guideline criterion only — not validated as upgrade predictor in internal validation cohort (AUC 0.465)',
+      basis: meetsNccnCoreCount
+        ? `Meets NCCN 2024 very low risk core criterion (< 3 positive cores; ${positiveCores} positive here) · Guideline eligibility gate only — AUC 0.465 in internal validation cohort (not independently discriminatory)`
+        : `Outside NCCN 2024 very low risk core criterion (≥ 3 positive cores; ${positiveCores} positive here) · Guideline criterion only — not validated as upgrade predictor in internal validation cohort (AUC 0.465). Ratio ${Math.round(ratio * 100)}% shown for additional context.`,
     })
   }
 
@@ -1022,11 +1045,12 @@ function calcCohortContext(inputs, combinedTierKey, psad) {
 
   // Max core involvement cohort context
   if (inputs.maxCorePercent != null && Number(inputs.maxCorePercent) > 50) {
-    const mc = C.max_core
+    const mc = MODEL_VALIDATION.supporting_variables.max_core_gt50
+    const mcUpgradeRate = mc.n_upgraded / mc.n
     ctx.push({
       variable: 'max_core',
       label: 'Max Core Involvement > 50% — Cohort Context',
-      finding: `In our cohort, patients with max core > 50% had an observed upgrade rate of ${(mc.upgrade_rate_above_50 * 100).toFixed(1)}% — paradoxically lower than the overall rate.`,
+      finding: `In our cohort, patients with max core > 50% had an observed upgrade rate of ${(mcUpgradeRate * 100).toFixed(1)}% — paradoxically lower than the overall rate.`,
       note: mc.note,
     })
   }
@@ -1310,7 +1334,15 @@ export const UPGRADE_RISK_MODEL = {
   // Trained on Mount Sinai AS cohort; categorical encodings match LabelEncoder output
   // Missing comorbidity/family hx inputs default to "No" (encoded 0) — most common value in cohort
   fullModel: {
-    intercept: 0.2011,
+    // Recalibrated intercept (was 0.2011, the raw sklearn fit intercept).
+    // data/analyze_upgrade.py trains this model with class_weight='balanced',
+    // which fits as if the two classes were 50/50 instead of the true ~25%/75%
+    // split — a well-known artifact that systematically inflates predict_proba
+    // for every patient. Standard correction: subtract ln(n_negative/n_positive)
+    // from the intercept using the true training counts (n=1213, n_upgraded=305
+    // below): ln(908/305) = 1.0909. Coefficients (feature effects) are unaffected
+    // — this only removes the class-balancing bias from the intercept.
+    intercept: 0.2011 - 1.0909,
     coef: {
       bmi:                                              -0.0011,
       age_first_diagnosis:                               0.0128,
