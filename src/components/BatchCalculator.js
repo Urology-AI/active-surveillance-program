@@ -241,7 +241,12 @@ export default function BatchCalculator() {
   const fileInputRef = useRef(null)
 
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(rows))
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(rows))
+    } catch {
+      // Storage unavailable (private browsing, quota exceeded, etc.) — patients
+      // stay in memory for this session but won't persist across reloads.
+    }
   }, [rows])
 
   function updateRow(id, patch) {
@@ -447,7 +452,7 @@ export default function BatchCalculator() {
                   'No patients yet. Click “+ Add Patient” to enter data using the form.'
                 )
               )
-            : rows.map((r, i) => e('tr', { key: r.id },
+            : rows.map(r => e('tr', { key: r.id },
                 e('td', { style: { ...TD_STYLE, fontWeight: 700 } }, `Patient #${r.id}`),
                 e('td', { style: TD_STYLE }, GGG_LABELS[r.ggg] || dash(r.ggg)),
                 e('td', { style: TD_STYLE }, dash(r.positiveCores)),
