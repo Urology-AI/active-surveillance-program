@@ -42,6 +42,54 @@ export function getAssistantEndpoint() {
   return ASSISTANT_ENDPOINT
 }
 
+/** Worker route. Verified live: GET /health -> {status:'ok'}, POST /chat -> {text}. */
+export const ASSISTANT_CHAT_PATH = '/chat'
+
+/** @returns {string} endpoint with the /chat route appended, tolerating a trailing slash. */
+export function chatUrl(base = ASSISTANT_ENDPOINT) {
+  const trimmed = String(base).replace(/\/+$/, '')
+  return trimmed.endsWith(ASSISTANT_CHAT_PATH) ? trimmed : `${trimmed}${ASSISTANT_CHAT_PATH}`
+}
+
+/**
+ * Flatten a sanitized Gemini-shaped body into the worker's { question, context }.
+ *
+ * The worker supplies its own system prompt and accepts a single question plus
+ * one context string, so prior turns are folded into `context` as plain text.
+ * Input MUST already be sanitized — this only reshapes, it never scrubs.
+ */
+export function toWorkerPayload(body) {
+  const turns = Array.isArray(body?.contents) ? body.contents : []
+  const textOf = (t) =>
+    (Array.isArray(t?.parts) ? t.parts : [])
+      .map((p) => (typeof p?.text === 'string' ? p.text : ''))
+      .filter(Boolean)
+      .join('\n')
+
+  // Last user turn is the live question; everything before it is context.
+  let lastUserIdx = -1
+  for (let i = turns.length - 1; i >= 0; i--) {
+    if (turns[i]?.role !== 'model') { lastUserIdx = i; break }
+  }
+
+  const question = lastUserIdx >= 0 ? textOf(turns[lastUserIdx]) : ''
+  const priorTurns = turns
+    .filter((_, i) => i !== lastUserIdx)
+    .map((t) => `${t?.role === 'model' ? 'Assistant' : 'Patient'}: ${textOf(t)}`)
+    .filter((s) => s.trim().length > String('Patient: ').length)
+
+  const systemText = (Array.isArray(body?.systemInstruction?.parts)
+    ? body.systemInstruction.parts
+    : []
+  )
+    .map((p) => (typeof p?.text === 'string' ? p.text : ''))
+    .filter(Boolean)
+    .join('\n')
+
+  const context = [systemText, ...priorTurns].filter(Boolean).join('\n\n')
+  return context ? { question, context } : { question }
+}
+
 // ---------------------------------------------------------------------------
 // Topic guardrails — pre-filter applied BEFORE calling the Gemini API.
 // Two-layer strategy:
@@ -288,13 +336,19 @@ export async function answerPatientEducationQuestion(question, opts) {
   // second fetch site; add to this one.
   const { body } = sanitizeOutboundBody(rawBody, clinicalContext)
 
+  // The deployed worker exposes POST /chat and expects { question, context },
+  // returning { text } — not raw Gemini generateContent JSON. Flatten the
+  // sanitized Gemini-shaped body into that contract here, AFTER sanitizing, so
+  // the sanitizer remains the single choke point.
+  const workerPayload = toWorkerPayload(body)
+
   let res
   let data
   try {
-    res = await fetch(ASSISTANT_ENDPOINT, {
+    res = await fetch(chatUrl(), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
+      body: JSON.stringify(workerPayload),
     })
     data = await res.json().catch(() => ({}))
   } catch (networkErr) {
@@ -316,7 +370,10 @@ export async function answerPatientEducationQuestion(question, opts) {
     }
   }
 
+  // Worker shape is { text }. The raw-Gemini shape is kept as a fallback so a
+  // differently-configured endpoint still works.
   const text =
+    (typeof data?.text === 'string' ? data.text : '') ||
     data?.candidates?.[0]?.content?.parts?.map((p) => p.text).filter(Boolean).join('\n') || ''
 
   if (!text.trim()) {
