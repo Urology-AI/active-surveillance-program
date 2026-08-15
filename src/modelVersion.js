@@ -25,7 +25,7 @@
  * 1.0.0 = the first explicitly versioned build of the two-layer engine
  * (guideline framework + N=1,213 cohort calibration) as it exists today.
  */
-export const ENGINE_VERSION = '1.0.0'
+export const ENGINE_VERSION = '1.1.0'
 
 /**
  * Cohort backing LAYER 2 (COHORT_CALIBRATION / MODEL_VALIDATION in asEngine.js).
@@ -71,6 +71,41 @@ export const EVIDENCE_SOURCES = [
  * the repo — see TODO above; git history remains the authoritative record.
  */
 export const CHANGELOG = [
+  {
+    version: '1.1.0',
+    date: null, // TODO(provenance): stamp release date at tagged release
+    summary:
+      'Clinical-defect remediation across the engine (15 defects found by the ' +
+      'golden-case regression suite). Scoring/threshold changes: PSAD "very ' +
+      'low" band now ends at the cohort-derived Youden cutoff 0.065 instead of ' +
+      'the unsourced 0.10 (patients at PSAD 0.065–0.10 score 0 rather than -5, ' +
+      'the safer direction, and the score now agrees with the narrative and ' +
+      'cohort tier shown beside it); core-burden ratio buckets use exact 1/3 ' +
+      'and 1/2 rather than the literal 0.33; ConfirmMDx scores only ' +
+      'explicitly-recognised results (unrecognised values were being scored as ' +
+      'favourable negatives). Correctness/safety: every numeric input is now ' +
+      'gated on Number.isFinite, closing a hole in which a non-numeric entry ' +
+      'passed validation and fell through every comparison into the most ' +
+      'favourable branch; family-history cohort context removed (referenced a ' +
+      'non-existent data key and crashed every assessment that used it); ECE ' +
+      'and NVB abutment are read from both the form and uploaded-JSON input ' +
+      'conventions (previously always encoded 0); Layer 3 refuses to score ' +
+      'GG4/GG5 (outside its GG1–GG3 training range) and is suppressed entirely ' +
+      'on hard-stop results; race is documented as a deliberate non-input and ' +
+      'the misleading live variable removed. Cohort data: age stratification ' +
+      'denominator corrected from N=1,213 to its true GG1 subset N=1,111, with ' +
+      'matching UI copy; treatment_discussion tier added to ' +
+      'tier_annual_upgrade_risk with an explicitly null risk rather than no ' +
+      'statement at all; PSAD tier lookup unified so a single screen cannot ' +
+      'report two different upgrade rates. Progression engine: grade upgrades ' +
+      'and high-PI-RADS / new-lesion MRI findings are evaluated over the full ' +
+      'visit history rather than the latest visit only (a documented upgrade ' +
+      'could previously be erased by a later benign biopsy); PSA velocity is a ' +
+      'least-squares fit over all points, consistent with PSADT; corrupt ' +
+      'roster storage is quarantined rather than silently overwritten; date ' +
+      'and PSADT formatting no longer emit "Invalid Date" / "~NaN months" into ' +
+      'clinical text; imported records are structurally validated.',
+  },
   {
     version: '1.0.0',
     date: null, // TODO(provenance): stamp release date at first tagged release

@@ -21,11 +21,56 @@ export function generatePatientId() {
 }
 
 // ─── Roster helpers ───────────────────────────────────────────────────────────
+/** Key under which an unreadable roster blob is quarantined rather than lost. */
+export const ROSTER_CORRUPT_BACKUP_PREFIX = 'as_progression_roster_corrupt_'
+
 export function loadRoster() {
+  // DATA LOSS FIX. Previously a corrupt roster blob made JSON.parse throw, the
+  // catch swallowed it, and execution fell through to the legacy-migration path
+  // which returns an EMPTY roster. Corrupt storage therefore presented to the
+  // user as "no patients" — and the very next saveRoster() overwrote the
+  // original, possibly recoverable, blob with an empty one. The patient data
+  // was destroyed by the act of opening the app.
+  //
+  // Now: the raw blob is copied to a timestamped quarantine key BEFORE anything
+  // else can overwrite it, and the failure is surfaced on the returned roster
+  // as `loadError` so the UI can say so instead of silently showing an empty
+  // list. Even if a later save clobbers the live key, the original survives.
+  let raw = null
   try {
-    const raw = localStorage.getItem(ROSTER_STORAGE_KEY)
-    if (raw) return JSON.parse(raw)
-  } catch (_) {}
+    raw = localStorage.getItem(ROSTER_STORAGE_KEY)
+  } catch (_) { raw = null }
+
+  if (raw) {
+    let parsed = null
+    let parseFailed = false
+    try {
+      parsed = JSON.parse(raw)
+    } catch (_) { parseFailed = true }
+
+    // A blob that parses but is not a roster is just as unusable as one that
+    // does not parse; both are quarantined rather than treated as empty.
+    const structurallyValid = !parseFailed && parsed && typeof parsed === 'object' &&
+      Array.isArray(parsed.patients)
+
+    if (structurallyValid) return parsed
+
+    const backupKey = `${ROSTER_CORRUPT_BACKUP_PREFIX}${Date.now()}`
+    try { localStorage.setItem(backupKey, raw) } catch (_) {}
+    return {
+      patients: [],
+      activeId: null,
+      loadError: {
+        code: parseFailed ? 'corrupt_roster_json' : 'corrupt_roster_shape',
+        message: parseFailed
+          ? 'Saved patient roster could not be read (invalid JSON). The original data has been preserved and NOT overwritten.'
+          : 'Saved patient roster is not in a recognised format. The original data has been preserved and NOT overwritten.',
+        backupKey,
+        recoverable: true,
+      },
+    }
+  }
+
   // Migrate legacy single-patient data if it exists
   const legacy = loadProgressionData()
   if (legacy) {
@@ -43,7 +88,10 @@ export function loadRoster() {
 
 export function saveRoster(roster) {
   try {
-    localStorage.setItem(ROSTER_STORAGE_KEY, JSON.stringify({ ...roster, updatedAt: new Date().toISOString() }))
+    // `loadError` is transient UI state describing a failed read; it must never
+    // be persisted back into the stored roster.
+    const { loadError: _ignored, ...clean } = roster || {}
+    localStorage.setItem(ROSTER_STORAGE_KEY, JSON.stringify({ ...clean, updatedAt: new Date().toISOString() }))
   } catch (_) {}
 }
 
@@ -146,17 +194,71 @@ export function exportCSV(patientsOrPatient, filename) {
   URL.revokeObjectURL(url)
 }
 
+/**
+ * Structural check for one patient record.
+ * Returns null when valid, or a human-readable reason when not.
+ *
+ * Previously there was NO per-field validation: `{"id":5,"visits":"nope"}` was
+ * accepted as a valid patient and then threw inside analyzeProgression, after
+ * the import had already been reported as successful. Rejecting at the import
+ * boundary means a bad file is a clear error message rather than a crash later.
+ */
+function validatePatientShape(p, where = 'Patient') {
+  if (!p || typeof p !== 'object' || Array.isArray(p)) return `${where}: expected an object.`
+  if (p.id !== undefined && typeof p.id !== 'string') return `${where}: "id" must be a string.`
+  if (p.label !== undefined && typeof p.label !== 'string') return `${where}: "label" must be a string.`
+  if (p.enrollmentDate !== undefined && typeof p.enrollmentDate !== 'string')
+    return `${where}: "enrollmentDate" must be a string.`
+  if (p.visits !== undefined && !Array.isArray(p.visits)) return `${where}: "visits" must be an array.`
+  if (Array.isArray(p.visits)) {
+    for (let i = 0; i < p.visits.length; i++) {
+      const v = p.visits[i]
+      if (!v || typeof v !== 'object' || Array.isArray(v))
+        return `${where}: visit ${i + 1} is not an object.`
+      if (v.biopsy !== undefined && v.biopsy !== null && typeof v.biopsy !== 'object')
+        return `${where}: visit ${i + 1} has a malformed "biopsy".`
+      if (v.mri !== undefined && v.mri !== null && typeof v.mri !== 'object')
+        return `${where}: visit ${i + 1} has a malformed "mri".`
+    }
+  }
+  if (p.enrollmentGG !== undefined && p.enrollmentGG !== null &&
+      !(Number.isFinite(Number(p.enrollmentGG)) && Number(p.enrollmentGG) >= 1 && Number(p.enrollmentGG) <= 5))
+    return `${where}: "enrollmentGG" must be a Grade Group 1–5.`
+  return null
+}
+
 // Parse imported JSON — returns { ok, data, error }
 export function parseImportJSON(text) {
+  let data
   try {
-    const data = JSON.parse(text)
-    // Accept roster export ({ patients: [...] }) or single patient record
-    if (data.patients && Array.isArray(data.patients)) return { ok: true, type: 'roster', data }
-    if (data.enrollmentDate !== undefined || data.id) return { ok: true, type: 'patient', data }
-    return { ok: false, error: 'Unrecognized JSON structure.' }
+    data = JSON.parse(text)
   } catch (_) {
     return { ok: false, error: 'Invalid JSON file.' }
   }
+
+  // A top-level scalar (`null`, `5`, `"x"`) is perfectly valid JSON but is not
+  // a record. It used to throw on property access INSIDE the try and be
+  // misreported as "Invalid JSON file.", which sends the user looking for a
+  // syntax error that is not there.
+  if (data === null || typeof data !== 'object' || Array.isArray(data)) {
+    return { ok: false, error: 'Unrecognized JSON structure.' }
+  }
+
+  if (Array.isArray(data.patients)) {
+    for (let i = 0; i < data.patients.length; i++) {
+      const reason = validatePatientShape(data.patients[i], `Patient ${i + 1}`)
+      if (reason) return { ok: false, error: reason }
+    }
+    return { ok: true, type: 'roster', data }
+  }
+
+  if (data.enrollmentDate !== undefined || data.id) {
+    const reason = validatePatientShape(data)
+    if (reason) return { ok: false, error: reason }
+    return { ok: true, type: 'patient', data }
+  }
+
+  return { ok: false, error: 'Unrecognized JSON structure.' }
 }
 
 // ─── Default data shape ───────────────────────────────────────────────────────
@@ -184,51 +286,85 @@ export function defaultProgressionData() {
 //   notes: string,
 // }
 
-// ─── PSA doubling time (log-linear regression, returns months) ────────────────
-export function computePSADT(psaPoints) {
-  // psaPoints: [{ date: ISO, psa: number }]
-  if (!psaPoints || psaPoints.length < 2) return null
-  const sorted = [...psaPoints]
-    .filter(p => p.psa > 0)
-    .sort((a, b) => new Date(a.date) - new Date(b.date))
-  if (sorted.length < 2) return null
+// ─── Shared PSA-series preparation and OLS ────────────────────────────────────
+/**
+ * One estimator for both kinetics functions.
+ *
+ * PSADT already did a proper least-squares regression while velocity used only
+ * the first and last points — two different estimators applied to the same
+ * series. A patient whose PSA spiked mid-series and returned to baseline read
+ * as velocity 0 (both endpoints equal) while PSADT saw the rise. Both now fit
+ * the same OLS line over every point.
+ *
+ * Duplicate dates are collapsed with derivedMetrics.collapseDuplicateDates —
+ * the same well-tested helper the trajectory module uses — so two draws stamped
+ * on one day cannot give that day double weight in the fit, and cannot make an
+ * x-variance check pass on what is really a single time point.
+ */
+const MS_PER_MONTH = 1000 * 60 * 60 * 24 * 30.44
+const MS_PER_YEAR  = 1000 * 60 * 60 * 24 * 365.25
 
-  const t0 = new Date(sorted[0].date).getTime()
-  const pts = sorted.map(p => ({
-    x: (new Date(p.date).getTime() - t0) / (1000 * 60 * 60 * 24 * 30.44),
-    y: Math.log(p.psa),
-  }))
+/** Usable, de-duplicated, chronologically sorted PSA points. */
+function preparePSAPoints(psaPoints) {
+  if (!Array.isArray(psaPoints)) return []
+  const usable = psaPoints.filter(p =>
+    p && p.date && Number.isFinite(Number(p.psa)) && Number(p.psa) > 0 &&
+    Number.isFinite(new Date(p.date).getTime()))
+  if (!usable.length) return []
+  const { points } = collapseDuplicateDates(usable.map(p => ({ ...p, psa: Number(p.psa) })))
+  return points
+}
 
+/** Ordinary least squares slope of y on x. Returns null with no x-variance. */
+function olsSlope(pts) {
   const n = pts.length
+  if (n < 2) return null
   const sumX  = pts.reduce((s, p) => s + p.x, 0)
   const sumY  = pts.reduce((s, p) => s + p.y, 0)
   const sumXY = pts.reduce((s, p) => s + p.x * p.y, 0)
   const sumX2 = pts.reduce((s, p) => s + p.x * p.x, 0)
   const denom = n * sumX2 - sumX * sumX
-  if (Math.abs(denom) < 1e-10) return null
+  if (!Number.isFinite(denom) || Math.abs(denom) < 1e-10) return null
   const slope = (n * sumXY - sumX * sumY) / denom
-  if (slope <= 0) return null
+  return Number.isFinite(slope) ? slope : null
+}
+
+// ─── PSA doubling time (log-linear regression, returns months) ────────────────
+export function computePSADT(psaPoints) {
+  // psaPoints: [{ date: ISO, psa: number }]
+  const sorted = preparePSAPoints(psaPoints)
+  if (sorted.length < 2) return null
+
+  const t0 = new Date(sorted[0].date).getTime()
+  const slope = olsSlope(sorted.map(p => ({
+    x: (new Date(p.date).getTime() - t0) / MS_PER_MONTH,
+    y: Math.log(p.psa),
+  })))
+  if (slope === null || slope <= 0) return null
   return Math.log(2) / slope
 }
 
-// ─── PSA velocity (ng/mL/yr, annualized slope) ───────────────────────────────
+// ─── PSA velocity (ng/mL/yr, least-squares slope over ALL points) ─────────────
 export function computePSAVelocity(psaPoints) {
-  if (!psaPoints || psaPoints.length < 2) return null
-  const sorted = [...psaPoints]
-    .filter(p => p.psa > 0)
-    .sort((a, b) => new Date(a.date) - new Date(b.date))
+  const sorted = preparePSAPoints(psaPoints)
   if (sorted.length < 2) return null
 
-  const first = sorted[0]
-  const last  = sorted[sorted.length - 1]
-  const years = (new Date(last.date) - new Date(first.date)) / (1000 * 60 * 60 * 24 * 365.25)
-  if (years < 0.08) return null // < ~1 month gap — not meaningful
-  return (last.psa - first.psa) / years
+  const t0 = new Date(sorted[0].date).getTime()
+  const years = (new Date(sorted[sorted.length - 1].date).getTime() - t0) / MS_PER_YEAR
+  if (years < 0.08) return null // < ~1 month span — not meaningful
+
+  return olsSlope(sorted.map(p => ({
+    x: (new Date(p.date).getTime() - t0) / MS_PER_YEAR,
+    y: p.psa,
+  })))
 }
 
 // ─── Format PSADT for display ─────────────────────────────────────────────────
 export function formatPSADT(months) {
-  if (months === null) return null
+  // Guard on finiteness, not on `=== null`. The old strict-null check let
+  // `undefined` (and NaN) fall through to `~${Math.round(undefined)} months`,
+  // rendering the literal string "~NaN months" into clinical display text.
+  if (!Number.isFinite(months)) return null
   if (months > 120) return '> 10 years'
   if (months > 24) return `~${(months / 12).toFixed(1)} years`
   return `~${Math.round(months)} months`
@@ -244,7 +380,12 @@ export function monthsOnAS(enrollmentDate) {
 // ─── Primary progression analysis ────────────────────────────────────────────
 // Returns { flags, psadt, psaVelocity, latestGG, upgradeEvent, summaryTier }
 export function analyzeProgression(data) {
-  const { enrollmentGG, enrollmentDate, enrollmentPSA, visits = [] } = data
+  // Defensive: a record can reach here from an imported file. A non-array
+  // `visits` (or a non-object record) must degrade to "no visits", not throw
+  // partway through and leave the caller with no analysis at all.
+  const record = (data && typeof data === 'object') ? data : {}
+  const { enrollmentGG, enrollmentDate, enrollmentPSA } = record
+  const visits = Array.isArray(record.visits) ? record.visits.filter(v => v && typeof v === 'object') : []
   const flags = []
 
   // Build PSA series from enrollment + visits
@@ -269,19 +410,48 @@ export function analyzeProgression(data) {
   // AUA/ASTRO 2026 §18: "Detection of significantly higher-volume or higher-grade disease
   // on surveillance biopsy should then prompt discussion of definitive therapy."
   // This is the ONLY criterion that alone warrants a treatment discussion.
+  //
+  // FULL HISTORY, NOT LATEST VISIT ONLY.
+  // This previously compared ONLY the most recent biopsy to the enrollment GG.
+  // A patient with a documented GG3 upgrade whose next biopsy happened to
+  // sample GG1 produced upgradeEvent: null and summaryTier: 'stable' — the
+  // documented upgrade silently vanished. Prostate biopsy is a SAMPLING
+  // procedure: a lower grade on a later core does not un-find higher-grade
+  // disease, it means that pass missed it. Once an upgrade is documented it is
+  // a permanent fact about the patient and cannot be erased by a later benign
+  // result.
   let upgradeEvent = null
   let latestGG = enrollmentGG
   const biopsyVisits = visits.filter(v => v.biopsy && v.biopsy.gg != null).sort((a, b) => new Date(a.date) - new Date(b.date))
+  let peakGG = enrollmentGG
   if (biopsyVisits.length > 0) {
     const latest = biopsyVisits[biopsyVisits.length - 1]
     latestGG = latest.biopsy.gg
-    if (latest.biopsy.gg > enrollmentGG) {
-      upgradeEvent = { date: latest.date, fromGG: enrollmentGG, toGG: latest.biopsy.gg }
+
+    // Every biopsy in the record that exceeded the enrollment grade.
+    const upgrades = biopsyVisits.filter(v => v.biopsy.gg > enrollmentGG)
+    peakGG = biopsyVisits.reduce((m, v) => Math.max(m, v.biopsy.gg), enrollmentGG)
+
+    if (upgrades.length > 0) {
+      // Report the highest grade ever documented — the most clinically
+      // significant finding — and the date it was found.
+      const worst = upgrades.reduce((a, b) => (b.biopsy.gg > a.biopsy.gg ? b : a))
+      const supersededByLower = latest.biopsy.gg < worst.biopsy.gg
+      upgradeEvent = {
+        date: worst.date,
+        fromGG: enrollmentGG,
+        toGG: worst.biopsy.gg,
+        latestGG,
+        supersededByLower,
+      }
       flags.push({
         severity: 'critical',
         code: 'grade_upgrade',
-        label: `Grade Group Upgrade: GG${enrollmentGG} → GG${latest.biopsy.gg}`,
-        detail: `Biopsy on ${formatDate(latest.date)} showed Grade Group ${latest.biopsy.gg}. Per AUA/ASTRO 2026 §18: "Detection of higher-grade disease on surveillance biopsy should prompt discussion of definitive therapy." Incorporate patient age, comorbidity, life expectancy, and preference into SDM.`,
+        label: `Grade Group Upgrade: GG${enrollmentGG} → GG${worst.biopsy.gg}`,
+        detail: `Biopsy on ${formatDate(worst.date)} showed Grade Group ${worst.biopsy.gg}. Per AUA/ASTRO 2026 §18: "Detection of higher-grade disease on surveillance biopsy should prompt discussion of definitive therapy." Incorporate patient age, comorbidity, life expectancy, and preference into SDM.` +
+          (supersededByLower
+            ? ` NOTE: a later biopsy on ${formatDate(latest.date)} sampled Grade Group ${latest.biopsy.gg}. A lower grade on a subsequent biopsy reflects sampling variability and does NOT retract the documented GG${worst.biopsy.gg} finding.`
+            : ''),
         source: 'AUA/ASTRO 2026 (Amended) §18; NCCN 2024',
       })
     }
@@ -351,26 +521,49 @@ export function analyzeProgression(data) {
       })
     }
   }
-  // Single MRI with PI-RADS 4–5 also triggers biopsy
+  // ── High PI-RADS / new lesion ANYWHERE in the MRI history ──────────────────
+  // These previously inspected ONLY the most recent MRI, so a PI-RADS 5 or a
+  // documented new lesion disappeared from the analysis the moment a later,
+  // quieter MRI was recorded — the record still contained the finding, but the
+  // patient read as stable. A PI-RADS 4–5 study calls for a targeted biopsy;
+  // that indication is satisfied by performing the biopsy, not by a subsequent
+  // scan reading lower. The highest study on record is reported, with the later
+  // reading noted alongside it.
+  const scoredMRIs = mriVisits.filter(v => v.mri?.pirads != null)
   const latestMRI = mriVisits[mriVisits.length - 1]
-  if (latestMRI?.mri?.pirads >= 4) {
+  const peakMRI = scoredMRIs.length
+    ? scoredMRIs.reduce((a, b) => (b.mri.pirads > a.mri.pirads ? b : a))
+    : null
+
+  if (peakMRI && peakMRI.mri.pirads >= 4) {
     const alreadyFlagged = flags.some(f => f.code === 'mri_progression')
     if (!alreadyFlagged) {
+      const isHistorical = latestMRI !== peakMRI
       flags.push({
         severity: 'warning',
         code: 'mri_pirads_high',
-        label: `PI-RADS ${latestMRI.mri.pirads} on MRI`,
-        detail: `PI-RADS ${latestMRI.mri.pirads} on ${formatDate(latestMRI.date)}. AUA/ASTRO 2026 §19: "PI-RADS 4 or 5 → timely repeat (confirmatory) targeted biopsy recommended." Biopsy required to confirm grade — MRI alone does not define progression.`,
+        label: `PI-RADS ${peakMRI.mri.pirads} on MRI`,
+        detail: `PI-RADS ${peakMRI.mri.pirads} on ${formatDate(peakMRI.date)}. AUA/ASTRO 2026 §19: "PI-RADS 4 or 5 → timely repeat (confirmatory) targeted biopsy recommended." Biopsy required to confirm grade — MRI alone does not define progression.` +
+          (isHistorical
+            ? ` A later MRI on ${formatDate(latestMRI.date)} read PI-RADS ${latestMRI.mri?.pirads ?? 'not scored'}; confirm the targeted biopsy indicated by the PI-RADS ${peakMRI.mri.pirads} study was actually performed before treating this as resolved.`
+            : ''),
         source: 'AUA/ASTRO 2026 (Amended) §19',
       })
     }
   }
-  if (latestMRI?.mri?.newLesion) {
+
+  const newLesionVisits = mriVisits.filter(v => v.mri?.newLesion)
+  if (newLesionVisits.length > 0) {
+    const firstNewLesion = newLesionVisits[0]
+    const isHistorical = newLesionVisits[newLesionVisits.length - 1] !== latestMRI
     flags.push({
       severity: 'warning',
       code: 'mri_new_lesion',
       label: 'New MRI Lesion Detected',
-      detail: `New suspicious lesion on ${formatDate(latestMRI.date)}. AUA/ASTRO 2026 §19: targeted biopsy required. MRI cannot replace biopsy — histological confirmation needed before any treatment decision.`,
+      detail: `New suspicious lesion on ${formatDate(firstNewLesion.date)}. AUA/ASTRO 2026 §19: targeted biopsy required. MRI cannot replace biopsy — histological confirmation needed before any treatment decision.` +
+        (isHistorical
+          ? ` Recorded at an earlier study than the most recent MRI (${formatDate(latestMRI.date)}); a later scan not reporting the lesion does not retract it.`
+          : ''),
       source: 'AUA/ASTRO 2026 (Amended) §19',
     })
   }
@@ -399,7 +592,7 @@ export function analyzeProgression(data) {
   if (flags.some(f => f.severity === 'critical')) summaryTier = 'progressed'
   else if (flags.some(f => f.severity === 'warning')) summaryTier = 'watch'
 
-  return { flags, psadt, psaVelocity, latestGG, upgradeEvent, summaryTier, psaPoints, psaSpanMonths }
+  return { flags, psadt, psaVelocity, latestGG, peakGG, upgradeEvent, summaryTier, psaPoints, psaSpanMonths }
 }
 
 // ─── Cohort risk contextualization (N=1,213 Mount Sinai) ─────────────────────
@@ -434,9 +627,17 @@ export function getCohortContext(data, analysisResult) {
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 export function formatDate(iso) {
   if (!iso) return ''
+  // The try/catch never fired: `new Date('garbage')` does not throw, it yields
+  // an Invalid Date, and toLocaleDateString then returns the literal string
+  // "Invalid Date" — which was being rendered straight into clinical flag text
+  // ("Biopsy on Invalid Date showed Grade Group 3"). Check validity explicitly
+  // and fall back to the raw input, which at least shows a clinician what is
+  // actually stored in the record.
+  const d = new Date(iso)
+  if (Number.isNaN(d.getTime())) return String(iso)
   try {
-    return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
-  } catch (_) { return iso }
+    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+  } catch (_) { return String(iso) }
 }
 
 export function generateVisitId() {
@@ -479,6 +680,7 @@ import {
   computePSADoublingTime as deriveDoublingTime,
   computeAdherence as deriveAdherence,
   formatDoublingTime as fmtDoublingTime,
+  collapseDuplicateDates,
 } from './derivedMetrics.js'
 
 /**

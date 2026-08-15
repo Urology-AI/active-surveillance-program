@@ -1,10 +1,13 @@
 /**
  * Golden-case regression suite for asEngine.js
  *
- * These tests assert the engine's ACTUAL CURRENT behavior, discovered by reading
- * the source. They are a regression net, not a restatement of clinical intent.
- * Anything that looked wrong while reading is marked `// SUSPECT:` and asserted
- * as-is rather than "fixed".
+ * These tests assert the engine's behavior, discovered by reading the source.
+ * They are a regression net, not a restatement of clinical intent.
+ *
+ * HISTORY: this suite originally pinned 15 defects as-is under `// SUSPECT:`
+ * markers. Those defects have now been fixed in the engine and the
+ * corresponding tests flipped to assert the CORRECTED behavior; each flip
+ * carries a `// FIXED:` note explaining what changed and why.
  */
 import { describe, it, expect } from 'vitest'
 import {
@@ -19,7 +22,10 @@ import {
 } from '../asEngine.js'
 
 // Minimal input that passes validateInputs and lands in the lowest tier.
-// score: GG1 0 + cores(<3) 0 + maxCore 0 + PSAD 0.100 (-5) + PI-RADS 2 (-3) = -8
+// score: GG1 0 + cores(<3) 0 + maxCore 0 + PSAD 0.100 (0) + PI-RADS 2 (-3) = -3
+// NOTE: PSAD 0.100 scores 0, not -5. The "very low" -5 bucket now ends at the
+// cohort-supported Youden cutoff 0.065 rather than the unsourced 0.10 — see the
+// PSAD threshold block below.
 const base = Object.freeze({
   ggg: 1,
   positiveCores: 1,
@@ -37,10 +43,10 @@ const scoreOf = (o = {}) => runAssessment(withBase(o)).asScore
 const volForPsad = (psad) => 5 / psad
 
 describe('baseline sanity', () => {
-  it('lowest-risk case is standard_as with score -8', () => {
+  it('lowest-risk case is standard_as with score -3', () => {
     const r = runAssessment(base)
     expect(r.hardStop).toBe(false)
-    expect(r.asScore).toBe(-8)
+    expect(r.asScore).toBe(-3)
     expect(r.asTierKey).toBe('standard_as')
     expect(r.monitoringTier).toBe('standard')
     expect(r.featureCount).toBe(0)
@@ -85,8 +91,8 @@ describe('LAYER 1 hard stops', () => {
   it('GG3 is just below the hard stop and proceeds to scoring', () => {
     const r = runAssessment(withBase({ ggg: 3 }))
     expect(r.hardStop).toBe(false)
-    // GG3 = 22 pts, so -8 + 22 = 14
-    expect(r.asScore).toBe(14)
+    // GG3 = 22 pts, so -3 + 22 = 19
+    expect(r.asScore).toBe(19)
     expect(r.asTierKey).toBe('enhanced_as')
   })
 
@@ -106,17 +112,42 @@ describe('LAYER 1 hard stops', () => {
     expect(runAssessment(withBase({ psmaFinding: 'regional' })).hardStop).toBe(false)
   })
 
-  // SUSPECT: src/asEngine.js:1635 — the hard-stop return still calls
-  // calcUpgradeRisk(inputs), and calcUpgradeRisk encodes GGG via
-  // UPGRADE_RISK_MODEL.fullModel.enc.ggg which only maps {1,2,3}. GG4/GG5 fall
-  // through `?? 0` (src/asEngine.js:1457) and are scored as if they were GG1,
-  // so a metastatic/GG5 patient is shown the same upgrade probability as a GG1
-  // patient. Asserting current behavior.
-  it('SUSPECT: hard-stop cases still get a GG1-equivalent upgradeRisk', () => {
-    const gg1 = calcUpgradeRisk(base).probability
-    expect(calcUpgradeRisk(withBase({ ggg: 4 })).probability).toBe(gg1)
-    expect(calcUpgradeRisk(withBase({ ggg: 5 })).probability).toBe(gg1)
-    expect(runAssessment(withBase({ ggg: 5 })).upgradeRisk.probability).toBe(gg1)
+  // FIXED (defect 3): `enc.ggg` maps only {1,2,3} and used to fall through
+  // `?? 0`, so GG4/GG5 were encoded — and scored — as GG1: a GG5 patient and a
+  // GG1 patient were shown the SAME 24% upgrade probability. Worse, the GG
+  // coefficient is negative, so a "corrected" ordinal would have reported GG5
+  // as lower-risk than GG1. The model is fitted on GG1–GG3 only, so it now
+  // declines to produce a number above its training range rather than guessing.
+  it('GG4/GG5 are outside the model training range and get no probability', () => {
+    for (const ggg of [4, 5]) {
+      const r = calcUpgradeRisk(withBase({ ggg }))
+      expect(r.available).toBe(false)
+      expect(r.probability).toBeUndefined()
+      expect(r.reason).toMatch(/GG1–GG3/)
+    }
+    // GG1–GG3 remain scoreable and distinct from one another
+    expect(calcUpgradeRisk(base).available).toBe(true)
+    expect(calcUpgradeRisk(withBase({ ggg: 2 })).probability)
+      .not.toBe(calcUpgradeRisk(base).probability)
+  })
+
+  // FIXED (defect 3b): the hard-stop return path used to call calcUpgradeRisk()
+  // and display a surveillance upgrade probability for a patient already ruled
+  // ineligible for surveillance — two contradictory messages on one screen.
+  // Layer 3 is now suppressed there, with an explicit reason rather than a
+  // silently-missing field.
+  it('hard-stop cases have Layer 3 suppressed with an explicit reason', () => {
+    const r = runAssessment(withBase({ ggg: 5 }))
+    expect(r.upgradeRisk.available).toBe(false)
+    expect(r.upgradeRisk.suppressedBy).toBe('ggg4_5')
+    expect(r.upgradeRisk.probability).toBeUndefined()
+    expect(r.upgradeRisk.reason).toMatch(/not applicable/)
+
+    // …and for a hard stop the model COULD have scored (GG1 + metastatic PSMA),
+    // suppression is still the behavior: no upgrade % beside "AS contraindicated".
+    const met = runAssessment(withBase({ psmaFinding: 'metastatic' }))
+    expect(met.upgradeRisk.available).toBe(false)
+    expect(met.upgradeRisk.suppressedBy).toBe('psma_metastatic')
   })
 })
 
@@ -206,7 +237,7 @@ describe('validateInputs', () => {
 // ═══════════════════════════════════════════════════════════════════════════
 describe('sub-model 1: GGG points', () => {
   it.each([[1, 0], [2, 8], [3, 22]])('GG%i contributes %i points', (ggg, pts) => {
-    expect(scoreOf({ ggg })).toBe(-8 + pts)
+    expect(scoreOf({ ggg })).toBe(-3 + pts)
   })
 })
 
@@ -225,8 +256,12 @@ describe('sub-model 1: positive-core count gate (NCCN < 3)', () => {
 
   it.each([
     ['3/24 — ratio 12.5%, fails count gate', 3, 24, 1, 'low'],
-    ['9/24 — ratio 37.5% (>0.33)', 9, 24, 3, 'intermediate'],
-    ['8/24 — ratio 33.3% (JS 0.3333 > 0.33)', 8, 24, 3, 'intermediate'],
+    ['9/24 — ratio 37.5% (> 1/3)', 9, 24, 3, 'intermediate'],
+    // FIXED (defect 9): 8/24 is EXACTLY one third. Under the old literal-0.33
+    // cutoff it read as 0.3333… > 0.33 and scored 3 pts 'intermediate'; against
+    // an exact 1/3 it is not greater than the cutoff and scores 1 pt, the same
+    // as any other one-third burden.
+    ['8/24 — ratio exactly 1/3 (not greater than the 1/3 cutoff)', 8, 24, 1, 'low'],
     ['12/24 — ratio exactly 0.50', 12, 24, 3, 'intermediate'],
     ['13/24 — ratio 54% (>0.50)', 13, 24, 6, 'high'],
   ])('%s', (_l, positiveCores, totalCores, pts, tier) => {
@@ -235,14 +270,22 @@ describe('sub-model 1: positive-core count gate (NCCN < 3)', () => {
     expect(f.tier).toBe(tier)
   })
 
-  // SUSPECT: src/asEngine.js:526-528 — the ratio buckets compare against the
-  // literal 0.33, not 1/3. 8/24 = 0.33333… lands in the >0.33 'intermediate'
-  // bucket while a true "one third" cutoff would not, so a clinically identical
-  // one-third burden scores 3 pts or 1 pt depending on how the fraction rounds
-  // (e.g. 4/12 = 0.3333 → 3 pts, but 1/3 expressed as 33 of 100 cores → 1 pt).
-  it('SUSPECT: ratio bucket uses literal 0.33, so one-third burdens straddle the cutoff', () => {
-    expect(runAssessment(withBase({ positiveCores: 4, totalCores: 12 })).asFactors[1].points).toBe(3)
-    expect(runAssessment(withBase({ positiveCores: 33, totalCores: 100 })).asFactors[1].points).toBe(1)
+  // FIXED (defect 9): the buckets compared against the literal 0.33 rather than
+  // 1/3, so 4/12 (0.33333…) scored 3 pts while 33/100 (0.33) scored 1 pt — two
+  // clinically identical one-third burdens landing in different tiers purely on
+  // decimal rounding. Exact fractions make one-third burdens agree.
+  it('one-third core burdens score identically regardless of how the fraction is expressed', () => {
+    const pts = (positiveCores, totalCores) =>
+      runAssessment(withBase({ positiveCores, totalCores })).asFactors[1].points
+    expect(pts(4, 12)).toBe(1)    // exactly 1/3 — no longer over the cutoff
+    expect(pts(8, 24)).toBe(1)    // exactly 1/3
+    expect(pts(33, 100)).toBe(1)  // just under 1/3
+    // …and a burden genuinely above one third still escalates
+    expect(pts(34, 100)).toBe(3)
+    expect(pts(5, 12)).toBe(3)
+    // the 1/2 boundary is likewise exact: 1/2 is not > 1/2
+    expect(pts(12, 24)).toBe(3)
+    expect(pts(13, 24)).toBe(6)
   })
 })
 
@@ -272,10 +315,13 @@ describe('sub-model 1: PSAD thresholds', () => {
   it.each([
     [0.05,   -5, 'low'],
     [0.0649, -5, 'low'],
-    [0.065,  -5, 'low'],   // exactly at Youden cutoff — no scoring change
-    [0.0651, -5, 'low'],
-    [0.0999, -5, 'low'],
-    [0.10,   -5, 'low'],   // exactly at 0.10 — still -5 (strict >)
+    [0.065,  -5, 'low'],   // exactly at Youden cutoff — still -5 (strict >)
+    // FIXED (defect 14): the "very low" -5 bucket used to run all the way to
+    // 0.10, a value found nowhere in COHORT_CALIBRATION.psad. It now ends at
+    // the cohort's own Youden-optimal 0.065, so these three cases score 0.
+    [0.0651,  0, 'low'],
+    [0.0999,  0, 'low'],
+    [0.10,    0, 'low'],
     [0.1001,  0, 'low'],
     [0.1499,  0, 'low'],
     [0.15,    0, 'low'],   // exactly at NCCN — still 0 (strict >)
@@ -290,25 +336,36 @@ describe('sub-model 1: PSAD thresholds', () => {
     expect(f.tier).toBe(tier)
   })
 
-  // SUSPECT: src/asEngine.js:565-580 — the PSAD scoring bands and the `basis`
-  // narrative use DIFFERENT cut-points. Scoring gives the maximally favourable
-  // -5 bucket to anything <= 0.10, while the narrative branches at 0.065. A
-  // patient with PSAD 0.08–0.10 therefore receives the "very low risk" -5 score
-  // while being told they sit in the 0.065–0.15 tier with a 23.9% upgrade rate.
-  // The engine's own Youden cutoff is 0.065, not 0.10; 0.10 appears nowhere in
-  // COHORT_CALIBRATION.psad.
-  it('SUSPECT: PSAD 0.08–0.10 gets the "very low" -5 score but 23.9%-tier narrative', () => {
-    for (const psad of [0.08, 0.0999, 0.10]) {
+  // FIXED (defect 14 — TIER 2, CLINICIAN SIGN-OFF REQUIRED): the scoring bands
+  // and the `basis` narrative used DIFFERENT cut-points. Scoring handed the
+  // maximally favourable -5 bucket to anything ≤ 0.10 while the narrative (and
+  // the Layer 2 cohort item, and calcOutcomesPrediction) branched at 0.065. A
+  // patient at PSAD 0.08 was scored "very low risk" while simultaneously being
+  // told they sat in the 0.065–0.15 tier with a 23.9% upgrade rate.
+  //
+  // Resolved toward CAUTION, in favour of the boundary the data supports: 0.065
+  // is COHORT_CALIBRATION.psad.youden_optimal, derived from the N=704 GG1
+  // subset. The value 0.10 appears nowhere in the cohort data. Patients in
+  // 0.065–0.10 now score 0 rather than -5 — a less favourable score, matching
+  // the tier they were already being shown.
+  it('score and narrative now agree on the 0.065 boundary', () => {
+    for (const psad of [0.0651, 0.08, 0.0999, 0.10]) {
       const f = psadFactor(psad)
-      expect(f.points).toBe(-5)
+      expect(f.points).toBe(0)   // no longer the "very low" bonus
       expect(f.basis).toMatch(/PSAD 0\.065–0\.15 — intermediate risk tier/)
       const item = runAssessment(withBase({ psa: 5, prostateVolume: volForPsad(psad) }))
         .cohortContext.cohortItems.find(i => i.variable === 'psad')
       expect(item.label).toMatch(/0\.065–0\.15/)
     }
-    // …while a genuinely-sub-0.065 patient gets the identical -5 score
-    expect(psadFactor(0.05).points).toBe(-5)
-    expect(psadFactor(0.05).basis).toMatch(/PSAD < 0\.065/)
+    // …and only a genuinely sub-0.065 patient gets the -5 "very low" score,
+    // with narrative and cohort item that agree with it.
+    for (const psad of [0.05, 0.0649, 0.065]) {
+      expect(psadFactor(psad).points).toBe(-5)
+      expect(psadFactor(psad).basis).toMatch(/PSAD < 0\.065/)
+    }
+    const lowItem = runAssessment(withBase({ psa: 5, prostateVolume: volForPsad(0.05) }))
+      .cohortContext.cohortItems.find(i => i.variable === 'psad')
+    expect(lowItem.label).toMatch(/< 0\.065/)
   })
 
   it('PSAD > 0.177 adds a monitoring feature', () => {
@@ -348,7 +405,7 @@ describe('sub-model 1: PI-RADS points', () => {
   it('PI-RADS 0 means "no MRI": no scoring factor, but a monitoring feature', () => {
     const r = runAssessment(withBase({ pirads: 0 }))
     expect(r.asFactors.some(f => f.label.startsWith('PI-RADS'))).toBe(false)
-    expect(r.asScore).toBe(-5) // -8 minus the PI-RADS 2 (-3) contribution
+    expect(r.asScore).toBe(0) // -3 minus the PI-RADS 2 (-3) contribution
     expect(r.features.some(f => /No mpMRI performed/.test(f.label))).toBe(true)
   })
 
@@ -371,19 +428,17 @@ describe('sub-model 1: score → tier boundaries (3 / 20 / 45)', () => {
   })
 
   it('score 20 is enhanced_as, score 21 is intensive_as', () => {
-    // GG3(22) + PI-RADS 1(-5) + PSAD 0.16(5) + maxCore 51(4) + cores 13/24(6) = 32
-    // Simpler: GG3(22) + PI-RADS 2(-3) + PSAD 0.10(-5) + cores 0 = 14 (enhanced)
-    expect(scoreOf({ ggg: 3 })).toBe(14)
+    // GG3(22) + PI-RADS 2(-3) + PSAD 0.10(0) + cores 0 = 19 (enhanced)
+    expect(scoreOf({ ggg: 3 })).toBe(19)
     expect(runAssessment(withBase({ ggg: 3 })).asTierKey).toBe('enhanced_as')
-    // push to exactly 20: GG3(22) + PI-RADS 3(0) + PSAD 0.10(-5) + maxCore 51(4) = 21
-    const at21 = runAssessment(withBase({ ggg: 3, pirads: 3, maxCorePercent: 51 }))
+    // exactly 20: GG3(22) + PI-RADS 2(-3) + PSAD 0.10(0) + cores 3/24(1) = 20
+    const at20 = runAssessment(withBase({ ggg: 3, positiveCores: 3, totalCores: 24 }))
+    expect(at20.asScore).toBe(20)
+    expect(at20.asTierKey).toBe('enhanced_as')
+    // exactly 21: GG2(8) + PI-RADS 4(8) + PSAD 0.16(5) + cores 0 + maxCore 0 = 21
+    const at21 = runAssessment(withBase({ ggg: 2, pirads: 4, prostateVolume: volForPsad(0.16) }))
     expect(at21.asScore).toBe(21)
     expect(at21.asTierKey).toBe('intensive_as')
-    // exactly 20: GG3(22) + PI-RADS 2(-3) + PSAD 0.15(0) + maxCore 51(4) + cores 0 = 23
-    // use PI-RADS 3(0) + PSAD 0.10(-5) + cores 3/24(1) = 18 → enhanced
-    const at18 = runAssessment(withBase({ ggg: 3, pirads: 3, positiveCores: 3, totalCores: 24 }))
-    expect(at18.asScore).toBe(18)
-    expect(at18.asTierKey).toBe('enhanced_as')
   })
 
   it('very high composite score reaches the basic-model treatment tier', () => {
@@ -511,14 +566,36 @@ describe('sub-model 3: PSMA', () => {
     expect(r.psmaFactors[0].tier).toBe(tier)
   })
 
-  // SUSPECT: src/asEngine.js:771-798 — psmaScore is computed and returned but is
-  // never added to any score used for tier assignment. calcCombined only reads
-  // psmaFinding === 'regional' / hardOverride, so PSMA "negative" (-15 pts) and
-  // "local" (0 pts) have zero effect on the tier via scoring. "local" only
-  // matters because calcMonitoring counts it as a feature.
-  it('SUSPECT: psmaScore never feeds the composite score', () => {
+  // REVIEWED (defect 10) — NOT A DEFECT; the behavior is deliberate and is now
+  // documented in the engine and pinned here as an invariant.
+  //
+  // psmaScore is displayed for transparency but never added to asScore. PSMA
+  // influences the tier through FINDINGS, not points: 'metastatic' is a hard
+  // stop, 'regional' forces at least intensive_as, 'local' counts as a
+  // monitoring feature. Wiring the points in would change clinical output in
+  // the UNSAFE direction — a negative PSMA PET (-15 pts) would subtract from
+  // the composite and could pull a patient with genuine biopsy/PSAD risk
+  // features DOWN a tier, on a scan whose negative predictive value for occult
+  // higher-grade disease in an AS population is not established here (the
+  // N=1,213 cohort has no PSMA stratum at all). Escalation via findings can
+  // only raise a tier; scoring would let it lower one.
+  //
+  // FLAGGED FOR CLINICIAN REVIEW: should a negative PSMA PET ever be allowed to
+  // de-escalate surveillance intensity? Until that is answered with data, no.
+  it('psmaScore is informational only and can never lower a tier', () => {
+    // reported, but not summed into the composite
+    expect(runAssessment(withBase({ psmaFinding: 'negative' })).psmaScore).toBe(-15)
     expect(runAssessment(withBase({ psmaFinding: 'negative' })).asScore).toBe(scoreOf())
     expect(runAssessment(withBase({ psmaFinding: 'negative' })).combinedTierKey).toBe('standard_as')
+
+    // the load-bearing safety property: a negative PSMA PET cannot de-escalate
+    // a patient who has genuine risk features from other sub-models
+    const risky = { abutment: 'yes', ece: 'yes', broadContact: 'yes' }
+    const withoutPsma = runAssessment(withBase(risky))
+    const withNegPsma = runAssessment(withBase({ ...risky, psmaFinding: 'negative' }))
+    expect(withoutPsma.combinedTierKey).toBe('intensive_as')
+    expect(withNegPsma.combinedTierKey).toBe('intensive_as')
+    expect(withNegPsma.asScore).toBe(withoutPsma.asScore)
   })
 
   it('PSMA local adds a monitoring feature', () => {
@@ -705,28 +782,45 @@ describe('LAYER 2: cohort context', () => {
     expect(item.label).toContain(`${(expected.upgrade_rate * 100).toFixed(1)}%`)
   })
 
-  // SUSPECT: src/asEngine.js:1188-1200 — the `chips.psad_tier_rate` helper uses
-  // completely different cut-points from the cohort item above: it branches on
-  // `psad > youden_optimal (0.065)` → HIGH tier rate (34.7%). So PSAD 0.07 gets
-  // a "34.7% upgrade rate" chip while the cohort item correctly says 23.9%.
-  // The chip is wrong for every PSAD in (0.065, 0.177].
-  it('SUSPECT: chips.psad_tier_rate disagrees with the cohort PSAD tier', () => {
-    const r = runAssessment(withBase({ psa: 7, prostateVolume: 100 })) // PSAD 0.07
-    expect(r.cohortContext.chips.psad_tier_rate).toBe(0.347)
-    const item = r.cohortContext.cohortItems.find(i => i.variable === 'psad')
-    expect(item.label).toContain('23.9%')
+  // FIXED (defect 15): `chips.psad_tier_rate` used completely different
+  // cut-points from the cohort item on the same screen — it branched on
+  // `psad > youden_optimal (0.065)` and jumped straight to the HIGH tier's
+  // 34.7%. Every PSAD in (0.065, 0.177] therefore produced a chip contradicting
+  // the cohort item beside it. Both now resolve through `psadTierFor`.
+  it('chips.psad_tier_rate agrees with the cohort PSAD tier at every boundary', () => {
+    const cases = [
+      [0.05,   0.112, '11.2%'],
+      [0.07,   0.239, '23.9%'],   // was 34.7% on the chip, 23.9% in the item
+      [0.14,   0.239, '23.9%'],
+      [0.16,   0.273, '27.3%'],
+      [0.20,   0.347, '34.7%'],
+    ]
+    for (const [psad, rate, pct] of cases) {
+      const r = runAssessment(withBase({ psa: 5, prostateVolume: volForPsad(psad) }))
+      expect(r.cohortContext.chips.psad_tier_rate).toBe(rate)
+      expect(r.cohortContext.chips.psad_tier_label).toContain(pct)
+      const item = r.cohortContext.cohortItems.find(i => i.variable === 'psad')
+      expect(item.label).toContain(pct)
+    }
   })
 
-  // SUSPECT: src/asEngine.js:1080-1088 — COHORT_CALIBRATION has no
-  // `fhx_prostate` key, so `const fhx = C.fhx_prostate` is undefined and
-  // reading `fhx.n_yes` throws a TypeError. Passing familyHistory: 'yes'
-  // crashes runAssessment outright. This is a live crash, not a mis-scoring.
-  it('SUSPECT: familyHistory "yes" throws a TypeError (missing COHORT_CALIBRATION.fhx_prostate)', () => {
+  // FIXED (defect 1): COHORT_CALIBRATION has no `fhx_prostate` key, so
+  // `C.fhx_prostate.n_yes` threw a TypeError and familyHistory: 'yes' crashed
+  // runAssessment outright — a live crash on a field the UI actually collects.
+  // There is no family-history stratum in the N=1,213 extract, so rather than
+  // fabricate a statistic the cohort item is omitted entirely.
+  it('familyHistory is accepted without crashing and adds no fabricated cohort item', () => {
     expect(COHORT_CALIBRATION.fhx_prostate).toBeUndefined()
-    expect(() => runAssessment(withBase({ familyHistory: 'yes' })))
-      .toThrow(/Cannot read properties of undefined \(reading 'n_yes'\)/)
-    // 'no' happens to be safe because the inner branch is never entered
-    expect(() => runAssessment(withBase({ familyHistory: 'no' }))).not.toThrow()
+    for (const familyHistory of ['yes', 'no', null, undefined]) {
+      const r = runAssessment(withBase({ familyHistory }))
+      expect(r.hardStop).toBe(false)
+      expect(r.cohortContext.cohortItems.some(i => i.variable === 'fhx')).toBe(false)
+    }
+    // family history is Layer 2 context only — it must not move the tier
+    expect(runAssessment(withBase({ familyHistory: 'yes' })).combinedTierKey)
+      .toBe(runAssessment(base).combinedTierKey)
+    expect(runAssessment(withBase({ familyHistory: 'yes' })).asScore)
+      .toBe(runAssessment(base).asScore)
   })
 
   it('reports PSAD as not calculable when prostate volume is absent', () => {
@@ -749,13 +843,19 @@ describe('LAYER 2: cohort context', () => {
     const int = runAssessment(withBase({ psmaFinding: 'regional' }))
       .cohortContext.cohortItems.find(i => i.variable === 'tier_risk')
     expect(int.finding).toMatch(/~20%/)
-    // SUSPECT: src/asEngine.js:115-119 — tier_annual_upgrade_risk has no
-    // `treatment_discussion` key, so the highest-risk patients get NO
-    // tier-level risk statement at all.
+    // FIXED (defect 7): tier_annual_upgrade_risk had no `treatment_discussion`
+    // key, so the HIGHEST-risk patients were the only ones who received no
+    // tier-level risk statement at all. They now get an item — but with
+    // `risk: null`, because no cohort or literature rate exists for a tier
+    // defined by feature accumulation rather than by a followed stratum. The
+    // statement says so instead of inventing a figure.
     const tx = runAssessment(withBase({
       abutment: 'yes', ece: 'yes', broadContact: 'yes', age: 40, germlineVariant: 'brca2',
     })).cohortContext.cohortItems.find(i => i.variable === 'tier_risk')
-    expect(tx).toBeUndefined()
+    expect(tx).toBeDefined()
+    expect(tx.finding).toMatch(/see clinical note/)
+    expect(tx.finding).not.toMatch(/~\d+%/)   // no invented percentage
+    expect(COHORT_CALIBRATION.tier_annual_upgrade_risk.treatment_discussion.risk).toBeNull()
   })
 })
 
@@ -885,23 +985,55 @@ describe('LAYER 3: calcUpgradeRisk', () => {
     }
   })
 
-  // SUSPECT: src/asEngine.js:1460-1461 — the full model reads ECE and abutment
-  // from `inputs.hasECE` / `inputs.hasAbutment` (booleans), but every other part
-  // of the engine and the UI uses `inputs.ece === 'yes'` / `inputs.abutment ===
-  // 'yes'`. As wired, ECE and abutment ALWAYS encode as 0 in the risk model.
-  it('SUSPECT: ece/abutment inputs are ignored by calcUpgradeRisk (expects hasECE/hasAbutment)', () => {
+  // FIXED (defect 4): the full model read ECE and abutment ONLY from
+  // `inputs.hasECE` / `inputs.hasAbutment` (booleans), but PatientForm.js emits
+  // `ece: 'yes'` / `abutment: 'yes'` strings. Every assessment entered through
+  // the form therefore encoded both as 0 and their fitted coefficients did
+  // nothing. Both conventions are now accepted, defensively.
+  it('ece/abutment reach the risk model in BOTH input conventions', () => {
     const ref = calcUpgradeRisk(base).probability
-    expect(calcUpgradeRisk(withBase({ ece: 'yes', abutment: 'yes' })).probability).toBe(ref)
-    expect(calcUpgradeRisk(withBase({ hasECE: true, hasAbutment: true })).probability).not.toBe(ref)
+    const strForm  = calcUpgradeRisk(withBase({ ece: 'yes', abutment: 'yes' })).probability
+    const boolForm = calcUpgradeRisk(withBase({ hasECE: true, hasAbutment: true })).probability
+    expect(strForm).not.toBe(ref)
+    expect(boolForm).not.toBe(ref)
+    expect(strForm).toBe(boolForm)             // the two shapes agree exactly
+    expect(strForm).toBeGreaterThan(ref)       // ECE/abutment coefficients are positive
+    // explicit negatives and unrecognised values are NOT treated as positive
+    expect(calcUpgradeRisk(withBase({ ece: 'no', abutment: 'no' })).probability).toBe(ref)
+    expect(calcUpgradeRisk(withBase({ ece: 'unknown' })).probability).toBe(ref)
   })
 
-  // SUSPECT: src/asEngine.js:1464 — race is hard-coded to 1 (Caucasian) and the
-  // smoking/comorbidity/family-history features are hard-coded to 0, so
-  // `inputs.race` has no effect on the Layer 3 probability even though race is
-  // collected and displayed elsewhere.
-  it('SUSPECT: inputs.race does not affect calcUpgradeRisk', () => {
-    expect(calcUpgradeRisk(withBase({ race: 'african_american' })).probability)
-      .toBe(calcUpgradeRisk(base).probability)
+  it('ece/abutment also raise monitoring features in both conventions', () => {
+    expect(runAssessment(withBase({ ece: 'yes' })).featureCount).toBe(1)
+    expect(runAssessment(withBase({ hasECE: true })).featureCount).toBe(1)
+    expect(runAssessment(withBase({ hasAbutment: true })).featureCount).toBe(1)
+    expect(runAssessment(withBase({ hasBroadContact: true })).featureCount).toBe(1)
+    expect(runAssessment(withBase({ hasECE: false })).featureCount).toBe(0)
+  })
+
+  // FIXED (defect 5): race is now a documented, deliberate NON-input.
+  //
+  // This is a clinical-safety decision, not an unfinished feature. The national
+  // VA data this project benchmarks against document race-based UNDER-offering
+  // of active surveillance; a live race term would re-emit that disparity as an
+  // individualised risk number and lend it the appearance of precision. The
+  // fitted `race_category_2` coefficient is retained ONLY as the model's fixed
+  // evaluation point (identical for every patient, a calibration constant), and
+  // the misleading `const race = 1` variable is gone. Race remains visible as
+  // observational cohort context, flagged riskAdjustmentUse: false.
+  it('race NEVER affects the Layer 3 probability, by design', () => {
+    const ref = calcUpgradeRisk(base).probability
+    for (const race of ['african_american', 'caucasian', 'other', 'BLACK', 'white', '', null]) {
+      expect(calcUpgradeRisk(withBase({ race })).probability).toBe(ref)
+    }
+    // …nor any tier, score or recommendation
+    const refR = runAssessment(base)
+    for (const race of ['african_american', 'caucasian', 'other']) {
+      const r = runAssessment(withBase({ race }))
+      expect(r.combinedTierKey).toBe(refR.combinedTierKey)
+      expect(r.asScore).toBe(refR.asScore)
+      expect(r.upgradeRisk.probability).toBe(refR.upgradeRisk.probability)
+    }
   })
 })
 
@@ -926,26 +1058,39 @@ describe('malformed and edge-case inputs', () => {
     expect(() => runAssessment(withBase({ ggg: 'high' }))).toThrow(/Invalid inputs/)
   })
 
-  // SUSPECT: src/asEngine.js:405-410 — the PSA guard is `Number(psa) <= 0` /
-  // `> 100`. NaN fails BOTH comparisons, so a garbage PSA string such as 'abc'
-  // passes validation, PSAD becomes NaN, and the PSAD factor renders as
-  // "PSA Density NaN". The same NaN hole exists for maxCorePercent,
-  // prostateVolume, decipher, gps, prolaris, age, psaVelocity and
-  // psaDoublingTime — every field validated with numeric range comparisons
-  // rather than an explicit isNaN check.
-  it('SUSPECT: NaN-producing strings pass validation and propagate as NaN', () => {
-    expect(validateInputs(withBase({ psa: 'abc' })).psa).toBeUndefined()
-    const r = runAssessment(withBase({ psa: 'abc' }))
-    expect(Number.isNaN(r.psad)).toBe(true)
-    expect(r.asFactors.some(f => f.label === 'PSA Density NaN ng/mL/cm³')).toBe(true)
-    // …and because every NaN comparison is false, the PSAD ladder falls through
-    // to its most-favourable else-branch: -5 points and "very low risk tier".
-    const f = r.asFactors.find(x => x.label.startsWith('PSA Density'))
-    expect(f.points).toBe(-5)
-    expect(f.basis).toMatch(/very low risk tier/)
-    expect(r.combinedTierKey).toBe('standard_as')
-    expect(validateInputs(withBase({ maxCorePercent: 'lots' })).maxCorePercent).toBeUndefined()
-    expect(validateInputs(withBase({ age: 'old' })).age).toBeUndefined()
+  // FIXED (defect 2 — the NaN hole): range guards written as bare comparisons
+  // (`<= 0`, `> 100`) are blind to NaN, because every comparison against NaN is
+  // false. A garbage PSA string therefore passed validation, PSAD became NaN,
+  // and — since each rung of the PSAD ladder also compared false — the score
+  // fell through to the MOST FAVOURABLE else-branch: -5 points, "very low risk
+  // tier", standard_as. A typo produced a reassuring answer indistinguishable
+  // from a genuinely low-risk patient. Every numeric field is now gated on
+  // Number.isFinite before any range check.
+  it('NaN-producing strings are rejected outright, never treated as favourable', () => {
+    for (const [field, value] of [
+      ['psa', 'abc'], ['maxCorePercent', 'lots'], ['prostateVolume', 'big'],
+      ['age', 'old'], ['decipher', 'x'], ['gps', 'y'], ['prolaris', 'z'],
+      ['psaVelocity', 'fast'], ['psaDoublingTime', 'soon'], ['pirads', 'high'],
+    ]) {
+      const errs = validateInputs(withBase({ [field]: value }))
+      expect(errs[field]).toMatch(/must be a number/i)
+      expect(() => runAssessment(withBase({ [field]: value }))).toThrow(/Invalid inputs/)
+    }
+  })
+
+  it('a garbage PSA no longer yields the same answer as a genuinely low-risk patient', () => {
+    // This was the concrete failure: psa 'abc' produced asScore -8 / standard_as,
+    // byte-identical to the lowest-risk case. It is now refused.
+    expect(() => runAssessment(withBase({ psa: 'abc' }))).toThrow(/Invalid inputs/)
+  })
+
+  it('blank optional numerics are still treated as absent, not as errors', () => {
+    // The finite-check must not turn "not provided" into "invalid".
+    expect(validateInputs(withBase({
+      prostateVolume: '', decipher: '', gps: '', prolaris: '',
+      age: '', psaVelocity: '', psaDoublingTime: '',
+    }))).toEqual({})
+    expect(validateInputs(withBase({ prostateVolume: null, age: undefined }))).toEqual({})
   })
 
   it('extreme-but-valid inputs do not throw', () => {
@@ -962,12 +1107,24 @@ describe('malformed and edge-case inputs', () => {
       germlineVariant: 'atm', confirmMDx: 'equivocal',
     }))
     expect(r.featureCount).toBe(0)
-    // confirmMDx anything other than 'not_done'/null counts as assessed and
-    // is scored as if NEGATIVE (-8) by the `=== 'positive' ? 10 : -8` ternary.
-    // SUSPECT: src/asEngine.js:741 — an unrecognised ConfirmMDx value silently
-    // scores as a favourable negative result.
-    expect(r.genomicAssessed).toBe(true)
-    expect(r.genomicScore).toBe(-8)
+    // FIXED (defect 8): `confirmMDx === 'positive' ? 10 : -8` scored EVERY
+    // unrecognised value — 'equivocal', a typo, a future enum member — as a
+    // reassuring NEGATIVE result worth -8 points. An unknown result is not a
+    // negative result. Only {positive, negative} are scored; anything else is
+    // "not assessed" and contributes nothing.
+    expect(r.genomicAssessed).toBe(false)
+    expect(r.genomicScore).toBeNull()
+  })
+
+  it('only explicitly recognised ConfirmMDx values are scored', () => {
+    expect(runAssessment(withBase({ confirmMDx: 'positive' })).genomicScore).toBe(10)
+    expect(runAssessment(withBase({ confirmMDx: 'negative' })).genomicScore).toBe(-8)
+    for (const v of ['equivocal', 'not_done', 'NEGATIVE', 'pending', '']) {
+      const r = runAssessment(withBase({ confirmMDx: v }))
+      expect(r.genomicAssessed).toBe(false)
+      expect(r.genomicScore).toBeNull()
+      expect(r.asScore).toBe(runAssessment(base).asScore)
+    }
   })
 })
 
@@ -988,17 +1145,25 @@ describe('exported constants', () => {
     expect(t.very_low.n + t.intermediate.n + t.nccn_zone.n + t.high.n).toBe(COHORT_CALIBRATION.psad.n)
   })
 
-  // SUSPECT: src/asEngine.js:91-99 — COHORT_CALIBRATION.age declares `n: 1213`
-  // and the UI string built at src/asEngine.js:1070 says "In our N=1,213
-  // cohort", but the four age tier Ns sum to 1,111 (= the GG1 subset size), not
-  // 1,213. Either 102 patients are missing from the age breakdown or the age
-  // stratification was computed on GG1 only and is being labelled as full-cohort.
-  it('SUSPECT: age tier Ns sum to 1,111, not the declared N=1,213', () => {
+  // FIXED (defect 6): COHORT_CALIBRATION.age declared `n: 1213` (the full
+  // cohort) while its four tier Ns sum to 1,111 — the GG1 subset size — and the
+  // UI copy repeated the wrong denominator as "In our N=1213 cohort". The
+  // stratification was computed on GG1 only; the declared N and the copy now
+  // say so, and the tier Ns reconcile against it.
+  it('age tier Ns sum to the declared denominator, which is the GG1 subset', () => {
     const t = COHORT_CALIBRATION.age.tiers
-    expect(COHORT_CALIBRATION.age.n).toBe(1213)
-    expect(t.under_50.n + t.age_50_59.n + t.age_60_69.n + t.age_70p.n).toBe(1111)
-    expect(runAssessment(withBase({ age: 65 })).cohortContext.cohortItems
-      .find(i => i.variable === 'age').finding).toMatch(/N=1213 cohort/)
+    expect(COHORT_CALIBRATION.age.n).toBe(1111)
+    expect(COHORT_CALIBRATION.age.ggg_subset).toBe(1)
+    expect(COHORT_CALIBRATION.age.cohort_n).toBe(1213)
+    expect(t.under_50.n + t.age_50_59.n + t.age_60_69.n + t.age_70p.n)
+      .toBe(COHORT_CALIBRATION.age.n)
+    // …and the GG1 subset N matches by_ggg[1]
+    expect(COHORT_CALIBRATION.age.n).toBe(COHORT_CALIBRATION.by_ggg[1].n)
+
+    const finding = runAssessment(withBase({ age: 65 })).cohortContext.cohortItems
+      .find(i => i.variable === 'age').finding
+    expect(finding).toMatch(/GG1 subset \(N=1111 of the N=1213 cohort\)/)
+    expect(finding).not.toMatch(/N=1213 cohort, patients aged/)
   })
 
   it('race Ns sum to the full cohort', () => {
