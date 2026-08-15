@@ -456,3 +456,203 @@ export function saveProgressionData(data) {
     localStorage.setItem(PROGRESSION_STORAGE_KEY, JSON.stringify(data))
   } catch (_) {}
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// TRAJECTORY-AWARE SIGNALS (additive — nothing above this line is affected)
+//
+// These consume a longitudinal patientRecord (src/patientRecord.js) rather than
+// the legacy `visits` array, and read derived kinetics from derivedMetrics.js.
+//
+// Design constraint, deliberately: these functions DO NOT produce a risk tier
+// and DO NOT reclassify anyone. `analyzeProgression`'s summaryTier remains the
+// single classification in this module. Everything below returns observations
+// for a clinician to weigh, each carrying the data that produced it.
+// ─────────────────────────────────────────────────────────────────────────────
+
+import {
+  EVENT_TYPES as REC_EVENT_TYPES,
+  sortedEvents as recSortedEvents,
+  psaSeries as recPSASeries,
+} from './patientRecord.js'
+import {
+  computePSAVelocity as deriveVelocity,
+  computePSADoublingTime as deriveDoublingTime,
+  computeAdherence as deriveAdherence,
+  formatDoublingTime as fmtDoublingTime,
+} from './derivedMetrics.js'
+
+/**
+ * Grade Group trajectory across every recorded biopsy.
+ * Reports the sequence and whether the most recent biopsy is higher than the
+ * lowest previously observed value. Returns { sequence, latest, nadir, upgraded }.
+ */
+export function biopsyTrajectory(record) {
+  const biopsies = recSortedEvents(record, REC_EVENT_TYPES.BIOPSY)
+    .filter(ev => ev.data && ev.data.ggg != null)
+  if (!biopsies.length) return { sequence: [], latest: null, nadir: null, upgraded: false }
+
+  const sequence = biopsies.map(ev => ({
+    date: ev.date,
+    ggg: ev.data.ggg,
+    positiveCores: ev.data.positiveCores,
+    totalCores: ev.data.totalCores,
+    maxCorePercent: ev.data.maxCorePercent,
+  }))
+  const values = sequence.map(s => s.ggg)
+  const latest = sequence[sequence.length - 1]
+  const nadir = Math.min(...values)
+  return { sequence, latest, nadir, upgraded: latest.ggg > nadir }
+}
+
+/**
+ * MRI trajectory: PI-RADS sequence and whether the latest reading is higher
+ * than any prior one.
+ */
+export function mriTrajectory(record) {
+  const mris = recSortedEvents(record, REC_EVENT_TYPES.MRI)
+  if (!mris.length) return { sequence: [], latest: null, rising: false }
+  const sequence = mris.map(ev => ({
+    date: ev.date,
+    pirads: ev.data?.pirads ?? null,
+    newLesion: !!ev.data?.newLesion,
+  }))
+  const scored = sequence.filter(s => s.pirads != null)
+  const latest = scored[scored.length - 1] || null
+  const rising = latest != null && scored.slice(0, -1).some(s => latest.pirads > s.pirads)
+  return { sequence, latest, rising }
+}
+
+/**
+ * Trajectory observations from a longitudinal record.
+ *
+ * Returns { observations, kinetics, adherence, trajectoryComplete } where each
+ * observation is { code, tone, label, detail, basis }. `tone` is 'neutral' |
+ * 'attention' — intentionally NOT the severity vocabulary used by
+ * analyzeProgression, so these can never be mistaken for a tier change.
+ *
+ * `trajectoryComplete` is false when the record is too sparse to support any of
+ * this, which is itself the honest answer.
+ */
+export function analyzeTrajectory(record, options = {}) {
+  const observations = []
+  const series = recPSASeries(record)
+  const velocity = deriveVelocity(series, options)
+  const doublingTime = deriveDoublingTime(series, options)
+  const adherence = deriveAdherence(record, options)
+
+  // ── PSA kinetics, derived rather than typed in ──────────────────────────────
+  if (velocity.value === null) {
+    observations.push({
+      code: 'velocity_not_computable', tone: 'neutral',
+      label: 'PSA velocity not computable',
+      detail: velocity.detail,
+      basis: `${series.length} PSA value(s) on record.`,
+    })
+  } else if (velocity.value > 0.75) {
+    observations.push({
+      code: 'velocity_elevated', tone: 'attention',
+      label: `PSA velocity +${velocity.value.toFixed(2)} ng/mL/yr`,
+      detail: 'Above the 0.75 ng/mL/yr UCSF institutional marker. Not cited in AUA/ASTRO 2026 and not a standalone trigger — re-test PSA, then weigh MRI and biopsy per §18.',
+      basis: `Least-squares fit over ${velocity.n} values spanning ${Math.round(velocity.spanMonths)} months (R² ${velocity.r2 != null ? velocity.r2.toFixed(2) : 'n/a'}).`,
+    })
+  } else {
+    observations.push({
+      code: 'velocity_stable', tone: 'neutral',
+      label: `PSA velocity ${velocity.value >= 0 ? '+' : ''}${velocity.value.toFixed(2)} ng/mL/yr`,
+      detail: 'At or below the 0.75 ng/mL/yr institutional marker.',
+      basis: `Least-squares fit over ${velocity.n} values spanning ${Math.round(velocity.spanMonths)} months.`,
+    })
+  }
+
+  if (doublingTime.value === null) {
+    observations.push({
+      code: 'psadt_not_computable', tone: 'neutral',
+      label: 'PSA doubling time not computable',
+      detail: doublingTime.detail,
+      basis: doublingTime.reason,
+    })
+  } else if (doublingTime.value < 36) {
+    observations.push({
+      code: 'psadt_short_trajectory', tone: 'attention',
+      label: `PSA doubling time ${fmtDoublingTime(doublingTime)}`,
+      detail: 'Under 3 years. AUA/ASTRO 2026 §18 treats serial PSA rises as a prompt for MRI and possible biopsy, not for treatment. PRIAS removed PSADT as an exit criterion in 2014.',
+      basis: `Log-linear fit over ${doublingTime.n} values spanning ${Math.round(doublingTime.spanMonths)} months.`,
+    })
+  } else {
+    observations.push({
+      code: 'psadt_long', tone: 'neutral',
+      label: `PSA doubling time ${fmtDoublingTime(doublingTime)}`,
+      detail: 'At or above 3 years.',
+      basis: `Log-linear fit over ${doublingTime.n} values spanning ${Math.round(doublingTime.spanMonths)} months.`,
+    })
+  }
+
+  // ── Biopsy trajectory ──────────────────────────────────────────────────────
+  const bx = biopsyTrajectory(record)
+  if (bx.upgraded) {
+    observations.push({
+      code: 'biopsy_trajectory_upgrade', tone: 'attention',
+      label: `Grade Group trajectory GG${bx.nadir} → GG${bx.latest.ggg}`,
+      detail: 'Biopsy-confirmed grade increase relative to the lowest prior surveillance biopsy. Per AUA/ASTRO 2026 §18 this warrants a discussion of definitive therapy in the context of age, comorbidity, life expectancy, and preference.',
+      basis: bx.sequence.map(s => `${s.date}: GG${s.ggg}`).join(' · '),
+    })
+  } else if (bx.sequence.length >= 2) {
+    observations.push({
+      code: 'biopsy_trajectory_stable', tone: 'neutral',
+      label: `Grade stable across ${bx.sequence.length} biopsies`,
+      detail: 'No grade increase relative to the lowest prior surveillance biopsy.',
+      basis: bx.sequence.map(s => `${s.date}: GG${s.ggg}`).join(' · '),
+    })
+  }
+
+  // ── MRI trajectory ─────────────────────────────────────────────────────────
+  const mri = mriTrajectory(record)
+  if (mri.rising) {
+    observations.push({
+      code: 'mri_trajectory_rising', tone: 'attention',
+      label: `PI-RADS rising to ${mri.latest.pirads}`,
+      detail: 'PI-RADS higher than a prior study. AUA/ASTRO 2026 §19: PI-RADS 4–5 warrants timely targeted biopsy; MRI cannot replace biopsy.',
+      basis: mri.sequence.filter(s => s.pirads != null).map(s => `${s.date}: PI-RADS ${s.pirads}`).join(' · '),
+    })
+  }
+
+  // ── Monitoring gaps ────────────────────────────────────────────────────────
+  if (adherence.hasGaps) {
+    observations.push({
+      code: 'surveillance_gap', tone: 'attention',
+      label: adherence.summary,
+      detail: 'Overdue surveillance means the trajectory above is estimated from stale data. Close the gap before weighing the kinetics.',
+      basis: adherence.overdue.map(i => `${i.label}: ${i.daysOverdue} days past due`).join(' · '),
+    })
+  }
+
+  const trajectoryComplete = velocity.value !== null || bx.sequence.length >= 2 || mri.sequence.length >= 2
+
+  return {
+    observations,
+    kinetics: { velocity, doublingTime },
+    biopsy: bx,
+    mri,
+    adherence,
+    trajectoryComplete,
+    disclaimer: 'Trajectory signals are supplementary context for a clinician. They do not assign or change a risk tier.',
+  }
+}
+
+/**
+ * Bridge for callers that hand-type PSA kinetics into the risk engine: returns
+ * the derived values in the units those inputs expect
+ * (psaVelocity ng/mL/yr, psaDoublingTime years), or null when not derivable.
+ * Callers decide whether to use them; nothing is written back automatically.
+ */
+export function deriveEngineInputsFromRecord(record, options = {}) {
+  const series = recPSASeries(record)
+  const v = deriveVelocity(series, options)
+  const dt = deriveDoublingTime(series, options)
+  return {
+    psaVelocity: v.value,
+    psaVelocityReason: v.value === null ? v.reason : null,
+    psaDoublingTime: dt.value === null ? null : dt.years,
+    psaDoublingTimeReason: dt.value === null ? dt.reason : null,
+  }
+}
