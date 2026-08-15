@@ -104,3 +104,21 @@ This project is automatically deployed to GitHub Pages via GitHub Actions when c
 ## License
 
 MIT
+
+## Testing
+
+The clinical decision engines (`src/asEngine.js`, `src/progressionEngine.js`) are
+covered by a Vitest regression suite in `src/__tests__/`.
+
+```bash
+npm test          # run once
+npm run test:watch # watch mode
+```
+
+The suite is a **regression net**: it asserts the engines' current behavior
+(hard stops, every numeric tier boundary, the Layer-2 `cohortContext`
+invariant, and malformed-input handling) so that unintended changes to
+treatment-adjacent logic fail loudly. Tests marked `// SUSPECT:` document
+behavior that looks clinically or numerically questionable; they pin the
+current behavior rather than assert the desired behavior, and each carries a
+comment explaining the concern.
