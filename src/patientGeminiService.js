@@ -13,6 +13,7 @@
 import AS_OVERVIEW_KNOWLEDGE from './data/active_surveillance_overview_knowledge.txt?raw'
 import { resolveLocalEducationAnswer } from './patientAnswerResolver.js'
 import { sanitizeOutboundBody } from './promptSanitizer.js'
+import { getAssistantSession, clearAssistantSession } from './assistantSession.js'
 
 /**
  * Deployed assistant proxy. Non-secret URL — it is a location, not a
@@ -44,6 +45,15 @@ export function getAssistantEndpoint() {
 
 /** Worker route. Verified live: GET /health -> {status:'ok'}, POST /chat -> {text}. */
 export const ASSISTANT_CHAT_PATH = '/chat'
+
+/** Worker route that exchanges a Turnstile token for a short-lived session. */
+export const ASSISTANT_SESSION_PATH = '/session'
+
+/** @returns {string} endpoint with the /session route appended. */
+export function sessionUrl(base = ASSISTANT_ENDPOINT) {
+  const trimmed = String(base).replace(/\/+$/, '').replace(/\/chat$/, '')
+  return trimmed ? `${trimmed}${ASSISTANT_SESSION_PATH}` : ''
+}
 
 /** @returns {string} endpoint with the /chat route appended, tolerating a trailing slash. */
 export function chatUrl(base = ASSISTANT_ENDPOINT) {
@@ -342,14 +352,33 @@ export async function answerPatientEducationQuestion(question, opts) {
   // the sanitizer remains the single choke point.
   const workerPayload = toWorkerPayload(body)
 
+  // Session: Turnstile-backed, short-lived, issued by the proxy. Null when
+  // sessions are not configured or the challenge cannot run — the proxy then
+  // either accepts the call (sessions disabled server-side) or 401s, and a 401
+  // degrades to the offline answer below rather than failing loudly.
+  const postChat = async (session) =>
+    fetch(chatUrl(), {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(session ? { Authorization: `Bearer ${session}` } : {}),
+      },
+      body: JSON.stringify(workerPayload),
+    })
+
   let res
   let data
   try {
-    res = await fetch(chatUrl(), {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(workerPayload),
-    })
+    let session = await getAssistantSession(sessionUrl())
+    res = await postChat(session)
+
+    // One retry with a fresh session — covers an expired or IP-rebound token.
+    if (res.status === 401 && session) {
+      clearAssistantSession()
+      session = await getAssistantSession(sessionUrl(), { force: true })
+      if (session) res = await postChat(session)
+    }
+
     data = await res.json().catch(() => ({}))
   } catch (networkErr) {
     return {
