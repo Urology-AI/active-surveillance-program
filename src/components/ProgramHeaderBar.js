@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { Activity, RotateCcw, Info, ChevronLeft, GitBranch, Calculator, Users } from 'lucide-react'
+import { Activity, RotateCcw, Info, ChevronLeft, GitBranch, Calculator, Users, BarChart3 } from 'lucide-react'
 import CareTeamModal from './CareTeamModal.js'
 
 export const PROGRAM_HEADER_SHELL_STYLE = {
@@ -113,6 +113,17 @@ function ClinicianToolToggle({ mode, onChange }) {
       React.createElement(Users, { className: 'w-3 h-3 sm:w-3.5 sm:h-3.5 shrink-0 opacity-90' }),
       React.createElement('span', { className: 'hidden min-[380px]:inline' }, 'Batch'),
       React.createElement('span', { className: 'min-[380px]:hidden' }, 'Batch')
+    ),
+    React.createElement('button', {
+      type: 'button',
+      onClick: () => onChange('benchmarks'),
+      className: 'flex items-center gap-1 rounded-full px-2 sm:px-2.5 py-1 text-[10px] sm:text-[11px] font-semibold transition-colors',
+      style: pill(mode === 'benchmarks'),
+      title: 'Practice benchmarks and equity audit',
+    },
+      React.createElement(BarChart3, { className: 'w-3 h-3 sm:w-3.5 sm:h-3.5 shrink-0 opacity-90' }),
+      React.createElement('span', { className: 'hidden min-[380px]:inline' }, 'Benchmarks'),
+      React.createElement('span', { className: 'min-[380px]:hidden' }, 'Bench')
     )
   )
 }

@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/png" href="data:image/png;base64,iVBORw0KGgo=" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="description" content="Mount Sinai clinical decision support for prostate cancer pathway after first positive biopsy. Clinician tools." />
+    <meta name="theme-color" content="#212070" />
+    <meta name="robots" content="noindex, nofollow" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet" />
+    <title>Clinician Tools · Tewari AS Program</title>
+  </head>
+  <body>
+    <!--
+      Separate HTML entry point so /clinician/ is a REAL document served by the
+      origin, not a client-side route. Cloudflare Access path rules gate
+      document requests, so a client-only route at /clinician would never reach
+      the edge and could not be protected. See README "Access (path-scoped)".
+    -->
+    <div id="root"></div>
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>

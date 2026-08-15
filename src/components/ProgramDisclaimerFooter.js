@@ -1,4 +1,5 @@
 import React from 'react'
+import { VERSION_STAMP } from '../modelVersion.js'
 
 /** Single shared clinical disclaimer (pathway + calculator + clinician shell). */
 export default function ProgramDisclaimerFooter() {
@@ -24,6 +25,13 @@ export default function ProgramDisclaimerFooter() {
         className: 'text-sinai-cerulean hover:underline',
       }, 'NCCN'),
       ' guidelines.'
-    )
+    ),
+    // ── Model provenance stamp (compact, always visible) ──
+    React.createElement('p', {
+      style: {
+        marginTop: 10, fontSize: 10, letterSpacing: '0.02em',
+        color: '#94a3b8', fontVariantNumeric: 'tabular-nums',
+      },
+    }, VERSION_STAMP)
   )
 }

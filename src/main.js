@@ -1,12 +1,13 @@
 import React, { useState, useRef, useEffect } from 'react'
 import ReactDOM from 'react-dom/client'
 import App from './App.js'
-import RoleSelector from './RoleSelector.js'
 import PatientApp from './PatientApp.js'
 import ProgramHeaderBar from './components/ProgramHeaderBar.js'
 import ProgramDisclaimerFooter from './components/ProgramDisclaimerFooter.js'
 import ClinicalCalculator from './components/ClinicalCalculator.js'
 import BatchCalculator from './components/BatchCalculator.js'
+import CohortBenchmark from './components/CohortBenchmark.js'
+import EquityAudit from './components/EquityAudit.js'
 import './index.css'
 
 const e = React.createElement
@@ -83,14 +84,45 @@ function ClinicianShell({ onChangeRole, epsaPrefill }) {
           ),
           e('div', { style: { display: toolMode === 'batch' ? 'block' : 'none' }, className: 'min-h-[calc(100vh-1px)] bg-sinai-page' },
             e(BatchCalculator, null)
+          ),
+          // Practice-level views. Deliberately not in the per-patient result path —
+          // these audit a practice's own patterns, not an individual's risk.
+          e('div', { style: { display: toolMode === 'benchmarks' ? 'block' : 'none' }, className: 'min-h-[calc(100vh-1px)] bg-sinai-page' },
+            e('div', { className: 'max-w-3xl mx-auto px-4 py-6 space-y-6' },
+              e(CohortBenchmark, null),
+              e(EquityAudit, null)
+            )
           )
         ),
     e(ProgramDisclaimerFooter)
   )
 }
 
+/**
+ * Role from the URL path.
+ *
+ * `/clinician/` is a real document (see clinician/index.html + the multi-entry
+ * build), which is what allows a Cloudflare Access path rule to gate it. The
+ * root document stays public for patients.
+ *
+ * SECURITY NOTE: this is routing, not authorization. Access enforces the gate
+ * at the edge on the document request; nothing here does. The JS bundle is
+ * shared between both entry points and is public either way, so treat this as
+ * "which view loads", never as "who is allowed in".
+ */
+function roleFromPath() {
+  try {
+    return window.location.pathname.replace(/\/+$/, '').endsWith('/clinician')
+      ? 'clinician'
+      : 'patient'
+  } catch (_) {
+    return 'patient'
+  }
+}
+
+
 function Root() {
-  const [role,        setRole]        = useState(null)
+  const [role,        setRole]        = useState(roleFromPath)
   const [epsaPrefill, setEpsaPrefill] = useState(null)
 
   useEffect(() => {
@@ -108,15 +140,21 @@ function Root() {
     } catch (_) {}
   }, [])
 
-  if (role === 'patient') {
-    return e(PatientApp, { onBack: () => setRole(null) })
-  }
-
+  // Role is derived from the URL, never chosen in-page. An in-page role switch
+  // would let anyone reach the clinician UI from the public root document
+  // without ever requesting /clinician/ — which is the path Access gates — so
+  // the gate would protect nothing. Leaving the clinician view therefore
+  // navigates to the public document rather than flipping local state.
   if (role === 'clinician') {
-    return e(ClinicianShell, { onChangeRole: () => { setRole(null); setEpsaPrefill(null) }, epsaPrefill })
+    return e(ClinicianShell, {
+      onChangeRole: () => { window.location.assign('/') },
+      epsaPrefill,
+    })
   }
 
-  return e(RoleSelector, { onSelectRole: setRole })
+  // No onBack: the patient view IS the public landing document. Pointing "back"
+  // at the gated clinician path would greet patients with a login prompt.
+  return e(PatientApp, null)
 }
 
 ReactDOM.createRoot(document.getElementById('root')).render(

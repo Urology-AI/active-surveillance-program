@@ -16,11 +16,18 @@
  * Evidence basis embedded per sub-model below.
  */
 
+import { ENGINE_VERSION, MODEL_PROVENANCE } from './modelVersion.js'
+
 // ═══════════════════════════════════════════════════════════════════════════════
 // LAYER 2 DATA — N=1,213 COHORT CALIBRATION
 // Mount Sinai Tewari AS Program, N=1,213 active surveillance patients
 // Real upgrade event data (GG upgrading on follow-up biopsy)
 // ═══════════════════════════════════════════════════════════════════════════════
+// Model provenance — single source of truth lives in src/modelVersion.js.
+// Re-exported here so consumers of the engine get version + cohort data-cut
+// metadata from the same import as the results.
+export const ENGINE_MODEL_VERSION = ENGINE_VERSION
+
 export const COHORT_CALIBRATION = {
   overview: {
     n: 1213,
@@ -87,9 +94,16 @@ export const COHORT_CALIBRATION = {
     note: 'Selection effect applies: PI-RADS 5 patients with very aggressive MRI findings are more often triaged to treatment rather than AS enrollment.',
   },
 
-  // Patient age at enrollment — N=1,213, with real under-50 data
+  // Patient age at enrollment — GG1 subset, N=1,111
+  // CORRECTED: this block previously declared `n: 1213` (the full cohort) while
+  // its four tier Ns sum to 1,111 — the GG1 subset size, not the full cohort.
+  // The stratification was computed on GG1 only; the denominator and every UI
+  // string built from it now say so.
   age: {
-    n: 1213,
+    n: 1111,
+    ggg_subset: 1,
+    cohort_n: 1213,
+    note: 'Age stratification computed on the GG1 subset (N=1,111 of the N=1,213 cohort); tier Ns sum to 1,111.',
     tiers: {
       under_50:  { label: '< 50',  n: 50,  upgrade_rate: 0.300, progressed_rate: 0.460 },
       age_50_59: { label: '50–59', n: 304, upgrade_rate: 0.276, progressed_rate: 0.424 },
@@ -116,6 +130,17 @@ export const COHORT_CALIBRATION = {
     standard_as:  { risk: 0.251, ci: '23–28%', source: 'Mount Sinai Tewari AS Program N=1,213 (overall cohort rate)' },
     enhanced_as:  { risk: 0.08,  ci: '5–12%',  source: 'Literature — unfavorable intermediate AS programs' },
     intensive_as: { risk: 0.20,  ci: '15–30%', source: 'Literature — high-feature AS programs; short-interval biopsy recommended' },
+    // The highest-risk tier previously had NO entry at all, so the patients who
+    // most need a risk statement received none. There is no cohort or
+    // literature rate for this tier — it is defined by an accumulation of risk
+    // features, not by a stratum anyone has followed prospectively — so `risk`
+    // is null on purpose. A null renders as the clinical-note wording below; it
+    // must NOT be back-filled with an invented figure.
+    treatment_discussion: {
+      risk: null,
+      ci: null,
+      source: 'No tier-level rate available — this tier is defined by an accumulation of risk features across sub-models, not by a followed cohort stratum. Individual risk must be integrated from the sub-model findings and the Layer 3 model.',
+    },
   },
 
   // NVB abutment — N=1,213 full cohort
@@ -376,9 +401,66 @@ export const GUIDELINE_HARD_STOPS = [
   },
 ]
 
+// ─── Shared input coercion helpers ────────────────────────────────────────────
+/**
+ * Numeric-input guards.
+ *
+ * SAFETY: range checks written as bare comparisons (`x <= 0`, `x > 100`) are
+ * blind to NaN — every comparison against NaN is false, so a garbage string
+ * silently passes validation and then falls through every downstream `if` into
+ * whichever branch happens to be the `else`. In this engine those else-branches
+ * are the MOST FAVOURABLE ones (PSAD "very low risk", -5 points), so a typo in
+ * the PSA field produced a reassuring answer. Every numeric field is now gated
+ * on `Number.isFinite` FIRST; non-finite input is rejected explicitly and is
+ * never treated as absent or as favourable.
+ */
+export function isBlank(v) {
+  return v === null || v === undefined || v === ''
+}
+
+/** True when `v` is present and coerces to a finite number. */
+export function isFiniteNumeric(v) {
+  return !isBlank(v) && Number.isFinite(Number(v))
+}
+
+/**
+ * Numeric value for scoring, or null when absent/unusable. Never returns NaN —
+ * callers may safely compare the result without an isNaN guard.
+ */
+function num(v) {
+  return isFiniteNumeric(v) ? Number(v) : null
+}
+
+/**
+ * Reconcile the two yes/no conventions that reach the engine:
+ *  · PatientForm.js emits `ece: 'yes' | 'no' | null` (string enum)
+ *  · ClinicalCalculator.js normalizePayload emits `hasECE: true | false` (bool)
+ * Both are accepted; anything unrecognised is "not assessed" (false), never a
+ * silent "no" that is indistinguishable from a recorded negative.
+ */
+function isYes(stringForm, boolForm) {
+  if (stringForm === 'yes') return true
+  if (boolForm === true) return true
+  return false
+}
+
 // ─── Input validation ─────────────────────────────────────────────────────────
 export function validateInputs(inputs) {
   const errors = {}
+
+  // Non-finite guard for every numeric field, applied before any range check.
+  const NUMERIC_FIELDS = [
+    ['psa', 'PSA'], ['maxCorePercent', 'Max core involvement'],
+    ['prostateVolume', 'Prostate volume'], ['decipher', 'Decipher'],
+    ['gps', 'GPS'], ['prolaris', 'Prolaris'], ['age', 'Age'],
+    ['psaVelocity', 'PSA velocity'], ['psaDoublingTime', 'PSA doubling time'],
+    ['pirads', 'PI-RADS'],
+  ]
+  for (const [key, label] of NUMERIC_FIELDS) {
+    if (!isBlank(inputs[key]) && !isFiniteNumeric(inputs[key])) {
+      errors[key] = `${label} must be a number`
+    }
+  }
 
   if (inputs.ggg == null || ![1, 2, 3, 4, 5].includes(Number(inputs.ggg)))
     errors.ggg = 'Grade Group is required (1–5)'
@@ -397,19 +479,22 @@ export function validateInputs(inputs) {
       Number(inputs.positiveCores) > Number(inputs.totalCores))
     errors.positiveCores = 'Cannot exceed total cores'
 
-  if (inputs.maxCorePercent == null || inputs.maxCorePercent === '')
+  if (isBlank(inputs.maxCorePercent))
     errors.maxCorePercent = 'Required'
-  else if (Number(inputs.maxCorePercent) < 0 || Number(inputs.maxCorePercent) > 100)
+  else if (!errors.maxCorePercent &&
+      (Number(inputs.maxCorePercent) < 0 || Number(inputs.maxCorePercent) > 100))
     errors.maxCorePercent = 'Must be 0–100%'
 
-  if (inputs.psa == null || inputs.psa === '')
+  if (isBlank(inputs.psa))
     errors.psa = 'Required'
-  else if (Number(inputs.psa) <= 0)
-    errors.psa = 'Must be > 0 ng/mL'
-  else if (Number(inputs.psa) > 100)
-    errors.psa = 'Value > 100 ng/mL — please verify'
+  else if (!errors.psa) {
+    if (Number(inputs.psa) <= 0)
+      errors.psa = 'Must be > 0 ng/mL'
+    else if (Number(inputs.psa) > 100)
+      errors.psa = 'Value > 100 ng/mL — please verify'
+  }
 
-  if (inputs.prostateVolume != null && inputs.prostateVolume !== '') {
+  if (!isBlank(inputs.prostateVolume) && !errors.prostateVolume) {
     if (Number(inputs.prostateVolume) <= 0)
       errors.prostateVolume = 'Must be > 0 cc'
     else if (Number(inputs.prostateVolume) > 500)
@@ -419,27 +504,27 @@ export function validateInputs(inputs) {
   if (inputs.pirads == null)
     errors.pirads = 'PI-RADS score is required (use 0 if no MRI performed)'
 
-  if (inputs.decipher != null && inputs.decipher !== '' &&
+  if (!isBlank(inputs.decipher) && !errors.decipher &&
       (Number(inputs.decipher) < 0 || Number(inputs.decipher) > 1))
     errors.decipher = 'Must be 0.00–1.00'
 
-  if (inputs.gps != null && inputs.gps !== '' &&
+  if (!isBlank(inputs.gps) && !errors.gps &&
       (Number(inputs.gps) < 0 || Number(inputs.gps) > 100))
     errors.gps = 'Must be 0–100'
 
-  if (inputs.prolaris != null && inputs.prolaris !== '' &&
+  if (!isBlank(inputs.prolaris) && !errors.prolaris &&
       (Number(inputs.prolaris) < 0 || Number(inputs.prolaris) > 10))
     errors.prolaris = 'Typical range 0–10'
 
-  if (inputs.age != null && inputs.age !== '' &&
+  if (!isBlank(inputs.age) && !errors.age &&
       (Number(inputs.age) < 18 || Number(inputs.age) > 120))
     errors.age = 'Must be 18–120 years'
 
-  if (inputs.psaVelocity != null && inputs.psaVelocity !== '' &&
+  if (!isBlank(inputs.psaVelocity) && !errors.psaVelocity &&
       Number(inputs.psaVelocity) < 0)
     errors.psaVelocity = 'Must be ≥ 0 ng/mL/year'
 
-  if (inputs.psaDoublingTime != null && inputs.psaDoublingTime !== '' &&
+  if (!isBlank(inputs.psaDoublingTime) && !errors.psaDoublingTime &&
       Number(inputs.psaDoublingTime) < 0)
     errors.psaDoublingTime = 'Must be ≥ 0 years'
 
@@ -523,9 +608,14 @@ function calcBasic({ ggg, positiveCores, totalCores, maxCorePercent, psa, prosta
     const meetsNccnCoreCount = posCores < 3
     let pts = 0; let tier = 'low'
     if (!meetsNccnCoreCount) {
-      if      (ratio > 0.50) { pts = 6; tier = 'high' }
-      else if (ratio > 0.33) { pts = 3; tier = 'intermediate' }
-      else                   { pts = 1; tier = 'low' }
+      // Exact fractions, not decimal approximations. The literal 0.33 split
+      // clinically identical one-third burdens: 4/12 (0.33333…) landed in the
+      // 'intermediate' bucket while 33/100 (0.33) landed in 'low'. `1/3` and
+      // `1/2` compare correctly against any ratio that is genuinely one third
+      // or one half.
+      if      (ratio > 1 / 2) { pts = 6; tier = 'high' }
+      else if (ratio > 1 / 3) { pts = 3; tier = 'intermediate' }
+      else                    { pts = 1; tier = 'low' }
     }
     score += pts
     factors.push({
@@ -542,8 +632,8 @@ function calcBasic({ ggg, positiveCores, totalCores, maxCorePercent, psa, prosta
   // N=218 cohort: max core % AUC = 0.504 (essentially chance — selection effect:
   // patients with very high core burden are triaged to treatment, not AS).
   // Retained as NCCN eligibility gate only. Weight reduced accordingly.
-  if (maxCorePercent != null) {
-    const pct  = Number(maxCorePercent)
+  if (num(maxCorePercent) != null) {
+    const pct  = num(maxCorePercent)
     const pts  = pct > 50 ? 4 : 0
     const tier = pct > 50 ? 'intermediate' : 'low'
     score += pts
@@ -558,13 +648,25 @@ function calcBasic({ ggg, positiveCores, totalCores, maxCorePercent, psa, prosta
   }
 
   // PSAD — dual threshold: NCCN 0.15 + Kadeer 2025 Youden 0.177
+  //
+  // TIER-2 CLINICAL CHANGE (needs sign-off): the "very low" -5 bucket previously
+  // extended to PSAD ≤ 0.10, but the `basis` narrative below — and the Layer 2
+  // cohort item, and calcOutcomesPrediction — all branch at 0.065, the engine's
+  // own Youden-optimal cutoff (COHORT_CALIBRATION.psad.youden_optimal, derived
+  // from the N=704 GG1 subset). The value 0.10 appears nowhere in the cohort
+  // data. Patients with PSAD 0.065–0.10 were therefore scored as maximally
+  // favourable while simultaneously being told they sat in a 23.9%-upgrade
+  // tier. Aligned to 0.065, the cohort-supported boundary; this is the SAFER
+  // direction (those patients now score 0 instead of -5).
+  const psaNumeric = num(psa)
+  const volNumeric = num(prostateVolume)
   let psad = null
-  if (psa != null && prostateVolume != null && Number(prostateVolume) > 0) {
-    psad = Number(psa) / Number(prostateVolume)
+  if (psaNumeric != null && volNumeric != null && volNumeric > 0) {
+    psad = psaNumeric / volNumeric
     let pts = 0; let tier = 'low'
     if      (psad > 0.177) { pts = 12; tier = 'high' }
     else if (psad > 0.15)  { pts = 5;  tier = 'intermediate' }
-    else if (psad > 0.10)  { pts = 0;  tier = 'low' }
+    else if (psad > 0.065) { pts = 0;  tier = 'low' }
     else                   { pts = -5; tier = 'low' }
     score += pts
     factors.push({
@@ -579,8 +681,8 @@ function calcBasic({ ggg, positiveCores, totalCores, maxCorePercent, psa, prosta
         ? 'PSAD 0.065–0.15 — intermediate risk tier; upgrade rate 23.9% (N=381 GG1 patients in N=1,213 cohort)'
         : 'PSAD < 0.065 — very low risk tier; upgrade rate 11.2% (N=170 GG1 patients in N=1,213 cohort)',
     })
-  } else if (psa != null) {
-    const psaNum = Number(psa)
+  } else if (psaNumeric != null) {
+    const psaNum = psaNumeric
     let pts = 0; let tier = 'low'
     if      (psaNum >= 10) { pts = 10; tier = 'high' }
     else if (psaNum >= 4)  { pts = 0;  tier = 'intermediate' }
@@ -736,16 +838,23 @@ function calcGenomic({ decipher, gps, prolaris, confirmMDx }) {
     })
   }
 
-  if (confirmMDx != null && confirmMDx !== 'not_done') {
+  // ConfirmMDx — ONLY explicitly recognised results are scored.
+  // Previously `confirmMDx === 'positive' ? 10 : -8` scored every unrecognised
+  // value (e.g. 'equivocal', a typo, a future enum member) as if it were a
+  // reassuring NEGATIVE result, worth -8 points. An unknown result is not a
+  // negative result: anything outside {positive, negative} is now treated as
+  // "not assessed" and contributes nothing.
+  if (confirmMDx === 'positive' || confirmMDx === 'negative') {
     assessed = true
-    const pts  = confirmMDx === 'positive' ? 10 : -8
-    const tier = confirmMDx === 'positive' ? 'high' : 'low'
+    const isPositive = confirmMDx === 'positive'
+    const pts  = isPositive ? 10 : -8
+    const tier = isPositive ? 'high' : 'low'
     score += pts
     factors.push({
-      label: `ConfirmMDx — ${confirmMDx === 'positive' ? 'positive (field cancerization)' : 'negative'}`,
+      label: `ConfirmMDx — ${isPositive ? 'positive (field cancerization)' : 'negative'}`,
       points: pts,
       tier,
-      basis: confirmMDx === 'positive'
+      basis: isPositive
         ? 'Stewart 2013: positive result associated with occult cancer; repeat biopsy recommended'
         : 'Negative ConfirmMDx: lower probability of missed cancer on negative biopsy',
     })
@@ -767,6 +876,26 @@ function calcGenomic({ decipher, gps, prolaris, confirmMDx }) {
  * Evidence basis:
  *  · EAU-EANM-ESTRO-ESUR-SIOG Guidelines 2024 on prostate cancer staging
  *  · Metastatic finding = hard override (also caught by GUIDELINE_HARD_STOPS)
+ *
+ * `psmaScore` IS INFORMATIONAL ONLY — DELIBERATELY NOT WIRED INTO ANY TIER.
+ * ─────────────────────────────────────────────────────────────────────────────
+ * The points below are displayed for transparency but are never added to
+ * `asScore` and never reach calcCombined. PSMA influences the tier through
+ * FINDINGS, not points: 'metastatic' is a hard stop, 'regional' forces at least
+ * intensive_as, and 'local' is counted as a monitoring feature.
+ *
+ * This is intentional and should NOT be "fixed" by summing psmaScore into the
+ * composite. Doing so would change clinical output in the unsafe direction: a
+ * negative PSMA PET (-15 pts) would subtract from the composite and could pull
+ * a patient with genuine biopsy/PSAD risk features DOWN a tier, on the strength
+ * of a scan whose negative predictive value for occult higher-grade disease in
+ * an AS population is not established in this cohort (the N=1,213 cohort has no
+ * PSMA stratum at all — the points are guideline-narrative weights, not fitted
+ * coefficients). Escalation via findings can only ever raise a tier; scoring
+ * would let it lower one.
+ *
+ * FLAGGED FOR CLINICIAN REVIEW: should a negative PSMA PET ever be permitted to
+ * de-escalate surveillance intensity? Until answered with data, it cannot.
  */
 function calcPSMA({ psmaFinding, lesionCount }) {
   if (!psmaFinding || psmaFinding === 'not_done')
@@ -954,6 +1083,23 @@ function calcCombined({ asTierKey, genomicRiskTier, psmaFinding, monitoringTier,
 // Runs after guideline tier is assigned. Returns probability statements from
 // real N=1,213 Mount Sinai AS cohort data. Does NOT change the tier.
 // ═══════════════════════════════════════════════════════════════════════════════
+/**
+ * Single source of truth for "which PSAD tier is this patient in?".
+ *
+ * Every consumer — the Layer 2 cohort item, the inline chip, and
+ * calcOutcomesPrediction — resolves the tier through this one function, so the
+ * UI cannot show two different upgrade rates for the same PSAD on one screen.
+ * Boundaries match COHORT_CALIBRATION.psad.tiers exactly.
+ */
+export function psadTierFor(psad) {
+  const t = COHORT_CALIBRATION.psad.tiers
+  if (psad == null || !Number.isFinite(psad)) return null
+  if (psad < 0.065) return { key: 'very_low',     ...t.very_low }
+  if (psad < 0.15)  return { key: 'intermediate', ...t.intermediate }
+  if (psad < 0.177) return { key: 'nccn_zone',    ...t.nccn_zone }
+  return { key: 'high', ...t.high }
+}
+
 function calcCohortContext(inputs, combinedTierKey, psad) {
   const C = COHORT_CALIBRATION
   const ctx = []
@@ -985,12 +1131,7 @@ function calcCohortContext(inputs, combinedTierKey, psad) {
   // PSAD cohort context — 4-tier system (GG1 subset N=704)
   if (psad != null) {
     const pd = C.psad
-    const tiers = pd.tiers
-    let tierKey, tierData
-    if      (psad < 0.065) { tierKey = 'very_low';     tierData = tiers.very_low }
-    else if (psad < 0.15)  { tierKey = 'intermediate'; tierData = tiers.intermediate }
-    else if (psad < 0.177) { tierKey = 'nccn_zone';    tierData = tiers.nccn_zone }
-    else                   { tierKey = 'high';          tierData = tiers.high }
+    const tierData = psadTierFor(psad)
 
     ctx.push({
       variable: 'psad',
@@ -1033,7 +1174,7 @@ function calcCohortContext(inputs, combinedTierKey, psad) {
   }
 
   // Abutment cohort context
-  if (inputs.abutment === 'yes') {
+  if (isYes(inputs.abutment, inputs.hasAbutment)) {
     const ab = C.abutment
     ctx.push({
       variable: 'abutment',
@@ -1067,7 +1208,7 @@ function calcCohortContext(inputs, combinedTierKey, psad) {
     ctx.push({
       variable: 'age',
       label: `Age ${ageNum} — Cohort Context (${ageTierData.label} tier)`,
-      finding: `In our N=${ag.n} cohort, patients aged ${ageTierData.label} had upgrade rate ${(ageTierData.upgrade_rate * 100).toFixed(1)}% and progression rate ${(ageTierData.progressed_rate * 100).toFixed(1)}% (N=${ageTierData.n}).`,
+      finding: `In our GG1 subset (N=${ag.n} of the N=${ag.cohort_n} cohort), patients aged ${ageTierData.label} had upgrade rate ${(ageTierData.upgrade_rate * 100).toFixed(1)}% and progression rate ${(ageTierData.progressed_rate * 100).toFixed(1)}% (N=${ageTierData.n}).`,
       note: ageNum < 50
         ? `Age <50 patients (N=${ageTierData.n}): upgrade rate ${(ageTierData.upgrade_rate * 100).toFixed(0)}% and progression rate ${(ageTierData.progressed_rate * 100).toFixed(0)}% — highest progression rate of any age group. Long life expectancy makes cumulative upgrade risk higher.`
         : ageNum < 60
@@ -1076,18 +1217,20 @@ function calcCohortContext(inputs, combinedTierKey, psad) {
     })
   }
 
-  // Family history cohort context
-  if (inputs.familyHistory != null) {
-    const fhx = C.fhx_prostate
-    if (inputs.familyHistory === 'yes') {
-      ctx.push({
-        variable: 'fhx',
-        label: 'Family History — Cohort Upgrade Rate',
-        finding: `In our N=${C.overview.n} cohort, patients with a family history of prostate cancer (N=${fhx.n_yes}) upgraded at ${(fhx.upgrade_rate_yes * 100).toFixed(1)}% — lower than those without (${(fhx.upgrade_rate_no * 100).toFixed(1)}%).`,
-        note: fhx.note,
-      })
-    }
-  }
+  // Family history cohort context — DELIBERATELY OMITTED.
+  //
+  // This block previously read `COHORT_CALIBRATION.fhx_prostate`, a key that has
+  // never existed in this file, and then dereferenced `.n_yes` on the resulting
+  // undefined. Because family history IS collected in the UI, every real
+  // assessment with familyHistory: 'yes' threw a TypeError and produced no
+  // result at all — a live crash, not a mis-scoring.
+  //
+  // There is no family-history stratum in the N=1,213 extract, so there is no
+  // honest cohort statement to make here. The item is omitted rather than
+  // back-filled with numbers from another cohort or invented outright: the rest
+  // of Layer 2 is real Tewari-program data and a fabricated line would
+  // contaminate it. Family history continues to be collected and remains
+  // available for a future data cut.
 
   // Race cohort context
   if (inputs.race) {
@@ -1151,15 +1294,8 @@ function calcCohortContext(inputs, combinedTierKey, psad) {
   const gggNum2 = Number(inputs.ggg)
   const gggChipRate = gggNum2 && C.by_ggg[gggNum2] ? C.by_ggg[gggNum2].upgrade_rate : null
 
-  let psadChipRate = null
-  let psadChipLabel = null
-  if (psad != null) {
-    const tiers2 = C.psad.tiers
-    if      (psad < 0.065) { psadChipRate = tiers2.very_low.upgrade_rate;     psadChipLabel = 'PSAD tier upgrade rate' }
-    else if (psad < 0.15)  { psadChipRate = tiers2.intermediate.upgrade_rate; psadChipLabel = 'PSAD tier upgrade rate' }
-    else if (psad < 0.177) { psadChipRate = tiers2.nccn_zone.upgrade_rate;    psadChipLabel = 'PSAD tier upgrade rate' }
-    else                   { psadChipRate = tiers2.high.upgrade_rate;          psadChipLabel = 'PSAD tier upgrade rate' }
-  }
+  const psadChipRate = psad != null ? psadTierFor(psad).upgrade_rate : null
+  const psadChipLabel = psad != null ? 'PSAD tier upgrade rate' : null
 
   let piradsChipRate = null
   let piradsChipLabel = null
@@ -1185,19 +1321,16 @@ function calcCohortContext(inputs, combinedTierKey, psad) {
       cohort_n: C.overview.n,
       ggg_rate: C.by_ggg[gggNum] ? C.by_ggg[gggNum].upgrade_rate : C.overview.overall_upgrade_rate,
       ggg_label: C.by_ggg[gggNum] ? `GG${gggNum} upgrade rate` : 'Overall upgrade rate',
-      psad_tier_rate: (() => {
-        if (psad === null) return null
-        if (psad > C.psad.youden_optimal) return C.psad.tier_high ? C.psad.tier_high.upgrade_rate : C.psad.tiers.high.upgrade_rate
-        if (psad > C.psad.nccn_vlow)      return C.psad.tier_nccn ? C.psad.tier_nccn.upgrade_rate : C.psad.tiers.nccn_zone.upgrade_rate
-        if (psad > 0.10)                   return C.psad.tier_low ? C.psad.tier_low.upgrade_rate : C.psad.tiers.intermediate.upgrade_rate
-        return C.psad.tier_below_youden ? C.psad.tier_below_youden.upgrade_rate : C.psad.tiers.very_low.upgrade_rate
-      })(),
-      psad_tier_label: psad !== null ? `Your PSAD tier: ${((() => {
-        if (psad > C.psad.youden_optimal) return C.psad.tier_high ? C.psad.tier_high.upgrade_rate : C.psad.tiers.high.upgrade_rate
-        if (psad > C.psad.nccn_vlow)      return C.psad.tier_nccn ? C.psad.tier_nccn.upgrade_rate : C.psad.tiers.nccn_zone.upgrade_rate
-        if (psad > 0.10)                   return C.psad.tier_low ? C.psad.tier_low.upgrade_rate : C.psad.tiers.intermediate.upgrade_rate
-        return C.psad.tier_below_youden ? C.psad.tier_below_youden.upgrade_rate : C.psad.tiers.very_low.upgrade_rate
-      })() * 100).toFixed(1)}% upgrade rate` : null,
+      // Both the chip and the cohort item above resolve the PSAD tier through
+      // the single `psadTierFor` lookup. They previously used different
+      // cut-points — the chip branched on `psad > youden_optimal` and jumped
+      // straight to the HIGH tier's 34.7%, so every PSAD in (0.065, 0.177]
+      // produced a chip contradicting the 23.9% / 27.3% figure printed on the
+      // same screen. One screen must not state two different rates.
+      psad_tier_rate: psadChipRate,
+      psad_tier_label: psadChipRate !== null
+        ? `Your PSAD tier: ${(psadChipRate * 100).toFixed(1)}% upgrade rate`
+        : null,
       pirads_rate: piradsChipRate,
       pirads_label: piradsChipLabel,
     },
@@ -1216,8 +1349,8 @@ export function calcOutcomesPrediction(inputs) {
   const C = COHORT_CALIBRATION
 
   // Compute PSAD if possible
-  const psadVal = (inputs.psa != null && inputs.prostateVolume != null && Number(inputs.prostateVolume) > 0)
-    ? Number(inputs.psa) / Number(inputs.prostateVolume)
+  const psadVal = (num(inputs.psa) != null && num(inputs.prostateVolume) > 0)
+    ? num(inputs.psa) / num(inputs.prostateVolume)
     : null
 
   const gggNum = Number(inputs.ggg)
@@ -1228,12 +1361,17 @@ export function calcOutcomesPrediction(inputs) {
   let psadTierRate = null
   let psadTierLabel = null
   let psadTierN = null
-  if (psadVal != null) {
-    const tiers = C.psad.tiers
-    if      (psadVal < 0.065) { psadTierRate = tiers.very_low.upgrade_rate     * 100; psadTierLabel = 'PSAD < 0.065 (very low risk tier)';     psadTierN = tiers.very_low.n }
-    else if (psadVal < 0.15)  { psadTierRate = tiers.intermediate.upgrade_rate * 100; psadTierLabel = 'PSAD 0.065–0.15 (intermediate risk tier)'; psadTierN = tiers.intermediate.n }
-    else if (psadVal < 0.177) { psadTierRate = tiers.nccn_zone.upgrade_rate    * 100; psadTierLabel = 'PSAD 0.15–0.177 (above NCCN threshold)';  psadTierN = tiers.nccn_zone.n }
-    else                      { psadTierRate = tiers.high.upgrade_rate         * 100; psadTierLabel = 'PSAD > 0.177 (above Kadeer cutoff)';       psadTierN = tiers.high.n }
+  const psadTier = psadTierFor(psadVal)
+  if (psadTier) {
+    const LABELS = {
+      very_low:     'PSAD < 0.065 (very low risk tier)',
+      intermediate: 'PSAD 0.065–0.15 (intermediate risk tier)',
+      nccn_zone:    'PSAD 0.15–0.177 (above NCCN threshold)',
+      high:         'PSAD > 0.177 (above Kadeer cutoff)',
+    }
+    psadTierRate  = psadTier.upgrade_rate * 100
+    psadTierLabel = LABELS[psadTier.key]
+    psadTierN     = psadTier.n
   }
 
   // Age flag
@@ -1363,12 +1501,22 @@ export const UPGRADE_RISK_MODEL = {
       abut_category:                                     0.0314,
       highest_pirads_category:                           0.0391,
     },
-    // LabelEncoder ordinals — values not supplied default to 0 ("No" for binary, GG1 for ggg, No PIRADS for pirads)
+    // LabelEncoder ordinals — values not supplied default to 0 ("No" for binary, No PIRADS for pirads)
     enc: {
-      race:    { 'African American': 0, 'Caucasian': 1, 'Other': 2 },   // default: 1 (Caucasian)
+      // `race` is intentionally absent — see the RACE note in calcUpgradeRisk.
+      // GGG: the training population is GG1/GG2 active-surveillance patients
+      // (plus N=2 GG3). GG4 and GG5 are NOT representable: they were never in
+      // the training data, and because `first_positive_bx_ggg_named` carries a
+      // NEGATIVE coefficient (-1.5655, the cohort's GG2 selection effect),
+      // extrapolating the ordinal to 3 or 4 would report GG5 patients as having
+      // a LOWER upgrade risk than GG1. Previously `?? 0` collapsed GG4 and GG5
+      // onto the GG1 encoding, so a GG5 patient was shown a GG1 probability.
+      // calcUpgradeRisk now refuses to score GGG ≥ 4 rather than guess.
       ggg:     { 1: 0, 2: 1, 3: 2 },                                    // GG1=0, GG2=1, GG3=2
       pirads:  { 0: 0, 1: 1, 2: 2, 3: 3, 4: 4, 5: 5 },                 // null→0 (No PIRADS)
     },
+    /** Highest Grade Group the training data supports. Above this → no estimate. */
+    maxSupportedGGG: 3,
     auc: 0.65, n: 1213, n_upgraded: 305, base_rate: 0.251,
   },
   // Legacy PSAD model — requires prostate volume (N=781 subset, AUC 0.668)
@@ -1433,6 +1581,18 @@ export function calcUpgradeRisk(inputs) {
     return { available: false, reason: 'GGG and positive core count required' }
   }
 
+  // GGG outside the training range → no estimate, rather than a wrong one.
+  // GG4/GG5 are absolute AS contraindications (GUIDELINE_HARD_STOPS.ggg4_5) and
+  // were never in the N=1,213 training population. Encoding them through the
+  // GG ordinal produced a probability LOWER than GG1's — actively misleading
+  // for the highest-risk patients this tool sees.
+  if (ggg > UPGRADE_RISK_MODEL.fullModel.maxSupportedGGG) {
+    return {
+      available: false,
+      reason: `No upgrade-risk estimate for Grade Group ${ggg}: the N=1,213 model was fitted on GG1–GG3 active-surveillance patients only. GG${ggg} is an absolute contraindication to active surveillance (AUA/NCCN/EAU) — upgrade probability is not the relevant question.`,
+    }
+  }
+
   const sig = x => 1 / (1 + Math.exp(-x))
   const psaVal = inputs.psa        != null ? Number(inputs.psa)           : null
   const volVal = inputs.prostateVolume != null ? Number(inputs.prostateVolume) : null
@@ -1457,12 +1617,47 @@ export function calcUpgradeRisk(inputs) {
     const gggEnc    = FM.enc.ggg[ggg]  ?? 0    // GG1=0, GG2=1, GG3=2
     const piradsRaw = inputs.pirads != null ? Number(inputs.pirads) : null
     const piradsEnc = piradsRaw != null ? (FM.enc.pirads[piradsRaw] ?? 0) : 0
-    const eceEnc    = inputs.hasECE      === true ? 1 : 0
-    const abutEnc   = inputs.hasAbutment === true ? 1 : 0
+    // ECE / NVB abutment — accept BOTH input conventions.
+    // PatientForm.js emits `ece: 'yes'|'no'`; ClinicalCalculator.js
+    // normalizePayload emits `hasECE: true|false`. This model previously read
+    // only the boolean form, so for every assessment entered through the form
+    // (i.e. essentially all of them) ECE and abutment silently encoded as 0 and
+    // their fitted coefficients did nothing.
+    const eceEnc    = isYes(inputs.ece,      inputs.hasECE)      ? 1 : 0
+    const abutEnc   = isYes(inputs.abutment, inputs.hasAbutment) ? 1 : 0
 
     // Comorbidities / family hx — default to 0 ("No") when not collected
-    const race = 1, smoking = 0, htn = 0, hld = 0, diabetes = 0
+    const smoking = 0, htn = 0, hld = 0, diabetes = 0
     const fhxBreast = 0, fhxOvarian = 0, fhxProstate = 0
+
+    // ── RACE: DELIBERATELY NOT AN INPUT ────────────────────────────────────
+    // The fitted model contains a `race_category_2` coefficient. It is NOT
+    // read from `inputs.race`, and it must never be. This is an explicit
+    // project clinical-safety decision, not an oversight or an unfinished
+    // feature:
+    //
+    //   The national VA data this project benchmarks against document
+    //   race-based UNDER-offering of active surveillance. A model that
+    //   consumed race as a live term would take a disparity in how care was
+    //   historically offered and re-emit it as an individualised risk figure —
+    //   mechanising the disparity and dressing it up as precision. An observed
+    //   between-group difference in a retrospective cohort is not a causal,
+    //   patient-level risk factor, and the group Ns here (129 / 376 / 708) give
+    //   confidence intervals that overlap substantially.
+    //
+    // Race remains visible as OBSERVATIONAL cohort context (Layer 2's race
+    // item and getLocalCohortSnapshot, both explicitly flagged
+    // riskAdjustmentUse: false) so that disparities can be seen and audited.
+    // It never reaches a tier, score, or recommendation.
+    //
+    // The coefficient below is retained ONLY as the model's fixed evaluation
+    // point — the reference level at which every patient is scored, identical
+    // for everyone. It is a calibration constant, not a variable: dropping the
+    // term outright would silently re-evaluate every prediction at a different
+    // reference level (shifting the intercept), which changes calibration
+    // without removing anything. Expressed as a constant so no future reader
+    // mistakes it for a live input.
+    const RACE_REFERENCE_OFFSET = C.race_category_2 // × 1, fixed for all patients
 
     const logit = FM.intercept
       + C.bmi                                              * bmi
@@ -1471,7 +1666,7 @@ export function calcUpgradeRisk(inputs) {
       + C.perc_highest_core_involvement_for_highest_gleason * maxCore
       + C.psa_result_ng                                    * psa
       + C.as_mri_prostate_vol                              * vol
-      + C.race_category_2                                  * race
+      + RACE_REFERENCE_OFFSET                              // fixed; NOT inputs.race
       + C.current_smoking_category                         * smoking
       + C.htn_category                                     * htn
       + C.hld_category                                     * hld
@@ -1632,7 +1827,24 @@ export function runAssessment(inputs) {
       cohortLayer: null,
       outcomesData: null,
       modelValidation: MODEL_VALIDATION,
-      upgradeRisk: calcUpgradeRisk(inputs),
+
+      // Layer 3 is SUPPRESSED on the hard-stop path. This return previously
+      // called calcUpgradeRisk() and displayed an upgrade probability for a
+      // patient already ruled ineligible for active surveillance — a number
+      // that is both wrong (the model is not fitted for these patients) and
+      // irrelevant (the question is treatment, not surveillance risk). A
+      // patient told "AS is contraindicated" alongside "23% chance of upgrade"
+      // receives two contradictory messages on one screen.
+      upgradeRisk: {
+        available: false,
+        reason: `Upgrade-risk estimate not applicable: ${hardStop.label}. Active surveillance is contraindicated, so surveillance upgrade probability is not the relevant clinical question. See ${hardStop.source}.`,
+        suppressedBy: hardStop.id,
+      },
+
+      // ── Model provenance (non-clinical metadata) ──
+      engineVersion:   ENGINE_VERSION,
+      modelProvenance: MODEL_PROVENANCE,
+      assessedAt:      new Date().toISOString(),
     }
   }
 
@@ -1645,10 +1857,14 @@ export function runAssessment(inputs) {
     psa:             inputs.psa,
     maxCorePercent:  inputs.maxCorePercent,
     psad:            basicResult.psad,
-    abutment:        inputs.abutment,
+    // Normalise the two conventions (form strings vs. uploaded-JSON booleans)
+    // to a single 'yes'/'no' before the monitoring sub-model sees them, so an
+    // uploaded record with hasECE: true raises the same feature as a form entry
+    // of ece: 'yes'.
+    abutment:        isYes(inputs.abutment,     inputs.hasAbutment)     ? 'yes' : 'no',
     pirads:          inputs.pirads,
-    ece:             inputs.ece,
-    broadContact:    inputs.broadContact,
+    ece:             isYes(inputs.ece,          inputs.hasECE)          ? 'yes' : 'no',
+    broadContact:    isYes(inputs.broadContact, inputs.hasBroadContact) ? 'yes' : 'no',
     age:             inputs.age,
     psmaFinding:     inputs.psmaFinding,
     psaVelocity:     inputs.psaVelocity,
@@ -1722,5 +1938,76 @@ export function runAssessment(inputs) {
 
     // ── Layer 3: Personalized logistic regression risk ──
     upgradeRisk: calcUpgradeRisk(inputs),
+
+    // ── Model provenance (non-clinical metadata) ──
+    engineVersion:   ENGINE_VERSION,
+    modelProvenance: MODEL_PROVENANCE,
+    assessedAt:      new Date().toISOString(),
   }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// READ-ONLY BENCHMARK ACCESSOR (additive — no clinical logic)
+// Exposes a defensive, frozen copy of the local N=1,213 cohort figures for the
+// national-benchmark / equity-audit views. Never consumed by tier assignment,
+// scoring, or recommendation logic.
+// ═══════════════════════════════════════════════════════════════════════════════
+
+/** Wilson score interval for a binomial proportion. Returns [lo, hi] as fractions. */
+function wilsonInterval(successes, n, z = 1.96) {
+  if (!n || n <= 0) return [0, 0]
+  const p = successes / n
+  const d = 1 + (z * z) / n
+  const center = p + (z * z) / (2 * n)
+  const margin = z * Math.sqrt((p * (1 - p)) / n + (z * z) / (4 * n * n))
+  return [Math.max(0, (center - margin) / d), Math.min(1, (center + margin) / d)]
+}
+
+/**
+ * getLocalCohortSnapshot() — read-only view of COHORT_CALIBRATION for the
+ * national-benchmark and equity-audit components.
+ *
+ * Race-stratified rates are returned WITH N and a 95% Wilson interval, and are
+ * explicitly flagged `riskAdjustmentUse: false`. They are observational cohort
+ * context only and must never be used to modify a tier or recommendation.
+ */
+export function getLocalCohortSnapshot() {
+  const C = COHORT_CALIBRATION
+  const raceRows = [
+    { key: 'caucasian',        label: 'White / Caucasian',        ...C.race.caucasian },
+    { key: 'african_american', label: 'Black / African American', ...C.race.african_american },
+    { key: 'other',            label: 'Other / not recorded',     ...C.race.other },
+  ].map(r => {
+    const upgraded = Math.round(r.upgrade_rate * r.n)
+    const [lo, hi] = wilsonInterval(upgraded, r.n)
+    return {
+      key: r.key,
+      label: r.label,
+      n: r.n,
+      upgradeRate: r.upgrade_rate,
+      ciLow: lo,
+      ciHigh: hi,
+      ciLabel: `${(lo * 100).toFixed(1)}–${(hi * 100).toFixed(1)}%`,
+    }
+  })
+
+  return Object.freeze({
+    source: 'Mount Sinai Tewari Active Surveillance Program',
+    n: C.overview.n,
+    overallUpgradeRate: C.overview.overall_upgrade_rate,
+    currentlyInAS: C.intervention.currently_in_as,
+    currentlyInASRate: C.intervention.currently_in_as_rate,
+    exitedWithoutUpgrade: C.intervention.progressed_anxiety_preference,
+    exitedWithoutUpgradeRate: C.intervention.progressed_anxiety_rate,
+    byGradeGroup: {
+      1: { n: C.by_ggg[1].n, upgradeRate: C.by_ggg[1].upgrade_rate },
+      2: { n: C.by_ggg[2].n, upgradeRate: C.by_ggg[2].upgrade_rate },
+    },
+    race: Object.freeze({
+      rows: raceRows,
+      riskAdjustmentUse: false,
+      disclaimer:
+        'Observational cohort context only. Sample sizes are small and the confidence intervals overlap substantially; race is not an input to any risk tier, score, or recommendation in this tool.',
+    }),
+  })
 }
