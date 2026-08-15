@@ -1741,3 +1741,69 @@ export function runAssessment(inputs) {
     assessedAt:      new Date().toISOString(),
   }
 }
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// READ-ONLY BENCHMARK ACCESSOR (additive — no clinical logic)
+// Exposes a defensive, frozen copy of the local N=1,213 cohort figures for the
+// national-benchmark / equity-audit views. Never consumed by tier assignment,
+// scoring, or recommendation logic.
+// ═══════════════════════════════════════════════════════════════════════════════
+
+/** Wilson score interval for a binomial proportion. Returns [lo, hi] as fractions. */
+function wilsonInterval(successes, n, z = 1.96) {
+  if (!n || n <= 0) return [0, 0]
+  const p = successes / n
+  const d = 1 + (z * z) / n
+  const center = p + (z * z) / (2 * n)
+  const margin = z * Math.sqrt((p * (1 - p)) / n + (z * z) / (4 * n * n))
+  return [Math.max(0, (center - margin) / d), Math.min(1, (center + margin) / d)]
+}
+
+/**
+ * getLocalCohortSnapshot() — read-only view of COHORT_CALIBRATION for the
+ * national-benchmark and equity-audit components.
+ *
+ * Race-stratified rates are returned WITH N and a 95% Wilson interval, and are
+ * explicitly flagged `riskAdjustmentUse: false`. They are observational cohort
+ * context only and must never be used to modify a tier or recommendation.
+ */
+export function getLocalCohortSnapshot() {
+  const C = COHORT_CALIBRATION
+  const raceRows = [
+    { key: 'caucasian',        label: 'White / Caucasian',        ...C.race.caucasian },
+    { key: 'african_american', label: 'Black / African American', ...C.race.african_american },
+    { key: 'other',            label: 'Other / not recorded',     ...C.race.other },
+  ].map(r => {
+    const upgraded = Math.round(r.upgrade_rate * r.n)
+    const [lo, hi] = wilsonInterval(upgraded, r.n)
+    return {
+      key: r.key,
+      label: r.label,
+      n: r.n,
+      upgradeRate: r.upgrade_rate,
+      ciLow: lo,
+      ciHigh: hi,
+      ciLabel: `${(lo * 100).toFixed(1)}–${(hi * 100).toFixed(1)}%`,
+    }
+  })
+
+  return Object.freeze({
+    source: 'Mount Sinai Tewari Active Surveillance Program',
+    n: C.overview.n,
+    overallUpgradeRate: C.overview.overall_upgrade_rate,
+    currentlyInAS: C.intervention.currently_in_as,
+    currentlyInASRate: C.intervention.currently_in_as_rate,
+    exitedWithoutUpgrade: C.intervention.progressed_anxiety_preference,
+    exitedWithoutUpgradeRate: C.intervention.progressed_anxiety_rate,
+    byGradeGroup: {
+      1: { n: C.by_ggg[1].n, upgradeRate: C.by_ggg[1].upgrade_rate },
+      2: { n: C.by_ggg[2].n, upgradeRate: C.by_ggg[2].upgrade_rate },
+    },
+    race: Object.freeze({
+      rows: raceRows,
+      riskAdjustmentUse: false,
+      disclaimer:
+        'Observational cohort context only. Sample sizes are small and the confidence intervals overlap substantially; race is not an input to any risk tier, score, or recommendation in this tool.',
+    }),
+  })
+}
