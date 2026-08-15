@@ -7,6 +7,8 @@ import ProgramHeaderBar from './components/ProgramHeaderBar.js'
 import ProgramDisclaimerFooter from './components/ProgramDisclaimerFooter.js'
 import ClinicalCalculator from './components/ClinicalCalculator.js'
 import BatchCalculator from './components/BatchCalculator.js'
+import CohortBenchmark from './components/CohortBenchmark.js'
+import EquityAudit from './components/EquityAudit.js'
 import './index.css'
 
 const e = React.createElement
@@ -83,6 +85,14 @@ function ClinicianShell({ onChangeRole, epsaPrefill }) {
           ),
           e('div', { style: { display: toolMode === 'batch' ? 'block' : 'none' }, className: 'min-h-[calc(100vh-1px)] bg-sinai-page' },
             e(BatchCalculator, null)
+          ),
+          // Practice-level views. Deliberately not in the per-patient result path —
+          // these audit a practice's own patterns, not an individual's risk.
+          e('div', { style: { display: toolMode === 'benchmarks' ? 'block' : 'none' }, className: 'min-h-[calc(100vh-1px)] bg-sinai-page' },
+            e('div', { className: 'max-w-3xl mx-auto px-4 py-6 space-y-6' },
+              e(CohortBenchmark, null),
+              e(EquityAudit, null)
+            )
           )
         ),
     e(ProgramDisclaimerFooter)

@@ -10,6 +10,8 @@ import React, { useState, useEffect } from 'react'
 import PatientForm from '../PatientForm.js'
 import PatientResults from '../PatientResults.js'
 import { runAssessment } from '../asEngine.js'
+import { loadStore, getActiveRecord } from '../patientRecord.js'
+import { deriveEngineInputsFromRecord } from '../progressionEngine.js'
 import { ENGINE_VERSION, MODEL_PROVENANCE, COHORT } from '../modelVersion.js'
 import { appendAuditRecord } from '../auditLog.js'
 
@@ -25,6 +27,32 @@ export default function ClinicalCalculator({ onBack, epsaPrefill, onAssessmentRu
   const [uploadNotice,      setUploadNotice]      = useState('')
   const [epsaBannerDismissed, setEpsaBannerDismissed] = useState(false)
   const [formKey,           setFormKey]           = useState(0)
+  const [derivedKinetics,   setDerivedKinetics]   = useState(null)
+
+  // ── Derived PSA kinetics from the longitudinal record ──────────────────────
+  // psaVelocity / psaDoublingTime were previously hand-typed. When a patient
+  // record with enough PSA history exists, compute them instead. Derivation
+  // returns null with a reason for degenerate series (too few points, flat or
+  // declining PSA) — in that case nothing is pre-filled and the clinician can
+  // still enter values manually.
+  useEffect(() => {
+    if (epsaPrefill) return // ePSA handoff owns the pre-fill in that path
+    try {
+      const record = getActiveRecord(loadStore())
+      if (!record) return
+      const d = deriveEngineInputsFromRecord(record)
+      if (d.psaVelocity == null && d.psaDoublingTime == null) return
+      setDerivedKinetics(d)
+      setInputs(prev => ({
+        ...(prev || {}),
+        ...(d.psaVelocity    != null ? { psaVelocity:    d.psaVelocity }    : {}),
+        ...(d.psaDoublingTime != null ? { psaDoublingTime: d.psaDoublingTime } : {}),
+      }))
+      setFormKey(k => k + 1)
+    } catch (_) {
+      // A malformed record must never block the calculator.
+    }
+  }, [epsaPrefill])
 
   // ── URL-param ePSA pre-fill ────────────────────────────────────────────────
   useEffect(() => {
@@ -383,6 +411,25 @@ export default function ClinicalCalculator({ onBack, epsaPrefill, onAssessmentRu
         borderRadius: 8, fontSize: 12, color: '#166534', marginBottom: 14,
       },
     }, uploadNotice),
+
+    // Derived-kinetics notice — the clinician must be able to tell a computed
+    // value from one they typed, and see what it was computed from.
+    view === 'form' && derivedKinetics && e('div', {
+      style: {
+        padding: '8px 12px', background: '#eff6ff', border: '1px solid #bfdbfe',
+        borderRadius: 8, fontSize: 12, color: '#1e40af', marginBottom: 14,
+      },
+    },
+      e('span', { style: { fontWeight: 700 } }, 'PSA kinetics derived from patient record · '),
+      derivedKinetics.psaVelocity != null
+        ? `velocity ${derivedKinetics.psaVelocity.toFixed(2)} ng/mL/yr`
+        : `velocity not derivable (${derivedKinetics.psaVelocityReason})`,
+      ' · ',
+      derivedKinetics.psaDoublingTime != null
+        ? `doubling time ${derivedKinetics.psaDoublingTime.toFixed(1)} yr`
+        : `doubling time not derivable (${derivedKinetics.psaDoublingTimeReason})`,
+      e('span', { style: { color: '#3b82f6' } }, ' — override in the form if needed.')
+    ),
 
     // Error
     uploadError && e('div', {
