@@ -12,14 +12,26 @@
  */
 import AS_OVERVIEW_KNOWLEDGE from './data/active_surveillance_overview_knowledge.txt?raw'
 import { resolveLocalEducationAnswer } from './patientAnswerResolver.js'
+import { sanitizeOutboundBody } from './promptSanitizer.js'
 
 /**
- * Non-secret, build-time-configurable proxy endpoint. Same-origin by default
- * (e.g. `/api/assistant`), but an absolute URL is allowed for a separately
- * deployed worker. Empty/unset => live assistant disabled.
+ * Deployed assistant proxy. Non-secret URL — it is a location, not a
+ * credential. Overridable at build time via VITE_ASSISTANT_ENDPOINT (set it to
+ * an empty string to ship with the live assistant disabled).
  */
+export const DEFAULT_ASSISTANT_ENDPOINT =
+  'https://epsa-gemini-proxy.e-psa.workers.dev/'
+
+// NOTE: use STATIC member access (`import.meta.env.VITE_X`), never optional
+// chaining (`import.meta.env?.VITE_X`). Optional chaining defeats Vite's
+// compile-time replacement, so Vite falls back to inlining the ENTIRE env
+// object — which would drag every other VITE_* value, including any stray
+// VITE_GEMINI_API_KEY, straight into the public bundle. Verified: see the
+// dist grep in the README.
+const CONFIGURED_ENDPOINT = import.meta.env.VITE_ASSISTANT_ENDPOINT
+
 const ASSISTANT_ENDPOINT = String(
-  import.meta.env?.VITE_ASSISTANT_ENDPOINT ?? ''
+  CONFIGURED_ENDPOINT === undefined ? DEFAULT_ASSISTANT_ENDPOINT : CONFIGURED_ENDPOINT
 ).trim()
 
 /** True when a live assistant endpoint is configured for this build. */
@@ -228,6 +240,7 @@ export async function answerPatientEducationQuestion(question, opts) {
     structuredQa = [],
     skipPii = false,
     skipLocal = false,
+    clinicalContext = null,
   } = opts
   const trimmed = String(question || '').trim()
   if (!skipPii) {
@@ -258,7 +271,7 @@ export async function answerPatientEducationQuestion(question, opts) {
     return { text: getFallbackAnswer(trimmed), usedGemini: false, source: 'fallback' }
   }
 
-  const body = {
+  const rawBody = {
     systemInstruction: {
       parts: [{ text: buildSystemInstruction() }],
     },
@@ -268,6 +281,12 @@ export async function answerPatientEducationQuestion(question, opts) {
       maxOutputTokens: 1200,
     },
   }
+
+  // SINGLE CHOKE POINT. This is the only place in the app that sends a request
+  // to the assistant proxy, so every outbound prompt — the new question and all
+  // replayed history turns — passes through the sanitizer here. Do not add a
+  // second fetch site; add to this one.
+  const { body } = sanitizeOutboundBody(rawBody, clinicalContext)
 
   let res
   let data

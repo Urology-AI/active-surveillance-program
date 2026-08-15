@@ -106,19 +106,40 @@ credential.
 
 ```
 browser (patientGeminiService.js)
-   │  POST { systemInstruction, contents, generationConfig }
+   │  1. promptSanitizer.js scrubs the outbound payload
+   │  2. POST { systemInstruction, contents, generationConfig }
    ▼
-assistant proxy  (server/assistant-proxy.js — Cloudflare Worker)
-   │  adds GEMINI_API_KEY from an encrypted server secret
+epsa-gemini-proxy  (existing Cloudflare Worker, deployed separately)
+   │  adds the Gemini API key from a server-side secret
    ▼
 Google Generative Language API
 ```
 
-The client is configured with `VITE_ASSISTANT_ENDPOINT` — a **non-secret URL**
-(e.g. `/api/assistant`). If it is unset, the live assistant is disabled and the
-app degrades gracefully: the handout search and guideline-topic answers still
-work, and the chat status bar reads "AI assistant offline — handout & topics
-only".
+The proxy is an **existing, separately deployed Worker** shared with the ePSA
+tool:
+
+```
+https://epsa-gemini-proxy.e-psa.workers.dev/
+```
+
+This repo does not contain the Worker's source and does not deploy it.
+
+> **Unresolved: the Worker's request path.** Probing the deployed Worker,
+> every path tried — including `/`, `/api`, `/chat`, `/generate`, `/assistant`,
+> `/api/gemini`, and `/v1beta/models/gemini-2.5-flash:generateContent` — returns
+> `HTTP 404` with body `{"error":"Not found"}` for both GET and POST. That JSON
+> body is the Worker's own (not Cloudflare's edge 404), so the Worker is live
+> and routing; the correct path is simply not guessable from outside. Until the
+> path and body schema are confirmed from the Worker's source, the default
+> endpoint above will 404 and the client will fall back to handout/topic
+> answers. Set `VITE_ASSISTANT_ENDPOINT` to the full correct URL once known.
+
+The URL is a **non-secret location**, not a credential. It is the built-in
+default, so the assistant works with no `.env` at all. Override it by setting
+`VITE_ASSISTANT_ENDPOINT` at build time, or set it to the empty string to ship
+with the live assistant disabled — the app then degrades gracefully: handout
+search and guideline-topic answers still work, and the chat status bar reads
+"AI assistant offline — handout & topics only".
 
 ### Why the previous approach was unsafe
 
@@ -137,23 +158,44 @@ Vite `define`, then send it from the browser as a URL query parameter.
   audit logging, or a Business Associate Agreement — all prerequisites for the
   HIPAA / SaMD posture this project targets.
 
-Anyone who deployed a build containing that key should treat it as **publicly
-disclosed and rotate it** in Google AI Studio / Cloud Console. Removing the code
-does not un-publish a key that was already in a shipped bundle.
+Any key present in a previously shipped bundle should be considered publicly
+disclosed; removing the code does not un-publish it.
 
-### Deploying the proxy
+## Outbound prompt sanitization (PHI)
 
-Full instructions, including secret setup and same-origin vs. cross-origin
-routing, are in [`server/README.md`](server/README.md). Short version:
+Because the proxy's upstream is not BAA-covered, `src/promptSanitizer.js` is the
+control that decides what may leave the browser. It runs at the **single choke
+point** in `patientGeminiService.js` — there is exactly one `fetch()` in `src/`,
+and it is downstream of the sanitizer, so no call path bypasses it.
 
-```bash
-cd server
-npx wrangler secret put GEMINI_API_KEY   # encrypted, server-side only
-npx wrangler deploy
-```
+Two mechanisms:
 
-Then build the app with `VITE_ASSISTANT_ENDPOINT` pointing at the deployed
-route.
+1. **Allowlist construction (primary).** Structured clinical context is built
+   only from an explicit allowlist of non-identifying variables (GGG, PSA, PSAD,
+   prostate volume, PI-RADS, core counts, max core %, genomic scores, PSA
+   velocity / doubling time, ...). Anything not on the list is dropped and
+   reported, so a new identifying field added upstream fails closed. Ages over
+   89 are bucketed to `"90+"` per HIPAA Safe Harbor, and exact dates are never
+   passed — only relative intervals such as `monthsSinceDiagnosis`.
+2. **Free-text backstop (secondary).** Patient chat is free text by nature, so
+   that path cannot be removed. Every turn — including replayed history, not
+   just the newest message — is scrubbed for MRN-like tokens, SSNs, phones,
+   emails, street addresses, long digit runs, and dates.
+
+In development, dropped fields and fired redaction rules are logged via
+`console.warn` so drift is noticed.
+
+**What this guarantees:** no identifying field is ever *constructed* into the
+outbound payload.
+
+**What it does not guarantee:** that free text is free of PHI. Pattern matching
+cannot catch names — `my name is X` is caught by a phrase rule, but `X here, my
+PSA is 6` is not, and no regex will reliably catch it. This is a blocklist, and
+blocklists leak. `src/__tests__/promptSanitizer.test.js` asserts this gap
+explicitly rather than leaving it implied.
+
+This is **not** a compliance control and does not make the pipeline "HIPAA
+compliant". It reduces accidental disclosure.
 
 ### Required before any real PHI
 
@@ -163,9 +205,33 @@ route.
 > this path, the proxy's upstream must be repointed at a **BAA-covered
 > endpoint** (e.g. Vertex AI under a signed Google Cloud BAA, or another covered
 > vendor), and the deployment must add authentication, access controls, and
-> audit logging. The client-side PII filters in
-> `src/patientGeminiService.js` reduce accidental disclosure; they are not a
-> compliance control.
+> audit logging. The client-side sanitizer described above reduces accidental
+> disclosure; it is not a compliance control.
+
+### Proxy origin restriction (to be applied on the Worker)
+
+The Worker should accept requests only from known origins. As deployed it
+returns **no `Access-Control-Allow-Origin` header at all** — verified with both
+a legitimate origin and `https://evil.example`, on `OPTIONS` and `POST`; both
+got an identical bare 404 — so the allowlist still needs to be added there.
+Without it the browser fetch will fail on CORS even once the path is correct.
+Required origins:
+
+| Origin | Purpose |
+|---|---|
+| `https://as.millionstrongmen.com` | this AS tool (from `public/CNAME`) |
+| `http://localhost:5173` | Vite dev server |
+| *ePSA tool origin* | **user must confirm** — not discoverable from this repo |
+
+The Worker must echo the request `Origin` **only when it is on the allowlist**,
+send `Vary: Origin`, answer the `OPTIONS` preflight with
+`Access-Control-Allow-Methods: POST, OPTIONS` and
+`Access-Control-Allow-Headers: Content-Type`, and reject disallowed origins by
+omitting the header (or returning 403).
+
+Note that `Origin` is only enforced by browsers and is trivially forged by curl
+or any script, so this restricts other *websites*, not determined abuse; it is
+not authentication.
 
 ## Access gating (what it is and is not)
 
