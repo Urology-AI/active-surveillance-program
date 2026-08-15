@@ -83,9 +83,10 @@ Ongoing monitoring for patients formally enrolled in active surveillance.
 # Install dependencies
 npm install
 
-# Optional: set access password via env (defaults to dev password if unset)
+# Optional: point the app at a deployed assistant proxy (see below).
+# Everything in .env is public — no secrets belong here.
 cp .env.example .env
-# Edit .env and set VITE_APP_PASSWORD
+# Edit .env and set VITE_ASSISTANT_ENDPOINT
 
 # Run development server
 npm run dev
@@ -97,9 +98,94 @@ npm run build
 npm run preview
 ```
 
+## AI assistant architecture
+
+The patient-facing education chat is optional. When enabled, it calls a
+**server-side proxy** that holds the model API key; the browser never sees a
+credential.
+
+```
+browser (patientGeminiService.js)
+   │  POST { systemInstruction, contents, generationConfig }
+   ▼
+assistant proxy  (server/assistant-proxy.js — Cloudflare Worker)
+   │  adds GEMINI_API_KEY from an encrypted server secret
+   ▼
+Google Generative Language API
+```
+
+The client is configured with `VITE_ASSISTANT_ENDPOINT` — a **non-secret URL**
+(e.g. `/api/assistant`). If it is unset, the live assistant is disabled and the
+app degrades gracefully: the handout search and guideline-topic answers still
+work, and the chat status bar reads "AI assistant offline — handout & topics
+only".
+
+### Why the previous approach was unsafe
+
+The app used to read `VITE_GEMINI_API_KEY` and inline it into the bundle via a
+Vite `define`, then send it from the browser as a URL query parameter.
+
+- **Vite `define` and all `VITE_*` variables are compile-time inlining, not
+  secret storage.** The key shipped as a plain string literal in the public
+  JavaScript on GitHub Pages, extractable by anyone who opened DevTools or
+  fetched the JS file — no reverse engineering required. Referrer restrictions
+  on the key are trivially spoofable and are not a substitute.
+- **The key was in a query string**, so it also landed in proxy logs, browser
+  history, and any intermediary that records URLs.
+- **Patient context was posted directly from the browser to Google**, leaving
+  no server-side boundary at which to enforce authentication, rate limiting,
+  audit logging, or a Business Associate Agreement — all prerequisites for the
+  HIPAA / SaMD posture this project targets.
+
+Anyone who deployed a build containing that key should treat it as **publicly
+disclosed and rotate it** in Google AI Studio / Cloud Console. Removing the code
+does not un-publish a key that was already in a shipped bundle.
+
+### Deploying the proxy
+
+Full instructions, including secret setup and same-origin vs. cross-origin
+routing, are in [`server/README.md`](server/README.md). Short version:
+
+```bash
+cd server
+npx wrangler secret put GEMINI_API_KEY   # encrypted, server-side only
+npx wrangler deploy
+```
+
+Then build the app with `VITE_ASSISTANT_ENDPOINT` pointing at the deployed
+route.
+
+### Required before any real PHI
+
+> **The current configuration is for de-identified, general patient education
+> only.** Google's public Generative Language API is not covered by a Business
+> Associate Agreement. Before any protected health information flows through
+> this path, the proxy's upstream must be repointed at a **BAA-covered
+> endpoint** (e.g. Vertex AI under a signed Google Cloud BAA, or another covered
+> vendor), and the deployment must add authentication, access controls, and
+> audit logging. The client-side PII filters in
+> `src/patientGeminiService.js` reduce accidental disclosure; they are not a
+> compliance control.
+
+## Access gating (what it is and is not)
+
+The app presents **acknowledgment gates** — a clinician acknowledgment before
+the pathway/AS tool and a patient acknowledgment before the education chat.
+These are **disclaimers, not authentication**. They record that the user has
+read the educational-use notice; they do not verify identity, do not restrict
+access, and must never be relied on to protect PHI. All content behind them is
+served publicly.
+
+If real access control is ever needed, it must be enforced server-side (SSO or
+an identity-aware proxy in front of the deployment), not in the client bundle.
+
 ## Deployment
 
 This project is automatically deployed to GitHub Pages via GitHub Actions when changes are pushed to the `master` branch.
+
+The Pages build carries **no secrets**. If the AI assistant is wanted on the
+Pages deployment, set `VITE_ASSISTANT_ENDPOINT` (a public URL) in the workflow's
+build env and deploy the proxy separately per `server/README.md`.
 
 ## License
 

@@ -2,14 +2,33 @@
  * Patient education answers via Google Gemini, grounded in the institutional
  * Active Surveillance overview (OCR text) plus explicit EHR-style guardrails.
  *
- * Set VITE_GEMINI_API_KEY in .env (see .env.example). Without a key, callers
- * should use the local fallback matcher.
+ * The browser NEVER holds a model API key. All model calls go to a same-origin
+ * (or explicitly configured) proxy that holds the key server-side — see
+ * `server/` and the README "AI assistant architecture" section.
+ *
+ * Set VITE_ASSISTANT_ENDPOINT in .env (see .env.example). It is a non-secret
+ * URL/path, e.g. `/api/assistant`. When it is unset, the live assistant is
+ * disabled and callers fall back to the local handout/topic matcher.
  */
 import AS_OVERVIEW_KNOWLEDGE from './data/active_surveillance_overview_knowledge.txt?raw'
 import { resolveLocalEducationAnswer } from './patientAnswerResolver.js'
 
-// gemini-2.0-flash often shows limit: 0 on the free tier; 2.5 Flash matches current AI Studio quotas.
-const GEMINI_MODEL = 'gemini-2.5-flash'
+/**
+ * Non-secret, build-time-configurable proxy endpoint. Same-origin by default
+ * (e.g. `/api/assistant`), but an absolute URL is allowed for a separately
+ * deployed worker. Empty/unset => live assistant disabled.
+ */
+const ASSISTANT_ENDPOINT = String(
+  import.meta.env?.VITE_ASSISTANT_ENDPOINT ?? ''
+).trim()
+
+/** True when a live assistant endpoint is configured for this build. */
+export const isAssistantConfigured = ASSISTANT_ENDPOINT.length > 0
+
+/** @returns {string} the configured endpoint, or '' when the assistant is offline. */
+export function getAssistantEndpoint() {
+  return ASSISTANT_ENDPOINT
+}
 
 // ---------------------------------------------------------------------------
 // Topic guardrails — pre-filter applied BEFORE calling the Gemini API.
@@ -233,12 +252,11 @@ export async function answerPatientEducationQuestion(question, opts) {
     }
   }
 
-  const apiKey = __VITE_GEMINI_API_KEY_INJECTED__
-  if (!apiKey) {
+  // No endpoint configured => the live assistant is offline. Handout and
+  // guideline-topic answers above still work; degrade quietly.
+  if (!isAssistantConfigured) {
     return { text: getFallbackAnswer(trimmed), usedGemini: false, source: 'fallback' }
   }
-
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${encodeURIComponent(apiKey)}`
 
   const body = {
     systemInstruction: {
@@ -251,15 +269,27 @@ export async function answerPatientEducationQuestion(question, opts) {
     },
   }
 
-  const res = await fetch(url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
-  })
+  let res
+  let data
+  try {
+    res = await fetch(ASSISTANT_ENDPOINT, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    })
+    data = await res.json().catch(() => ({}))
+  } catch (networkErr) {
+    return {
+      text: `${getFallbackAnswer(trimmed)}\n\n—\n_(The live assistant was unavailable: ${
+        networkErr?.message || 'network error'
+      }.)_`,
+      usedGemini: false,
+      source: 'fallback',
+    }
+  }
 
-  const data = await res.json().catch(() => ({}))
   if (!res.ok) {
-    const err = data?.error?.message || res.statusText || 'Gemini request failed'
+    const err = data?.error?.message || res.statusText || 'Assistant request failed'
     return {
       text: `${getFallbackAnswer(trimmed)}\n\n—\n_(The live assistant was unavailable: ${err}.)_`,
       usedGemini: false,

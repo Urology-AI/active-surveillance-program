@@ -4,7 +4,11 @@ import PSATracker from './components/PSATracker.js'
 import VisitPrep from './components/VisitPrep.js'
 import PatientJourney from './components/PatientJourney.js'
 import { Activity, BookOpen } from 'lucide-react'
-import { answerPatientEducationQuestion, checkPatientMessageForPii } from './patientGeminiService.js'
+import {
+  answerPatientEducationQuestion,
+  checkPatientMessageForPii,
+  isAssistantConfigured,
+} from './patientGeminiService.js'
 import {
   findStructuredQaAnswer,
   GENERIC_FALLBACK_MESSAGE,
@@ -14,9 +18,9 @@ import {
 const e = React.createElement
 const PATIENT_CONSENT_KEY = 'as_patient_consent_accepted'
 
-const GEMINI_KEY_CONFIGURED =
-  typeof __VITE_GEMINI_API_KEY_INJECTED__ === 'string' &&
-  __VITE_GEMINI_API_KEY_INJECTED__.trim().length > 0
+// True when this build points at a server-side assistant proxy. No API key is
+// ever present in the browser — see src/patientGeminiService.js.
+const GEMINI_KEY_CONFIGURED = isAssistantConfigured
 
 const LOAD_CHECK   = 'Checking your message…'
 const LOAD_HANDOUT = 'Searching patient handout & guideline topics…'
@@ -695,7 +699,7 @@ export default function PatientApp({ onBack }) {
         }),
         e('span', {
           style: { fontSize: 10, color: GEMINI_KEY_CONFIGURED ? 'rgba(52,211,153,0.95)' : 'rgba(255,255,255,0.45)' },
-        }, GEMINI_KEY_CONFIGURED ? 'Gemini AI connected' : 'AI assistant offline — handout & topics only')
+        }, GEMINI_KEY_CONFIGURED ? 'AI assistant connected' : 'AI assistant offline — handout & topics only')
       )
     ),
 
