@@ -2,14 +2,45 @@
  * Patient education answers via Google Gemini, grounded in the institutional
  * Active Surveillance overview (OCR text) plus explicit EHR-style guardrails.
  *
- * Set VITE_GEMINI_API_KEY in .env (see .env.example). Without a key, callers
- * should use the local fallback matcher.
+ * The browser NEVER holds a model API key. All model calls go to a same-origin
+ * (or explicitly configured) proxy that holds the key server-side — see
+ * `server/` and the README "AI assistant architecture" section.
+ *
+ * Set VITE_ASSISTANT_ENDPOINT in .env (see .env.example). It is a non-secret
+ * URL/path, e.g. `/api/assistant`. When it is unset, the live assistant is
+ * disabled and callers fall back to the local handout/topic matcher.
  */
 import AS_OVERVIEW_KNOWLEDGE from './data/active_surveillance_overview_knowledge.txt?raw'
 import { resolveLocalEducationAnswer } from './patientAnswerResolver.js'
+import { sanitizeOutboundBody } from './promptSanitizer.js'
 
-// gemini-2.0-flash often shows limit: 0 on the free tier; 2.5 Flash matches current AI Studio quotas.
-const GEMINI_MODEL = 'gemini-2.5-flash'
+/**
+ * Deployed assistant proxy. Non-secret URL — it is a location, not a
+ * credential. Overridable at build time via VITE_ASSISTANT_ENDPOINT (set it to
+ * an empty string to ship with the live assistant disabled).
+ */
+export const DEFAULT_ASSISTANT_ENDPOINT =
+  'https://epsa-gemini-proxy.e-psa.workers.dev/'
+
+// NOTE: use STATIC member access (`import.meta.env.VITE_X`), never optional
+// chaining (`import.meta.env?.VITE_X`). Optional chaining defeats Vite's
+// compile-time replacement, so Vite falls back to inlining the ENTIRE env
+// object — which would drag every other VITE_* value, including any stray
+// VITE_GEMINI_API_KEY, straight into the public bundle. Verified: see the
+// dist grep in the README.
+const CONFIGURED_ENDPOINT = import.meta.env.VITE_ASSISTANT_ENDPOINT
+
+const ASSISTANT_ENDPOINT = String(
+  CONFIGURED_ENDPOINT === undefined ? DEFAULT_ASSISTANT_ENDPOINT : CONFIGURED_ENDPOINT
+).trim()
+
+/** True when a live assistant endpoint is configured for this build. */
+export const isAssistantConfigured = ASSISTANT_ENDPOINT.length > 0
+
+/** @returns {string} the configured endpoint, or '' when the assistant is offline. */
+export function getAssistantEndpoint() {
+  return ASSISTANT_ENDPOINT
+}
 
 // ---------------------------------------------------------------------------
 // Topic guardrails — pre-filter applied BEFORE calling the Gemini API.
@@ -209,6 +240,7 @@ export async function answerPatientEducationQuestion(question, opts) {
     structuredQa = [],
     skipPii = false,
     skipLocal = false,
+    clinicalContext = null,
   } = opts
   const trimmed = String(question || '').trim()
   if (!skipPii) {
@@ -233,14 +265,13 @@ export async function answerPatientEducationQuestion(question, opts) {
     }
   }
 
-  const apiKey = __VITE_GEMINI_API_KEY_INJECTED__
-  if (!apiKey) {
+  // No endpoint configured => the live assistant is offline. Handout and
+  // guideline-topic answers above still work; degrade quietly.
+  if (!isAssistantConfigured) {
     return { text: getFallbackAnswer(trimmed), usedGemini: false, source: 'fallback' }
   }
 
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${encodeURIComponent(apiKey)}`
-
-  const body = {
+  const rawBody = {
     systemInstruction: {
       parts: [{ text: buildSystemInstruction() }],
     },
@@ -251,15 +282,33 @@ export async function answerPatientEducationQuestion(question, opts) {
     },
   }
 
-  const res = await fetch(url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
-  })
+  // SINGLE CHOKE POINT. This is the only place in the app that sends a request
+  // to the assistant proxy, so every outbound prompt — the new question and all
+  // replayed history turns — passes through the sanitizer here. Do not add a
+  // second fetch site; add to this one.
+  const { body } = sanitizeOutboundBody(rawBody, clinicalContext)
 
-  const data = await res.json().catch(() => ({}))
+  let res
+  let data
+  try {
+    res = await fetch(ASSISTANT_ENDPOINT, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    })
+    data = await res.json().catch(() => ({}))
+  } catch (networkErr) {
+    return {
+      text: `${getFallbackAnswer(trimmed)}\n\n—\n_(The live assistant was unavailable: ${
+        networkErr?.message || 'network error'
+      }.)_`,
+      usedGemini: false,
+      source: 'fallback',
+    }
+  }
+
   if (!res.ok) {
-    const err = data?.error?.message || res.statusText || 'Gemini request failed'
+    const err = data?.error?.message || res.statusText || 'Assistant request failed'
     return {
       text: `${getFallbackAnswer(trimmed)}\n\n—\n_(The live assistant was unavailable: ${err}.)_`,
       usedGemini: false,
