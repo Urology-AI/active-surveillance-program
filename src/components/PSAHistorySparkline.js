@@ -1,14 +1,33 @@
 import React from 'react'
 import { getPSAHistory } from '../patientSession.js'
+import { loadStore, getActiveRecord, psaSeries } from '../patientRecord.js'
+import { computePSAVelocity, computePSADoublingTime, formatVelocity, formatDoublingTime } from '../derivedMetrics.js'
 
 const e = React.createElement
+
+// PSA values come from the clinic-keyed session first (what this component has
+// always used). If that session has no PSA history, fall back to the
+// longitudinal record so the sparkline still reflects the patient's trajectory.
+function resolveEntries(patientId, limit) {
+  const fromSession = getPSAHistory(patientId, limit)
+  if (fromSession.length >= 2) return { entries: fromSession, source: 'session', full: fromSession }
+  const record = getActiveRecord(loadStore())
+  const series = record ? psaSeries(record) : []
+  if (series.length >= 2) return { entries: series.slice(-limit), source: 'record', full: series }
+  return { entries: fromSession, source: 'session', full: fromSession }
+}
 
 // Simple SVG line sparkline for the last N PSA readings (and PSAD trend if
 // volume was captured), with a dashed reference line at the doubling
 // threshold (2x the earliest plotted PSA value).
 export default function PSAHistorySparkline({ patientId }) {
-  const entries = getPSAHistory(patientId, 3)
+  const resolved = resolveEntries(patientId, 3)
+  const entries = resolved.entries
   if (!patientId || entries.length < 2) return null
+
+  // Derived kinetics over the FULL series (not just the 3 plotted points).
+  const velocity = computePSAVelocity(resolved.full)
+  const doublingTime = computePSADoublingTime(resolved.full)
 
   const W = 320, H = 110
   const padL = 34, padR = 14, padT = 12, padB = 22
@@ -46,7 +65,8 @@ export default function PSAHistorySparkline({ patientId }) {
     style: { background: '#fff', border: '1px solid #e2e8f0', borderRadius: 10, padding: '10px 12px' },
   },
     e('div', { style: { fontSize: 10, fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 6 } },
-      `PSA History — Patient ${patientId}`
+      `PSA History — Patient ${patientId}`,
+      resolved.source === 'record' ? ' · from longitudinal record' : ''
     ),
     e('svg', { width: '100%', viewBox: `0 0 ${W} ${H}`, style: { overflow: 'visible', display: 'block' } },
       // axes
@@ -82,6 +102,16 @@ export default function PSAHistorySparkline({ patientId }) {
     psadSeries && e('div', { style: { marginTop: 6, fontSize: 11, color: '#64748b' } },
       e('span', { style: { fontWeight: 700, color: '#212070' } }, 'PSAD trend: '),
       psadSeries.map(v => v.toFixed(3)).join(' → ')
-    )
+    ),
+    (velocity.value !== null || doublingTime.value !== null) &&
+      e('div', { style: { marginTop: 4, fontSize: 11, color: '#64748b' } },
+        e('span', { style: { fontWeight: 700, color: '#212070' } }, 'Derived: '),
+        [
+          velocity.value !== null ? `velocity ${formatVelocity(velocity)}` : null,
+          doublingTime.value !== null ? `PSADT ${formatDoublingTime(doublingTime)}` : null,
+        ].filter(Boolean).join(' · '),
+        e('span', { style: { color: '#94a3b8' } },
+          ` (${(velocity.value !== null ? velocity.n : doublingTime.n)} values)`)
+      )
   )
 }
