@@ -16,6 +16,7 @@ export default defineConfig({
       // never reach the edge and could not be protected.
       input: {
         main:      resolve(__dirname, 'index.html'),
+        patient:   resolve(__dirname, 'patient/index.html'),
         clinician: resolve(__dirname, 'clinician/index.html'),
       },
     },

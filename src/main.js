@@ -113,9 +113,10 @@ function ClinicianShell({ onChangeRole, epsaPrefill }) {
  */
 function roleFromPath() {
   try {
-    return window.location.pathname.replace(/\/+$/, '').endsWith('/clinician')
-      ? 'clinician'
-      : null
+    const path = window.location.pathname.replace(/\/+$/, '')
+    if (path.endsWith('/clinician')) return 'clinician'
+    if (path.endsWith('/patient'))   return 'patient'
+    return null
   } catch (_) {
     return null
   }
@@ -123,6 +124,7 @@ function roleFromPath() {
 
 
 const CLINICIAN_PATH = '/clinician/'
+const PATIENT_PATH   = '/patient/'
 
 function Root() {
   const [role,        setRole]        = useState(roleFromPath)
@@ -157,13 +159,15 @@ function Root() {
   }
 
   if (role === 'patient') {
-    return e(PatientApp, { onBack: () => setRole(null) })
+    return e(PatientApp, { onBack: () => window.location.assign('/') })
   }
 
+  // Root is the welcome screen. Both roles are real paths, so each selection is
+  // a navigation, not a state flip — /clinician/ can then be gated by Access
+  // while /patient/ and / stay public.
   return e(RoleSelector, {
     onSelectRole: (key) => {
-      if (key === 'clinician') { window.location.assign(CLINICIAN_PATH); return }
-      setRole(key)
+      window.location.assign(key === 'clinician' ? CLINICIAN_PATH : PATIENT_PATH)
     },
   })
 }
