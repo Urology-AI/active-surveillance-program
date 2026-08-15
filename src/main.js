@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react'
 import ReactDOM from 'react-dom/client'
 import App from './App.js'
+import RoleSelector from './RoleSelector.js'
 import PatientApp from './PatientApp.js'
 import ProgramHeaderBar from './components/ProgramHeaderBar.js'
 import ProgramDisclaimerFooter from './components/ProgramDisclaimerFooter.js'
@@ -114,12 +115,14 @@ function roleFromPath() {
   try {
     return window.location.pathname.replace(/\/+$/, '').endsWith('/clinician')
       ? 'clinician'
-      : 'patient'
+      : null
   } catch (_) {
-    return 'patient'
+    return null
   }
 }
 
+
+const CLINICIAN_PATH = '/clinician/'
 
 function Root() {
   const [role,        setRole]        = useState(roleFromPath)
@@ -140,11 +143,12 @@ function Root() {
     } catch (_) {}
   }, [])
 
-  // Role is derived from the URL, never chosen in-page. An in-page role switch
-  // would let anyone reach the clinician UI from the public root document
-  // without ever requesting /clinician/ — which is the path Access gates — so
-  // the gate would protect nothing. Leaving the clinician view therefore
-  // navigates to the public document rather than flipping local state.
+  // The clinician view is only ever reached by loading the /clinician/
+  // document, so the Access gate on that path is what admits the user. The
+  // welcome screen's clinician option NAVIGATES there (a real request) rather
+  // than flipping local state — an in-page switch would hand out the clinician
+  // UI from the public root document without the gated path ever being
+  // requested, making the gate decorative.
   if (role === 'clinician') {
     return e(ClinicianShell, {
       onChangeRole: () => { window.location.assign('/') },
@@ -152,9 +156,16 @@ function Root() {
     })
   }
 
-  // No onBack: the patient view IS the public landing document. Pointing "back"
-  // at the gated clinician path would greet patients with a login prompt.
-  return e(PatientApp, null)
+  if (role === 'patient') {
+    return e(PatientApp, { onBack: () => setRole(null) })
+  }
+
+  return e(RoleSelector, {
+    onSelectRole: (key) => {
+      if (key === 'clinician') { window.location.assign(CLINICIAN_PATH); return }
+      setRole(key)
+    },
+  })
 }
 
 ReactDOM.createRoot(document.getElementById('root')).render(
