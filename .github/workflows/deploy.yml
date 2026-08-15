@@ -37,11 +37,14 @@ jobs:
       - name: Install dependencies
         run: npm ci
       
-      # Vite bakes VITE_* into the client bundle at build time. The repo secret must
-      # be passed here; GitHub does not inject secrets into the shell automatically.
+      # Vite bakes every VITE_* value into the client bundle at build time, so anything
+      # passed here is PUBLIC. Never pass an API key. The Gemini key lives only in the
+      # proxy worker's server-side secret; the client calls the worker by URL.
+      # VITE_ASSISTANT_ENDPOINT is a non-secret URL with a default in the source, so it
+      # is set here only to point a build at a different proxy.
       - name: Build
         env:
-          VITE_GEMINI_API_KEY: ${{ secrets.VITE_GEMINI_API_KEY }}
+          VITE_ASSISTANT_ENDPOINT: ${{ vars.VITE_ASSISTANT_ENDPOINT }}
         run: npm run build
       
       - name: Setup Pages
