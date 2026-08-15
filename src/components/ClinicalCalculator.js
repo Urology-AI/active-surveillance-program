@@ -10,6 +10,8 @@ import React, { useState, useEffect } from 'react'
 import PatientForm from '../PatientForm.js'
 import PatientResults from '../PatientResults.js'
 import { runAssessment } from '../asEngine.js'
+import { ENGINE_VERSION, MODEL_PROVENANCE, COHORT } from '../modelVersion.js'
+import { appendAuditRecord } from '../auditLog.js'
 
 const e = React.createElement
 
@@ -58,6 +60,8 @@ export default function ClinicalCalculator({ onBack, epsaPrefill, onAssessmentRu
       setInputs(formInputs)
       setResults(assessment)
       setView('results')
+      // Append-only local audit record — fails silently, never blocks the flow.
+      appendAuditRecord({ inputs: formInputs, output: assessment, context: 'clinical-calculator' })
       window.scrollTo({ top: 0, behavior: 'smooth' })
       onAssessmentRun?.(formInputs)
     } catch (err) {
@@ -256,6 +260,11 @@ export default function ClinicalCalculator({ onBack, epsaPrefill, onAssessmentRu
       exportType: 'as-clinical-calculator',
       version: EXPORT_VERSION,
       exportedAt: new Date().toISOString(),
+      // ── Model provenance stamp ──
+      engineVersion:   ENGINE_VERSION,
+      cohortDataCut:   COHORT.dataCutDate,
+      cohortDataCutStatus: COHORT.dataCutStatus,
+      modelProvenance: MODEL_PROVENANCE,
       inputs,
       results,
     }

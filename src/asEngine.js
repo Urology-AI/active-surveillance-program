@@ -16,11 +16,18 @@
  * Evidence basis embedded per sub-model below.
  */
 
+import { ENGINE_VERSION, MODEL_PROVENANCE } from './modelVersion.js'
+
 // ═══════════════════════════════════════════════════════════════════════════════
 // LAYER 2 DATA — N=1,213 COHORT CALIBRATION
 // Mount Sinai Tewari AS Program, N=1,213 active surveillance patients
 // Real upgrade event data (GG upgrading on follow-up biopsy)
 // ═══════════════════════════════════════════════════════════════════════════════
+// Model provenance — single source of truth lives in src/modelVersion.js.
+// Re-exported here so consumers of the engine get version + cohort data-cut
+// metadata from the same import as the results.
+export const ENGINE_MODEL_VERSION = ENGINE_VERSION
+
 export const COHORT_CALIBRATION = {
   overview: {
     n: 1213,
@@ -1633,6 +1640,11 @@ export function runAssessment(inputs) {
       outcomesData: null,
       modelValidation: MODEL_VALIDATION,
       upgradeRisk: calcUpgradeRisk(inputs),
+
+      // ── Model provenance (non-clinical metadata) ──
+      engineVersion:   ENGINE_VERSION,
+      modelProvenance: MODEL_PROVENANCE,
+      assessedAt:      new Date().toISOString(),
     }
   }
 
@@ -1722,5 +1734,10 @@ export function runAssessment(inputs) {
 
     // ── Layer 3: Personalized logistic regression risk ──
     upgradeRisk: calcUpgradeRisk(inputs),
+
+    // ── Model provenance (non-clinical metadata) ──
+    engineVersion:   ENGINE_VERSION,
+    modelProvenance: MODEL_PROVENANCE,
+    assessedAt:      new Date().toISOString(),
   }
 }
