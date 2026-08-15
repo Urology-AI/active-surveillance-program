@@ -608,8 +608,11 @@ export default function PatientApp({ onBack }) {
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         },
       },
-        // Back
-        e('button', {
+        // Back — only when there is somewhere to go back to. The patient view
+        // is the public landing document, so by default there is not, and a
+        // dead button (or one pointing at the gated clinician path) would be
+        // worse than none. A spacer keeps the brand mark centred.
+        onBack ? e('button', {
           type: 'button', onClick: onBack,
           style: {
             background: 'transparent', border: 'none',
@@ -623,7 +626,7 @@ export default function PatientApp({ onBack }) {
           },
             e('polyline', { points: '15 18 9 12 15 6' })
           )
-        ),
+        ) : e('div', { style: { width: 13 } }),
         // BrandMark
         e(BrandMark),
         // Right side: text size + Care

@@ -245,6 +245,36 @@ served publicly.
 If real access control is ever needed, it must be enforced server-side (SSO or
 an identity-aware proxy in front of the deployment), not in the client bundle.
 
+### Cloudflare Access, path-scoped (`/clinician/`)
+
+The clinician entry point is a **real document** at `/clinician/index.html`
+(separate Vite entry, see `vite.config.js`), not a client-side route. That is
+what makes it gateable: Cloudflare Access enforces on document requests at the
+edge, so a client-only route would never reach the edge and could not be
+protected. The root document stays public for patients.
+
+Setup:
+
+1. **Proxy the hostname.** `as.millionstrongmen.com` currently CNAMEs to
+   `urology-ai.github.io` **DNS-only** (it resolves to GitHub's
+   `185.199.108–111.153`). Access cannot enforce on an unproxied record — flip
+   it to proxied (orange cloud) in Cloudflare DNS. SSL mode `Full`; GitHub Pages
+   serves a valid certificate.
+2. **Create a self-hosted Access application** for
+   `as.millionstrongmen.com/clinician` (path-scoped).
+3. **Attach the existing reusable policy** — the same policy used by the digital
+   twin app can be reused; it does not need redefining. The *application* is
+   per-hostname/path and does need creating.
+4. Each application has its own **AUD** tag. If the proxy is later set to verify
+   `Cf-Access-Jwt-Assertion`, it must accept this application's AUD.
+
+**What this does and does not protect.** Access gates the `/clinician/` document
+request. The JavaScript bundle is shared with the public root entry and is
+served from `/assets/` — it is public either way, and so is anything compiled
+into it. Path-scoped Access controls *who can load the clinician page*, not
+*who can read the clinician code*. Do not put anything secret in the bundle; the
+same rule that applies to API keys applies here.
+
 ## Deployment
 
 This project is automatically deployed to GitHub Pages via GitHub Actions when changes are pushed to the `master` branch.
