@@ -565,21 +565,34 @@ function checkHardStops(inputs) {
  *  · PI-RADS v2.1: Turkbey B et al., Eur Urol 2019;76(3):340–351
  */
 function calcBasic({ ggg, positiveCores, totalCores, maxCorePercent, psa, prostateVolume, pirads, epsaPreBiopsyTier }) {
+  // NOTE ON DESIGN (evidence audit remediation, see docs/EVIDENCE_AUDIT.md):
+  // this sub-model used to sum invented point magnitudes per factor and derive
+  // a tier from unsourced cut-points (3/20/45). Tested against the real
+  // N=1,213 cohort: that scheme discriminated at AUC 0.538 -- barely above
+  // chance. A published external score (CAPRA) scored 0.500 on this
+  // population, and a gates-only "worst factor wins" design scored 0.489 --
+  // WORSE than the broken points system, because collapsing to the single
+  // worst factor throws away the (weak) signal the sum was at least
+  // partially capturing. None of these combination schemes are good enough
+  // to drive a surveillance-intensity decision.
+  //
+  // The only thing in this file that is actually validated against outcomes
+  // is UPGRADE_RISK_MODEL.fullModel (AUC 0.65, holds under 5-fold CV — see
+  // data/validate_fullmodel_auc.py). So this function no longer produces a
+  // scored tier at all. Each factor is reported against its own cited
+  // guideline/literature threshold for clinician transparency only; none of
+  // it feeds calcCombined. See fullModel's calcUpgradeRisk for the validated
+  // probability.
   const factors = []
-  let score = 0
   const gggNum = Number(ggg)
 
   // GGG — ISUP 2016 (hard stop catches ≥4 before reaching here)
   {
-    const ptsMap   = { 1: 0, 2: 8, 3: 22, 4: 28, 5: 35 }
     const tierMap  = { 1: 'low', 2: 'low', 3: 'intermediate', 4: 'high', 5: 'high' }
     const glossary = { 1: '3+3=6', 2: '3+4=7', 3: '4+3=7', 4: '4+4=8', 5: '9–10' }
-    const pts  = ptsMap[gggNum]
     const tier = tierMap[gggNum]
-    score += pts
     factors.push({
       label: `Grade Group ${gggNum} — Gleason ${glossary[gggNum]}`,
-      points: pts,
       tier,
       basis: gggNum === 1
         ? 'NCCN 2024: AS-eligible. N=1,213 cohort: GG1 upgraded at 26.7% (1,111 patients) — ongoing surveillance biopsies essential.'
@@ -606,21 +619,19 @@ function calcBasic({ ggg, positiveCores, totalCores, maxCorePercent, psa, prosta
     const posCores = Number(positiveCores)
     const ratio = posCores / Number(totalCores)
     const meetsNccnCoreCount = posCores < 3
-    let pts = 0; let tier = 'low'
+    let tier = 'low'
     if (!meetsNccnCoreCount) {
       // Exact fractions, not decimal approximations. The literal 0.33 split
       // clinically identical one-third burdens: 4/12 (0.33333…) landed in the
       // 'intermediate' bucket while 33/100 (0.33) landed in 'low'. `1/3` and
       // `1/2` compare correctly against any ratio that is genuinely one third
       // or one half.
-      if      (ratio > 1 / 2) { pts = 6; tier = 'high' }
-      else if (ratio > 1 / 3) { pts = 3; tier = 'intermediate' }
-      else                    { pts = 1; tier = 'low' }
+      if      (ratio > 1 / 2) { tier = 'high' }
+      else if (ratio > 1 / 3) { tier = 'intermediate' }
+      else                    { tier = 'low' }
     }
-    score += pts
     factors.push({
       label: `Positive cores ${positiveCores}/${totalCores} (${Math.round(ratio * 100)}%)`,
-      points: pts,
       tier,
       basis: meetsNccnCoreCount
         ? `Meets NCCN 2024 very low risk core criterion (< 3 positive cores; ${positiveCores} positive here) · Guideline eligibility gate only — AUC 0.465 in internal validation cohort (not independently discriminatory)`
@@ -634,12 +645,9 @@ function calcBasic({ ggg, positiveCores, totalCores, maxCorePercent, psa, prosta
   // Retained as NCCN eligibility gate only. Weight reduced accordingly.
   if (num(maxCorePercent) != null) {
     const pct  = num(maxCorePercent)
-    const pts  = pct > 50 ? 4 : 0
     const tier = pct > 50 ? 'intermediate' : 'low'
-    score += pts
     factors.push({
       label: `Max core involvement ${pct}%`,
-      points: pts,
       tier,
       basis: pct <= 50
         ? 'Within NCCN 2024 very low risk (≤ 50% per core) · Guideline gate only — AUC 0.504 in internal validation cohort (not discriminatory; selection effect present)'
@@ -663,15 +671,13 @@ function calcBasic({ ggg, positiveCores, totalCores, maxCorePercent, psa, prosta
   let psad = null
   if (psaNumeric != null && volNumeric != null && volNumeric > 0) {
     psad = psaNumeric / volNumeric
-    let pts = 0; let tier = 'low'
-    if      (psad > 0.177) { pts = 12; tier = 'high' }
-    else if (psad > 0.15)  { pts = 5;  tier = 'intermediate' }
-    else if (psad > 0.065) { pts = 0;  tier = 'low' }
-    else                   { pts = -5; tier = 'low' }
-    score += pts
+    let tier = 'low'
+    if      (psad > 0.177) { tier = 'high' }
+    else if (psad > 0.15)  { tier = 'intermediate' }
+    else if (psad > 0.065) { tier = 'low' }
+    else                   { tier = 'low' }
     factors.push({
       label: `PSA Density ${psad.toFixed(3)} ng/mL/cm³`,
-      points: pts,
       tier,
       basis: psad > 0.177
         ? 'Above Kadeer 2025 cutoff (0.177) — tier upgrade rate 34.7% in N=98 GG1 patients (AUC 0.609, N=704 GG1 cohort)'
@@ -683,14 +689,12 @@ function calcBasic({ ggg, positiveCores, totalCores, maxCorePercent, psa, prosta
     })
   } else if (psaNumeric != null) {
     const psaNum = psaNumeric
-    let pts = 0; let tier = 'low'
-    if      (psaNum >= 10) { pts = 10; tier = 'high' }
-    else if (psaNum >= 4)  { pts = 0;  tier = 'intermediate' }
-    else                   { pts = -3; tier = 'low' }
-    score += pts
+    let tier = 'low'
+    if      (psaNum >= 10) { tier = 'high' }
+    else if (psaNum >= 4)  { tier = 'intermediate' }
+    else                   { tier = 'low' }
     factors.push({
       label: `PSA ${psaNum} ng/mL (prostate volume not provided — PSAD unavailable)`,
-      points: pts,
       tier,
       basis: psaNum >= 10
         ? 'Above NCCN 2024 / PRIAS threshold (PSA ≤ 10 ng/mL for AS eligibility)'
@@ -701,22 +705,18 @@ function calcBasic({ ggg, positiveCores, totalCores, maxCorePercent, psa, prosta
   // PI-RADS v2.1 (pirads=0 means no MRI)
   if (pirads != null && Number(pirads) > 0) {
     const p = Number(pirads)
-    const ptsMap  = { 1: -5, 2: -3, 3: 0, 4: 8, 5: 15 }
     const tierMap = { 1: 'low', 2: 'low', 3: 'intermediate', 4: 'high', 5: 'high' }
-    const pts  = ptsMap[p] ?? 0
     const tier = tierMap[p] ?? 'intermediate'
-    score += pts
     factors.push({
       label: `PI-RADS ${p}`,
-      points: pts,
       tier,
       basis: p <= 2
         ? 'PI-RADS v2.1: low probability of clinically significant cancer'
         : p === 3
         ? 'PI-RADS v2.1: equivocal — requires clinical judgment'
         : p === 4
-        ? 'PI-RADS v2.1: high probability of clinically significant cancer. Note: PI-RADS was not an independent predictor of GG upgrade in multivariable analysis (p=0.397) after adjusting for PSAD, GGG, and positive core count (N=781). Retained as a monitoring intensity trigger, not a standalone risk score.'
-        : 'PI-RADS v2.1: very high probability — biopsy/treatment discussion urgently recommended. Note: PI-RADS was not an independent predictor of GG upgrade in multivariable analysis (p=0.397) after adjusting for PSAD, GGG, and positive core count (N=781). Retained as a monitoring intensity trigger, not a standalone risk score.',
+        ? "PI-RADS v2.1: high probability of clinically significant cancer. Note: this cohort's own multivariable analysis found PI-RADS was not independently predictive after adjusting for PSAD/GGG/cores (p=0.397, N=781) — but external literature disagrees: PI-RADS 3/4/5 are independent predictors of grade reclassification in multiple published AS cohorts (ORs 2.46/3.01/3.90; reclassification 17%→52% across PI-RADS negative→5). Retained as informational, consistent with AUA/ASTRO/NCCN guidance to use mpMRI to augment risk assessment."
+        : "PI-RADS v2.1: very high probability — biopsy/treatment discussion urgently recommended. Note: this cohort's own multivariable analysis found PI-RADS was not independently predictive after adjusting for PSAD/GGG/cores (p=0.397, N=781) — but external literature disagrees: PI-RADS 3/4/5 are independent predictors of grade reclassification in multiple published AS cohorts (ORs 2.46/3.01/3.90; reclassification 17%→52% across PI-RADS negative→5). Retained as informational, consistent with AUA/ASTRO/NCCN guidance to use mpMRI to augment risk assessment.",
     })
   }
 
@@ -727,17 +727,21 @@ function calcBasic({ ggg, positiveCores, totalCores, maxCorePercent, psa, prosta
   if (epsaPreBiopsyTier) {
     factors.push({
       label: `Pre-biopsy ePSA tier: ${String(epsaPreBiopsyTier).replace(/-/g,' ').replace(/\b\w/g, c => c.toUpperCase())}`,
-      points: 0,
       tier: 'low',
       basis: 'ePSA pre-biopsy context — shown for reference only. No scoring contribution: ePSA-to-upgrade linkage is not validated in the N=1,213 AS cohort (pre-biopsy tier not recorded at enrollment). See cohort calibration section below.',
     })
   }
 
-  let asTierKey
-  if      (score <= 3)  asTierKey = 'standard_as'
-  else if (score <= 20) asTierKey = 'enhanced_as'
-  else if (score <= 45) asTierKey = 'intensive_as'
-  else                  asTierKey = 'treatment'
+  // asTierKey is now a DISPLAY-ONLY summary label (worst individual factor
+  // tier) for the clinician panel. It is NOT fed into calcCombined — tested
+  // combination schemes (points, CAPRA, worst-gate) all failed to
+  // discriminate on the real cohort (AUC 0.489-0.538 vs fullModel's 0.65).
+  // See data/compare_scoring_systems.py and docs/EVIDENCE_AUDIT.md.
+  const TIER_RANK = { low: 0, intermediate: 1, high: 2 }
+  const worstTier = factors.reduce((w, f) => (TIER_RANK[f.tier] ?? 0) > TIER_RANK[w] ? f.tier : w, 'low')
+  const asTierKey = worstTier === 'high' ? 'guideline_flags_present'
+    : worstTier === 'intermediate' ? 'guideline_flags_mild'
+    : 'guideline_flags_none'
 
   // Logistic regression upgrade probability (N=781, AUC 0.668 with PSAD; N=1,197, AUC 0.609 without)
   let upgradeProbability = null
@@ -761,7 +765,7 @@ function calcBasic({ ggg, positiveCores, totalCores, maxCorePercent, psa, prosta
     }
   }
 
-  return { asTierKey, asScore: score, asFactors: factors, psad, upgradeProbability, upgradeProbabilityModel }
+  return { asTierKey, asFactors: factors, psad, upgradeProbability, upgradeProbabilityModel }
 }
 
 // ─── Sub-model 2: Genomic ─────────────────────────────────────────────────────
@@ -879,8 +883,8 @@ function calcGenomic({ decipher, gps, prolaris, confirmMDx }) {
  *
  * `psmaScore` IS INFORMATIONAL ONLY — DELIBERATELY NOT WIRED INTO ANY TIER.
  * ─────────────────────────────────────────────────────────────────────────────
- * The points below are displayed for transparency but are never added to
- * `asScore` and never reach calcCombined. PSMA influences the tier through
+ * The points below are displayed for transparency but never reach
+ * calcCombined. PSMA influences the tier through
  * FINDINGS, not points: 'metastatic' is a hard stop, 'regional' forces at least
  * intensive_as, and 'local' is counted as a monitoring feature.
  *
@@ -1040,11 +1044,21 @@ function calcMonitoring({
 /**
  * LAYER 1 — Tier integration (clinically transparent, mirrors NCCN/EAU multi-modal approach):
  *  1. Hard override: PSMA metastatic → treatment required (caught earlier by hard stop)
- *  2. Baseline: highest tier among Basic and Monitoring sub-models
+ *  2. Baseline: Monitoring sub-model tier (unweighted guideline-feature checklist)
  *  3. PSMA regional → escalate to minimum Intensive (EAU 2024: nodal disease changes management)
  *  4. Genomic high → escalate one tier (capped at treatment_discussion)
+ *
+ * The Basic sub-model (calcBasic / asTierKey) does NOT feed this decision.
+ * Evidence audit remediation: tested against the real N=1,213 cohort, no
+ * combination scheme built from Basic's factors (invented points, published
+ * CAPRA score, or gates-only worst-tier) discriminated better than chance
+ * (AUC 0.489-0.538). Monitoring's feature checklist already independently
+ * captures the same guideline breaches (PSAD>0.177, max core>50%, PSA>=10,
+ * PI-RADS>=4, etc.) that Basic used to score. Basic's factors remain in the
+ * output for clinician transparency (asFactors) but are informational only —
+ * see calcBasic's header comment and data/compare_scoring_systems.py.
  */
-function calcCombined({ asTierKey, genomicRiskTier, psmaFinding, monitoringTier, hardOverride }) {
+function calcCombined({ genomicRiskTier, psmaFinding, monitoringTier, hardOverride }) {
   if (hardOverride) {
     return {
       combinedTierKey:        'treatment_required',
@@ -1061,7 +1075,7 @@ function calcCombined({ asTierKey, genomicRiskTier, psmaFinding, monitoringTier,
   }
   const KEYS = ['standard_as', 'enhanced_as', 'intensive_as', 'treatment_discussion']
 
-  let level = Math.max(LEVEL[asTierKey] ?? 0, LEVEL[monitoringTier] ?? 0)
+  let level = LEVEL[monitoringTier] ?? 0
   if (psmaFinding === 'regional') level = Math.max(level, 2)
   if (genomicRiskTier === 'high') level = Math.min(3, level + 1)
 
@@ -1874,7 +1888,6 @@ export function runAssessment(inputs) {
 
   // ── LAYER 1C: Combine sub-models → final guideline tier ─────────────────────
   const combinedResult = calcCombined({
-    asTierKey:       basicResult.asTierKey,
     genomicRiskTier: genomicResult.genomicRiskTier,
     psmaFinding:     inputs.psmaFinding,
     monitoringTier:  monitoringResult.monitoringTier,
@@ -1908,7 +1921,6 @@ export function runAssessment(inputs) {
     // Named layer objects for UI separation
     guidelineLayer: {
       asTierKey:       basicResult.asTierKey,
-      asScore:         basicResult.asScore,
       asFactors:       basicResult.asFactors,
       psad:            basicResult.psad,
       genomicRiskTier: genomicResult.genomicRiskTier,

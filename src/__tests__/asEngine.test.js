@@ -37,17 +37,15 @@ const base = Object.freeze({
 })
 const withBase = (o = {}) => ({ ...base, ...o })
 const tierOf = (o = {}) => runAssessment(withBase(o)).combinedTierKey
-const scoreOf = (o = {}) => runAssessment(withBase(o)).asScore
 
 // PSAD is psa/prostateVolume; hold psa at 5 and vary volume to hit exact PSADs.
 const volForPsad = (psad) => 5 / psad
 
 describe('baseline sanity', () => {
-  it('lowest-risk case is standard_as with score -3', () => {
+  it('lowest-risk case is standard_as, Basic sub-model has no high-tier factors', () => {
     const r = runAssessment(base)
     expect(r.hardStop).toBe(false)
-    expect(r.asScore).toBe(-3)
-    expect(r.asTierKey).toBe('standard_as')
+    expect(r.asTierKey).toBe('guideline_flags_none')
     expect(r.monitoringTier).toBe('standard')
     expect(r.featureCount).toBe(0)
     expect(r.combinedTierKey).toBe('standard_as')
@@ -88,12 +86,11 @@ describe('LAYER 1 hard stops', () => {
     expect(runAssessment(withBase({ ggg: 5 })).hardStopId).toBe('ggg4_5')
   })
 
-  it('GG3 is just below the hard stop and proceeds to scoring', () => {
+  it('GG3 is just below the hard stop and proceeds to assessment', () => {
     const r = runAssessment(withBase({ ggg: 3 }))
     expect(r.hardStop).toBe(false)
-    // GG3 = 22 pts, so -3 + 22 = 19
-    expect(r.asScore).toBe(19)
-    expect(r.asTierKey).toBe('enhanced_as')
+    // GG3 is guideline-flagged 'intermediate' -- the worst factor at base inputs
+    expect(r.asTierKey).toBe('guideline_flags_mild')
   })
 
   it('PSMA metastatic triggers the psma_metastatic hard stop', () => {
@@ -214,11 +211,10 @@ describe('validateInputs', () => {
   // where ptsMap[6] is undefined so it scores 0 points and falls into the
   // `p === 5` else-branch text ("very high probability"). Asserting current
   // behavior.
-  it('SUSPECT: PI-RADS 6 passes validation and scores 0 pts with PI-RADS-5 wording', () => {
+  it('SUSPECT: PI-RADS 6 passes validation and lands in the intermediate tier with PI-RADS-5 wording', () => {
     expect(validateInputs(withBase({ pirads: 6 }))).toEqual({})
     const r = runAssessment(withBase({ pirads: 6 }))
     const f = r.asFactors.find(x => x.label === 'PI-RADS 6')
-    expect(f.points).toBe(0)
     expect(f.tier).toBe('intermediate')
     expect(f.basis).toMatch(/very high probability/)
     // still counted as ≥4 by the monitoring sub-model
@@ -235,69 +231,74 @@ describe('validateInputs', () => {
 // ═══════════════════════════════════════════════════════════════════════════
 // SUB-MODEL 1 — BASIC + PSAD
 // ═══════════════════════════════════════════════════════════════════════════
-describe('sub-model 1: GGG points', () => {
-  it.each([[1, 0], [2, 8], [3, 22]])('GG%i contributes %i points', (ggg, pts) => {
-    expect(scoreOf({ ggg })).toBe(-3 + pts)
+// Evidence audit remediation: calcBasic no longer sums invented point
+// magnitudes into a score (tested AUC 0.538, barely above chance -- see
+// data/compare_scoring_systems.py). Each factor now reports only a
+// guideline/literature-cited tier ('low'/'intermediate'/'high') for
+// clinician transparency; asTierKey is a display-only worst-of-factors
+// summary and does not feed calcCombined. These tests assert the tier
+// labels and the guideline citations behind them.
+describe('sub-model 1: GGG guideline tier', () => {
+  it.each([[1, 'low'], [2, 'low'], [3, 'intermediate']])('GG%i is tier %s', (ggg, tier) => {
+    const f = runAssessment(withBase({ ggg })).asFactors.find(x => x.label.startsWith('Grade Group'))
+    expect(f.tier).toBe(tier)
   })
 })
 
 describe('sub-model 1: positive-core count gate (NCCN < 3)', () => {
   // gate is an absolute count, ratio only grades severity among failures
-  it('2 positive cores (just below 3) scores 0', () => {
+  it('2 positive cores (just below 3) is low tier', () => {
     const f = runAssessment(withBase({ positiveCores: 2, totalCores: 12 })).asFactors[1]
-    expect(f.points).toBe(0)
     expect(f.tier).toBe('low')
     expect(f.basis).toMatch(/Meets NCCN 2024 very low risk core criterion/)
   })
 
   it('2/4 cores (50% ratio) still passes the count gate', () => {
-    expect(runAssessment(withBase({ positiveCores: 2, totalCores: 4 })).asFactors[1].points).toBe(0)
+    expect(runAssessment(withBase({ positiveCores: 2, totalCores: 4 })).asFactors[1].tier).toBe('low')
   })
 
   it.each([
-    ['3/24 — ratio 12.5%, fails count gate', 3, 24, 1, 'low'],
-    ['9/24 — ratio 37.5% (> 1/3)', 9, 24, 3, 'intermediate'],
+    ['3/24 — ratio 12.5%, fails count gate', 3, 24, 'low'],
+    ['9/24 — ratio 37.5% (> 1/3)', 9, 24, 'intermediate'],
     // FIXED (defect 9): 8/24 is EXACTLY one third. Under the old literal-0.33
-    // cutoff it read as 0.3333… > 0.33 and scored 3 pts 'intermediate'; against
-    // an exact 1/3 it is not greater than the cutoff and scores 1 pt, the same
+    // cutoff it read as 0.3333… > 0.33 and landed 'intermediate'; against an
+    // exact 1/3 it is not greater than the cutoff and stays 'low', the same
     // as any other one-third burden.
-    ['8/24 — ratio exactly 1/3 (not greater than the 1/3 cutoff)', 8, 24, 1, 'low'],
-    ['12/24 — ratio exactly 0.50', 12, 24, 3, 'intermediate'],
-    ['13/24 — ratio 54% (>0.50)', 13, 24, 6, 'high'],
-  ])('%s', (_l, positiveCores, totalCores, pts, tier) => {
+    ['8/24 — ratio exactly 1/3 (not greater than the 1/3 cutoff)', 8, 24, 'low'],
+    ['12/24 — ratio exactly 0.50', 12, 24, 'intermediate'],
+    ['13/24 — ratio 54% (>0.50)', 13, 24, 'high'],
+  ])('%s', (_l, positiveCores, totalCores, tier) => {
     const f = runAssessment(withBase({ positiveCores, totalCores })).asFactors[1]
-    expect(f.points).toBe(pts)
     expect(f.tier).toBe(tier)
   })
 
   // FIXED (defect 9): the buckets compared against the literal 0.33 rather than
-  // 1/3, so 4/12 (0.33333…) scored 3 pts while 33/100 (0.33) scored 1 pt — two
-  // clinically identical one-third burdens landing in different tiers purely on
-  // decimal rounding. Exact fractions make one-third burdens agree.
-  it('one-third core burdens score identically regardless of how the fraction is expressed', () => {
-    const pts = (positiveCores, totalCores) =>
-      runAssessment(withBase({ positiveCores, totalCores })).asFactors[1].points
-    expect(pts(4, 12)).toBe(1)    // exactly 1/3 — no longer over the cutoff
-    expect(pts(8, 24)).toBe(1)    // exactly 1/3
-    expect(pts(33, 100)).toBe(1)  // just under 1/3
+  // 1/3, so 4/12 (0.33333…) landed 'intermediate' while 33/100 (0.33) landed
+  // 'low' — two clinically identical one-third burdens landing in different
+  // tiers purely on decimal rounding. Exact fractions make one-third burdens agree.
+  it('one-third core burdens land in the same tier regardless of how the fraction is expressed', () => {
+    const tierOfCores = (positiveCores, totalCores) =>
+      runAssessment(withBase({ positiveCores, totalCores })).asFactors[1].tier
+    expect(tierOfCores(4, 12)).toBe('low')    // exactly 1/3 — no longer over the cutoff
+    expect(tierOfCores(8, 24)).toBe('low')    // exactly 1/3
+    expect(tierOfCores(33, 100)).toBe('low')  // just under 1/3
     // …and a burden genuinely above one third still escalates
-    expect(pts(34, 100)).toBe(3)
-    expect(pts(5, 12)).toBe(3)
+    expect(tierOfCores(34, 100)).toBe('intermediate')
+    expect(tierOfCores(5, 12)).toBe('intermediate')
     // the 1/2 boundary is likewise exact: 1/2 is not > 1/2
-    expect(pts(12, 24)).toBe(3)
-    expect(pts(13, 24)).toBe(6)
+    expect(tierOfCores(12, 24)).toBe('intermediate')
+    expect(tierOfCores(13, 24)).toBe('high')
   })
 })
 
 describe('sub-model 1: max core involvement (NCCN 50%)', () => {
   it.each([
-    [49, 0, 'low'],
-    [50, 0, 'low'],   // exactly at threshold — still within NCCN
-    [51, 4, 'intermediate'],
-    [100, 4, 'intermediate'],
-  ])('maxCorePercent %i → %i pts', (maxCorePercent, pts, tier) => {
+    [49, 'low'],
+    [50, 'low'],   // exactly at threshold — still within NCCN
+    [51, 'intermediate'],
+    [100, 'intermediate'],
+  ])('maxCorePercent %i → tier %s', (maxCorePercent, tier) => {
     const f = runAssessment(withBase({ maxCorePercent })).asFactors[2]
-    expect(f.points).toBe(pts)
     expect(f.tier).toBe(tier)
   })
 
@@ -313,54 +314,51 @@ describe('sub-model 1: PSAD thresholds', () => {
       .asFactors.find(f => f.label.startsWith('PSA Density'))
 
   it.each([
-    [0.05,   -5, 'low'],
-    [0.0649, -5, 'low'],
-    [0.065,  -5, 'low'],   // exactly at Youden cutoff — still -5 (strict >)
-    // FIXED (defect 14): the "very low" -5 bucket used to run all the way to
+    [0.05,   'low'],
+    [0.0649, 'low'],
+    [0.065,  'low'],   // exactly at Youden cutoff
+    // FIXED (defect 14): the "very low" bucket used to run all the way to
     // 0.10, a value found nowhere in COHORT_CALIBRATION.psad. It now ends at
-    // the cohort's own Youden-optimal 0.065, so these three cases score 0.
-    [0.0651,  0, 'low'],
-    [0.0999,  0, 'low'],
-    [0.10,    0, 'low'],
-    [0.1001,  0, 'low'],
-    [0.1499,  0, 'low'],
-    [0.15,    0, 'low'],   // exactly at NCCN — still 0 (strict >)
-    [0.1501,  5, 'intermediate'],
-    [0.1769,  5, 'intermediate'],
-    [0.177,   5, 'intermediate'], // exactly at Kadeer — still 5 (strict >)
-    [0.1771, 12, 'high'],
-    [0.30,   12, 'high'],
-  ])('PSAD %f → %i pts', (psad, pts, tier) => {
+    // the cohort's own Youden-optimal 0.065.
+    [0.0651,  'low'],
+    [0.0999,  'low'],
+    [0.10,    'low'],
+    [0.1001,  'low'],
+    [0.1499,  'low'],
+    [0.15,    'low'],   // exactly at NCCN — still low (strict >)
+    [0.1501,  'intermediate'],
+    [0.1769,  'intermediate'],
+    [0.177,   'intermediate'], // exactly at Kadeer — still intermediate (strict >)
+    [0.1771, 'high'],
+    [0.30,   'high'],
+  ])('PSAD %f → tier %s', (psad, tier) => {
     const f = psadFactor(psad)
-    expect(f.points).toBe(pts)
     expect(f.tier).toBe(tier)
   })
 
   // FIXED (defect 14 — TIER 2, CLINICIAN SIGN-OFF REQUIRED): the scoring bands
-  // and the `basis` narrative used DIFFERENT cut-points. Scoring handed the
-  // maximally favourable -5 bucket to anything ≤ 0.10 while the narrative (and
+  // and the `basis` narrative used DIFFERENT cut-points. The tier handed the
+  // maximally favourable bucket to anything ≤ 0.10 while the narrative (and
   // the Layer 2 cohort item, and calcOutcomesPrediction) branched at 0.065. A
-  // patient at PSAD 0.08 was scored "very low risk" while simultaneously being
+  // patient at PSAD 0.08 was shown "very low risk" while simultaneously being
   // told they sat in the 0.065–0.15 tier with a 23.9% upgrade rate.
   //
   // Resolved toward CAUTION, in favour of the boundary the data supports: 0.065
   // is COHORT_CALIBRATION.psad.youden_optimal, derived from the N=704 GG1
-  // subset. The value 0.10 appears nowhere in the cohort data. Patients in
-  // 0.065–0.10 now score 0 rather than -5 — a less favourable score, matching
-  // the tier they were already being shown.
-  it('score and narrative now agree on the 0.065 boundary', () => {
+  // subset. The value 0.10 appears nowhere in the cohort data.
+  it('tier and narrative now agree on the 0.065 boundary', () => {
     for (const psad of [0.0651, 0.08, 0.0999, 0.10]) {
       const f = psadFactor(psad)
-      expect(f.points).toBe(0)   // no longer the "very low" bonus
+      expect(f.tier).toBe('low')
       expect(f.basis).toMatch(/PSAD 0\.065–0\.15 — intermediate risk tier/)
       const item = runAssessment(withBase({ psa: 5, prostateVolume: volForPsad(psad) }))
         .cohortContext.cohortItems.find(i => i.variable === 'psad')
       expect(item.label).toMatch(/0\.065–0\.15/)
     }
-    // …and only a genuinely sub-0.065 patient gets the -5 "very low" score,
-    // with narrative and cohort item that agree with it.
+    // …and only a genuinely sub-0.065 patient gets the "very low" narrative,
+    // with a cohort item that agrees with it.
     for (const psad of [0.05, 0.0649, 0.065]) {
-      expect(psadFactor(psad).points).toBe(-5)
+      expect(psadFactor(psad).tier).toBe('low')
       expect(psadFactor(psad).basis).toMatch(/PSAD < 0\.065/)
     }
     const lowItem = runAssessment(withBase({ psa: 5, prostateVolume: volForPsad(0.05) }))
@@ -379,11 +377,10 @@ describe('sub-model 1: PSAD thresholds', () => {
       expect(r.psad).toBeNull()
       return r.asFactors.find(f => f.label.startsWith('PSA '))
     }
-    expect(psaFactor(3.9).points).toBe(-3)
-    expect(psaFactor(4).points).toBe(0)     // exactly 4 → intermediate band
-    expect(psaFactor(9.99).points).toBe(0)
-    expect(psaFactor(10).points).toBe(10)   // exactly 10 → high band (>=)
-    expect(psaFactor(10).tier).toBe('high')
+    expect(psaFactor(3.9).tier).toBe('low')
+    expect(psaFactor(4).tier).toBe('intermediate')     // exactly 4 → intermediate band
+    expect(psaFactor(9.99).tier).toBe('intermediate')
+    expect(psaFactor(10).tier).toBe('high')   // exactly 10 → high band (>=)
   })
 
   it('PSA >= 10 adds a monitoring feature regardless of PSAD', () => {
@@ -392,12 +389,11 @@ describe('sub-model 1: PSAD thresholds', () => {
   })
 })
 
-describe('sub-model 1: PI-RADS points', () => {
-  it.each([[1, -5, 'low'], [2, -3, 'low'], [3, 0, 'intermediate'], [4, 8, 'high'], [5, 15, 'high']])(
-    'PI-RADS %i → %i pts',
-    (pirads, pts, tier) => {
+describe('sub-model 1: PI-RADS tier', () => {
+  it.each([[1, 'low'], [2, 'low'], [3, 'intermediate'], [4, 'high'], [5, 'high']])(
+    'PI-RADS %i → tier %s',
+    (pirads, tier) => {
       const f = runAssessment(withBase({ pirads })).asFactors.find(x => x.label === `PI-RADS ${pirads}`)
-      expect(f.points).toBe(pts)
       expect(f.tier).toBe(tier)
     },
   )
@@ -405,7 +401,6 @@ describe('sub-model 1: PI-RADS points', () => {
   it('PI-RADS 0 means "no MRI": no scoring factor, but a monitoring feature', () => {
     const r = runAssessment(withBase({ pirads: 0 }))
     expect(r.asFactors.some(f => f.label.startsWith('PI-RADS'))).toBe(false)
-    expect(r.asScore).toBe(0) // -3 minus the PI-RADS 2 (-3) contribution
     expect(r.features.some(f => /No mpMRI performed/.test(f.label))).toBe(true)
   })
 
@@ -415,41 +410,29 @@ describe('sub-model 1: PI-RADS points', () => {
   })
 })
 
-describe('sub-model 1: score → tier boundaries (3 / 20 / 45)', () => {
-  // Drive the score with GGG + PI-RADS + cores rather than asserting arithmetic twice.
-  it('score 3 is still standard_as, score 4 is enhanced_as', () => {
-    // GG2(8) + PI-RADS 1(-5) + PSAD 0.15(0) + cores 0 + maxcore 0 = 3
-    const v = volForPsad(0.15)
-    expect(scoreOf({ ggg: 2, pirads: 1, prostateVolume: v })).toBe(3)
-    expect(runAssessment(withBase({ ggg: 2, pirads: 1, prostateVolume: v })).asTierKey).toBe('standard_as')
-    // GG2(8) + PI-RADS 3(0) + PSAD 0.10(-5) + cores(13/24 → 6) = 9  … use a direct 4
-    // GG2(8) + PI-RADS 2(-3) + PSAD 0.15(0) = 5 → enhanced
-    expect(runAssessment(withBase({ ggg: 2, prostateVolume: v })).asTierKey).toBe('enhanced_as')
+describe('sub-model 1: asTierKey is a display-only worst-of-factors summary', () => {
+  // asTierKey no longer feeds calcCombined (see calcCombined's header comment
+  // and data/compare_scoring_systems.py -- no combination scheme built from
+  // these factors discriminated better than chance on the real cohort).
+  it('no elevated factors → guideline_flags_none', () => {
+    expect(runAssessment(base).asTierKey).toBe('guideline_flags_none')
   })
 
-  it('score 20 is enhanced_as, score 21 is intensive_as', () => {
-    // GG3(22) + PI-RADS 2(-3) + PSAD 0.10(0) + cores 0 = 19 (enhanced)
-    expect(scoreOf({ ggg: 3 })).toBe(19)
-    expect(runAssessment(withBase({ ggg: 3 })).asTierKey).toBe('enhanced_as')
-    // exactly 20: GG3(22) + PI-RADS 2(-3) + PSAD 0.10(0) + cores 3/24(1) = 20
-    const at20 = runAssessment(withBase({ ggg: 3, positiveCores: 3, totalCores: 24 }))
-    expect(at20.asScore).toBe(20)
-    expect(at20.asTierKey).toBe('enhanced_as')
-    // exactly 21: GG2(8) + PI-RADS 4(8) + PSAD 0.16(5) + cores 0 + maxCore 0 = 21
-    const at21 = runAssessment(withBase({ ggg: 2, pirads: 4, prostateVolume: volForPsad(0.16) }))
-    expect(at21.asScore).toBe(21)
-    expect(at21.asTierKey).toBe('intensive_as')
+  it('one intermediate factor → guideline_flags_mild', () => {
+    expect(runAssessment(withBase({ ggg: 3 })).asTierKey).toBe('guideline_flags_mild')
   })
 
-  it('very high composite score reaches the basic-model treatment tier', () => {
-    // GG3(22) + PI-RADS 5(15) + PSAD >0.177(12) + maxCore 100(4) + cores 13/24(6) = 59
-    const r = runAssessment(withBase({
-      ggg: 3, pirads: 5, prostateVolume: volForPsad(0.25),
-      maxCorePercent: 100, positiveCores: 13, totalCores: 24,
-    }))
-    expect(r.asScore).toBe(59)
-    expect(r.asTierKey).toBe('treatment')
-    expect(r.combinedTierKey).toBe('treatment_discussion')
+  it('GGG is not a monitoring feature, so varying it alone changes asTierKey but not combinedTierKey', () => {
+    // GGG doesn't appear in the monitoring feature checklist (see sub-model 4),
+    // so GG1 vs GG3 with everything else held at base should swing asTierKey
+    // (Basic's worst-factor summary) while leaving combinedTierKey untouched —
+    // direct proof that Basic no longer drives the surveillance-intensity decision.
+    const gg1 = runAssessment(withBase({ ggg: 1 }))
+    const gg3 = runAssessment(withBase({ ggg: 3 }))
+    expect(gg1.asTierKey).toBe('guideline_flags_none')
+    expect(gg3.asTierKey).toBe('guideline_flags_mild')
+    expect(gg1.combinedTierKey).toBe(gg3.combinedTierKey)
+    expect(gg1.monitoringTier).toBe(gg3.monitoringTier)
   })
 })
 
@@ -522,9 +505,9 @@ describe('sub-model 2: genomic', () => {
 
   it('high genomic risk escalates the combined tier by one level', () => {
     expect(tierOf()).toBe('standard_as')
-    // decipher 0.60 → genomic high; basic tier stays standard_as
+    // decipher 0.60 → genomic high; basic tier stays flag-free
     const r = runAssessment(withBase({ decipher: 0.6 }))
-    expect(r.asTierKey).toBe('standard_as')
+    expect(r.asTierKey).toBe('guideline_flags_none')
     expect(r.genomicRiskTier).toBe('high')
     // high genomic also adds a monitoring feature → enhanced monitoring (level 1),
     // then genomic-high escalation adds one more → intensive_as
@@ -569,8 +552,8 @@ describe('sub-model 3: PSMA', () => {
   // REVIEWED (defect 10) — NOT A DEFECT; the behavior is deliberate and is now
   // documented in the engine and pinned here as an invariant.
   //
-  // psmaScore is displayed for transparency but never added to asScore. PSMA
-  // influences the tier through FINDINGS, not points: 'metastatic' is a hard
+  // psmaScore is displayed for transparency but never reaches calcCombined.
+  // PSMA influences the tier through FINDINGS, not points: 'metastatic' is a hard
   // stop, 'regional' forces at least intensive_as, 'local' counts as a
   // monitoring feature. Wiring the points in would change clinical output in
   // the UNSAFE direction — a negative PSMA PET (-15 pts) would subtract from
@@ -585,7 +568,6 @@ describe('sub-model 3: PSMA', () => {
   it('psmaScore is informational only and can never lower a tier', () => {
     // reported, but not summed into the composite
     expect(runAssessment(withBase({ psmaFinding: 'negative' })).psmaScore).toBe(-15)
-    expect(runAssessment(withBase({ psmaFinding: 'negative' })).asScore).toBe(scoreOf())
     expect(runAssessment(withBase({ psmaFinding: 'negative' })).combinedTierKey).toBe('standard_as')
 
     // the load-bearing safety property: a negative PSMA PET cannot de-escalate
@@ -595,7 +577,6 @@ describe('sub-model 3: PSMA', () => {
     const withNegPsma = runAssessment(withBase({ ...risky, psmaFinding: 'negative' }))
     expect(withoutPsma.combinedTierKey).toBe('intensive_as')
     expect(withNegPsma.combinedTierKey).toBe('intensive_as')
-    expect(withNegPsma.asScore).toBe(withoutPsma.asScore)
   })
 
   it('PSMA local adds a monitoring feature', () => {
@@ -605,7 +586,7 @@ describe('sub-model 3: PSMA', () => {
 
   it('PSMA regional escalates to at least intensive_as', () => {
     const r = runAssessment(withBase({ psmaFinding: 'regional' }))
-    expect(r.asTierKey).toBe('standard_as')
+    expect(r.asTierKey).toBe('guideline_flags_none')
     expect(r.combinedTierKey).toBe('intensive_as')
   })
 
@@ -677,10 +658,9 @@ describe('sub-model 4: monitoring feature detection', () => {
 // COMBINED TIER
 // ═══════════════════════════════════════════════════════════════════════════
 describe('combined tier assignment', () => {
-  it('takes the max of the basic and monitoring tiers', () => {
-    // basic standard (level 0), monitoring intensive (level 2)
+  it('combinedTierKey follows the monitoring tier (Basic no longer contributes)', () => {
     const r = runAssessment(withBase({ abutment: 'yes', ece: 'yes', broadContact: 'yes' }))
-    expect(r.asTierKey).toBe('standard_as')
+    expect(r.asTierKey).toBe('guideline_flags_none')
     expect(r.monitoringTier).toBe('intensive')
     expect(r.combinedTierKey).toBe('intensive_as')
   })
@@ -732,17 +712,15 @@ describe('LAYER 2 invariant: cohort calibration never changes the guideline tier
       expect(r.asTierKey).toBe(ref.asTierKey)
       expect(r.monitoringTier).toBe(ref.monitoringTier)
       expect(r.featureCount).toBe(ref.featureCount)
-      // epsaPreBiopsyTier adds a display-only 0-point factor
-      expect(r.asScore).toBe(ref.asScore)
     }
   })
 
-  it('epsaPreBiopsyTier contributes a 0-point factor only', () => {
+  it('epsaPreBiopsyTier contributes a display-only low-tier factor only', () => {
     const r = runAssessment(withBase({ epsaPreBiopsyTier: 'high' }))
     const f = r.asFactors.find(x => x.label.startsWith('Pre-biopsy ePSA tier'))
-    expect(f.points).toBe(0)
+    expect(f.tier).toBe('low')
     expect(f.label).toBe('Pre-biopsy ePSA tier: High')
-    expect(r.asScore).toBe(runAssessment(base).asScore)
+    expect(r.asTierKey).toBe(runAssessment(base).asTierKey)
   })
 
   it('race changes cohortContext content but not the tier', () => {
@@ -819,8 +797,8 @@ describe('LAYER 2: cohort context', () => {
     // family history is Layer 2 context only — it must not move the tier
     expect(runAssessment(withBase({ familyHistory: 'yes' })).combinedTierKey)
       .toBe(runAssessment(base).combinedTierKey)
-    expect(runAssessment(withBase({ familyHistory: 'yes' })).asScore)
-      .toBe(runAssessment(base).asScore)
+    expect(runAssessment(withBase({ familyHistory: 'yes' })).asTierKey)
+      .toBe(runAssessment(base).asTierKey)
   })
 
   it('reports PSAD as not calculable when prostate volume is absent', () => {
@@ -1031,7 +1009,7 @@ describe('LAYER 3: calcUpgradeRisk', () => {
     for (const race of ['african_american', 'caucasian', 'other']) {
       const r = runAssessment(withBase({ race }))
       expect(r.combinedTierKey).toBe(refR.combinedTierKey)
-      expect(r.asScore).toBe(refR.asScore)
+      expect(r.asTierKey).toBe(refR.asTierKey)
       expect(r.upgradeRisk.probability).toBe(refR.upgradeRisk.probability)
     }
   })
@@ -1123,7 +1101,7 @@ describe('malformed and edge-case inputs', () => {
       const r = runAssessment(withBase({ confirmMDx: v }))
       expect(r.genomicAssessed).toBe(false)
       expect(r.genomicScore).toBeNull()
-      expect(r.asScore).toBe(runAssessment(base).asScore)
+      expect(r.asTierKey).toBe(runAssessment(base).asTierKey)
     }
   })
 })
