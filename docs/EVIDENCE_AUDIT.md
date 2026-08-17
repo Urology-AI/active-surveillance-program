@@ -169,3 +169,7 @@ Not threshold-provenance issues, but they affect what the evidence trail says.
 ---
 
 *Audit performed against `src/asEngine.js` (2,013 lines), `src/progressionEngine.js` (860), `src/derivedMetrics.js` (370), `src/modelVersion.js` (136). Read-only — no engine file was modified. No external literature was consulted; every classification rests on in-repo data or a citation string present in the source.*
+
+---
+
+**Status note (added when this doc was brought into `docs/`):** the highest-priority finding here (U1–U4 — the Layer 1 points system) and the citation conflicts in §5.1–5.2 have been remediated in [PR #45](https://github.com/Urology-AI/active-surveillance-program/pull/45) (merged) — see [MODEL_OVERVIEW.md](MODEL_OVERVIEW.md) for the current state of the validated model. Items U5–U28 and §5.3–5.5 remain open.
