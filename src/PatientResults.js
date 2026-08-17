@@ -70,12 +70,19 @@ function ValidationBadge({ type }) {
 }
 
 function FactorRow({ factor }) {
+  // Basic sub-model factors (asFactors) no longer carry `points` -- an
+  // evidence-audit finding that summing invented point magnitudes scored
+  // AUC 0.538 (barely above chance) against the real cohort. They report a
+  // guideline/literature-cited tier only. Genomic/PSMA factors still carry
+  // points (out of scope for this pass) so this row supports both shapes.
+  const hasPoints = factor.points !== undefined
   const pts    = factor.points
   const ptsTxt = pts === 'OVERRIDE' ? 'OVERRIDE' : pts > 0 ? `+${pts}` : pts === 0 ? '0' : String(pts)
+  const tierTxt = factor.tier ? factor.tier.charAt(0).toUpperCase() + factor.tier.slice(1) : ''
   return e('div', { className: 'py-2 border-b border-gray-50 last:border-0' },
     e('div', { className: 'flex items-center justify-between gap-3' },
       e('span', { className: 'text-sm text-gray-800' }, factor.label),
-      e('span', { className: `text-xs font-semibold px-2 py-0.5 rounded-full flex-shrink-0 ${POINTS_BADGE[factor.tier] || 'bg-gray-100 text-gray-600'}` }, ptsTxt)
+      e('span', { className: `text-xs font-semibold px-2 py-0.5 rounded-full flex-shrink-0 ${POINTS_BADGE[factor.tier] || 'bg-gray-100 text-gray-600'}` }, hasPoints ? ptsTxt : tierTxt)
     ),
     factor.basis && e('p', { className: 'text-xs text-gray-400 mt-0.5 leading-snug' }, factor.basis)
   )
@@ -668,7 +675,7 @@ function ModelValidationModal({ onClose, isEpsa, epsaContext }) {
 // ─── Evidence & Full Detail Modal ────────────────────────────────────────────
 function EvidenceDetailModal({
   onClose,
-  asFactors, asScore, asTierKey,
+  asFactors, asTierKey,
   genomicAssessed, genomicRiskTier, genomicScore, genomicFactors,
   psmaAssessed, psmaFinding, psmaScore, psmaFactors,
   monitoringSchedule, monitoringLabel, monitoringTier, features, featureCount,
@@ -773,10 +780,10 @@ function EvidenceDetailModal({
         e('div', { style: { background: '#fff', borderRadius: 14, border: '1px solid #f1f5f9', padding: '14px 16px' } },
           e('div', { style: { display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10, flexWrap: 'wrap' } },
             e('span', { style: { fontWeight: 700, fontSize: 13, color: '#00002D' } }, 'Sub-model 1 — Biopsy Pathology & PSA Density'),
-            e('span', { style: { fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 999, background: '#e0f2fe', color: '#075985' } },
-              `Score: ${asScore > 0 ? '+' : ''}${asScore}  ·  ${asTierKey?.replace(/_/g,' ')}`
-            ),
-            e(ValidationBadge, { type: 'cohort_validated' })
+            e(ValidationBadge, { type: 'guideline_checklist' })
+          ),
+          e('p', { style: { fontSize: 11, color: '#94a3b8', margin: '0 0 10px', lineHeight: 1.6, fontStyle: 'italic' } },
+            'Informational only — each factor below is checked against its own cited guideline or literature threshold. Tested against the N=1,213 cohort, no scoring or combination scheme built from these factors discriminated who actually upgrades (AUC 0.49–0.54, no better than chance); this sub-model does not drive the surveillance-intensity recommendation. See the validated risk estimate below instead.'
           ),
           e('div', {}, ...asFactors.map((f, i) => e(FactorRow, { key: i, factor: f }))),
           e('div', { style: { marginTop: 10, paddingTop: 10, borderTop: '1px solid #f1f5f9', fontSize: 11, color: '#94a3b8', lineHeight: 1.6 } },
@@ -906,7 +913,7 @@ function EvidenceDetailModal({
 
 // ─── Detail Accordion ─────────────────────────────────────────────────────────
 function DetailAccordion({
-  asFactors, asScore, asTierKey,
+  asFactors, asTierKey,
   genomicAssessed, genomicRiskTier, genomicScore, genomicFactors,
   psmaAssessed, psmaFinding, psmaScore, psmaFactors,
   monitoringSchedule, monitoringLabel, monitoringTier, features, featureCount,
@@ -964,10 +971,10 @@ function DetailAccordion({
       e('div', {},
         e('div', { className: 'flex items-center gap-2 mb-3' },
           e('span', { className: 'font-semibold text-gray-800 text-sm' }, 'Sub-model 1 — Basic & PSAD'),
-          e('span', { className: 'text-xs font-semibold px-2 py-0.5 rounded-full', style: { background: '#e0f2fe', color: '#075985' } },
-            `Score: ${asScore > 0 ? '+' : ''}${asScore}  ·  ${asTierKey?.replace(/_/g,' ')}`
-          ),
-          e(ValidationBadge, { type: 'cohort_validated' })
+          e(ValidationBadge, { type: 'guideline_checklist' })
+        ),
+        e('p', { className: 'text-xs text-gray-400 italic mb-2 leading-relaxed' },
+          'Informational only — tested against the N=1,213 cohort, no scoring or combination scheme built from these factors discriminated who actually upgrades (AUC 0.49–0.54, no better than chance). Does not drive the surveillance-intensity recommendation; see the validated risk estimate instead.'
         ),
         e('div', { className: 'space-y-0' }, ...asFactors.map((f, i) => e(FactorRow, { key: i, factor: f }))),
         e('div', { className: 'mt-3 pt-3 border-t border-gray-50 text-xs text-gray-400 leading-relaxed' },
@@ -1110,7 +1117,7 @@ function DetailAccordion({
 }
 
 // ─── Clinical Summary Panel (clinician-facing input + sub-model overview) ─────
-function ClinicalSummaryPanel({ inputs, asScore, asTierKey, genomicAssessed, genomicRiskTier, genomicScore, psmaAssessed, psmaFinding, psmaScore, monitoringTier, psad, combinedTierKey }) {
+function ClinicalSummaryPanel({ inputs, asTierKey, genomicAssessed, genomicRiskTier, genomicScore, psmaAssessed, psmaFinding, psmaScore, monitoringTier, psad, combinedTierKey }) {
   const [open, setOpen] = useState(true)
 
   const SUBMODEL_STYLES = {
@@ -1121,7 +1128,15 @@ function ClinicalSummaryPanel({ inputs, asScore, asTierKey, genomicAssessed, gen
     treatment_required:   { label: 'Tx Required',   bg: '#fef2f2', border: '#dc2626', color: '#b91c1c' },
   }
 
-  const asStyle = SUBMODEL_STYLES[asTierKey] || { label: asTierKey, bg: '#f1f5f9', border: '#e2e8f0', color: '#334155' }
+  // asTierKey is now Basic's own display-only worst-factor summary
+  // (guideline_flags_none/mild/present) -- informational, not a recommendation.
+  const AS_INFO_STYLES = {
+    guideline_flags_none:    { label: 'No flags',      bg: '#f8fafc', border: '#cbd5e1', color: '#475569' },
+    guideline_flags_mild:    { label: 'Mild flags',     bg: '#fffbeb', border: '#d97706', color: '#b45309' },
+    guideline_flags_present: { label: 'Flags present',  bg: '#fef2f2', border: '#dc2626', color: '#b91c1c' },
+  }
+
+  const asStyle = AS_INFO_STYLES[asTierKey] || SUBMODEL_STYLES[asTierKey] || { label: asTierKey, bg: '#f1f5f9', border: '#e2e8f0', color: '#334155' }
 
   const genomicStyle =
     !genomicAssessed           ? { label: 'Not assessed', bg: '#f8fafc', border: '#e2e8f0', color: '#94a3b8' }
@@ -1188,7 +1203,7 @@ function ClinicalSummaryPanel({ inputs, asScore, asTierKey, genomicAssessed, gen
       e('div', {},
         e('p', { style: { fontSize: 11, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#94a3b8', margin: '12px 0 8px' } }, 'Sub-model Results'),
         e('div', { style: { display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 8 } },
-          e(SubModelBadge, { label: 'Basic + PSAD', score: asScore, style: asStyle }),
+          e(SubModelBadge, { label: 'Basic + PSAD (info only)', score: true, style: asStyle, scoreLabel: 'Guideline checklist — does not set the tier' }),
           e(SubModelBadge, { label: 'Genomic', score: genomicAssessed ? genomicScore : null, style: genomicStyle }),
           e(SubModelBadge, { label: 'PSMA PET/CT', score: psmaAssessed ? psmaScore : null, style: psmaStyle }),
           e('div', {
@@ -1622,7 +1637,7 @@ const SHORT_TIER_LABEL = {
 // ─── Main component ───────────────────────────────────────────────────────────
 export default function PatientResults({ results, inputs, onBack, onDownloadData, onUploadData }) {
   const {
-    asTierKey, asScore, asFactors, psad,
+    asTierKey, asFactors, psad,
     genomicRiskTier, genomicScore, genomicFactors, genomicAssessed,
     psmaFinding, psmaScore, psmaFactors, psmaAssessed,
     monitoringTier, monitoringLabel, monitoringSchedule, features, featureCount,
@@ -1739,7 +1754,7 @@ export default function PatientResults({ results, inputs, onBack, onDownloadData
     // ── 2. Clinical Summary (sub-models + entered data) ─────────────────
     e(ClinicalSummaryPanel, {
       inputs, psad: psadNum, combinedTierKey,
-      asScore, asTierKey,
+      asTierKey,
       genomicAssessed, genomicRiskTier, genomicScore,
       psmaAssessed, psmaFinding, psmaScore,
       monitoringTier,
@@ -1852,7 +1867,7 @@ export default function PatientResults({ results, inputs, onBack, onDownloadData
     // ── Modals ───────────────────────────────────────────────────────────
     showEvidenceModal && e(EvidenceDetailModal, {
       onClose: () => setShowEvidenceModal(false),
-      asFactors, asScore, asTierKey,
+      asFactors, asTierKey,
       genomicAssessed, genomicRiskTier, genomicScore, genomicFactors,
       psmaAssessed, psmaFinding, psmaScore, psmaFactors,
       monitoringSchedule, monitoringLabel, monitoringTier, features, featureCount,

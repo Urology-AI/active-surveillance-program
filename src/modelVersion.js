@@ -36,7 +36,7 @@ export const COHORT = {
   n: 1213,
   upgradeEvents: 305,
   validationType: 'Internal cohort validation (retrospective)',
-  reference: 'Kadeer N et al., Eur Urol 2025',
+  reference: 'Kadeer A et al., Front Oncol 2025;15:1602134, doi:10.3389/fonc.2025.1602134',
   // TODO(provenance): the calendar date the N=1,213 extract was frozen is not
   // recorded anywhere in this repository. Populate with the actual data-cut
   // date from the Tewari program data dictionary before any regulatory
@@ -51,7 +51,7 @@ export const COHORT = {
  * monitoring feature sources). Nothing here is inferred.
  */
 export const GUIDELINES = [
-  { body: 'AUA/ASTRO', edition: 'Clinically Localized Prostate Cancer Guideline 2022' },
+  { body: 'AUA/ASTRO', edition: 'Clinically Localized Prostate Cancer: AUA/ASTRO Guideline Amendment (2026), doi:10.1097/JU.0000000000005060 — amends the 2022 edition' },
   { body: 'NCCN',      edition: 'Prostate Cancer Version 3.2024' },
   { body: 'EAU',       edition: 'EAU-EANM-ESTRO-ESUR-SIOG Guidelines 2024' },
 ]
@@ -61,7 +61,7 @@ export const EVIDENCE_SOURCES = [
   'PRIAS protocol',
   "D'Amico AV et al., JAMA 2004",
   'Bastian PJ et al., 2004',
-  'Kadeer N et al., Eur Urol 2025',
+  'Kadeer A et al., Front Oncol 2025;15:1602134, doi:10.3389/fonc.2025.1602134',
 ]
 
 /**
