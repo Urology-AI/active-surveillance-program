@@ -60,7 +60,7 @@ export default function EndStateActiveSurveillance({ onReset, pathSummary, onBac
         React.createElement('button', {
           onClick: onContinuePart2,
           className: 'btn-primary w-full flex items-center justify-center gap-2 py-3.5 rounded-xl font-bold text-white',
-          style: { background: 'linear-gradient(135deg, #212070 0%, #1a1a5e 100%)', boxShadow: '0 4px 16px rgba(33,32,112,0.25)' }
+          style: { background: 'linear-gradient(135deg, #221f72 0%, #17134f 100%)', boxShadow: '0 4px 16px rgba(33,32,112,0.25)' }
         },
           'Continue to Pre-Enrollment Verification',
           React.createElement(ArrowRight, { className: 'w-5 h-5' })

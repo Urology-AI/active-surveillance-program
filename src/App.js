@@ -116,8 +116,8 @@ const STEPS_14 = [
 ]
 
 const PART_META = {
-  1: { label: 'Part 1', range: 'Steps 1–5',   color: '#06ABEB' },
-  2: { label: 'Part 2', range: 'Steps 6–9',   color: '#DC298D' },
+  1: { label: 'Part 1', range: 'Steps 1–5',   color: '#0288d1' },
+  2: { label: 'Part 2', range: 'Steps 6–9',   color: '#d31f7a' },
   3: { label: 'Part 3', range: 'Steps 10–14', color: '#10b981' },
 }
 
@@ -240,7 +240,7 @@ function FlowchartPanel({ currentStepKey, stepHistory, onExpand }) {
   const visitedKeys = new Set(stepHistory)
   const currentNum  = stepKeyToNum(currentStepKey)
 
-  const C = { cerulean: '#06ABEB', emerald: '#10b981', navy: '#212070', magenta: '#DC298D' }
+  const C = { cerulean: '#0288d1', emerald: '#10b981', navy: '#221f72', magenta: '#d31f7a' }
 
   return React.createElement('div', {
     style: { padding: 14, display: 'flex', flexDirection: 'column', height: '100%' },
@@ -319,7 +319,7 @@ function FlowchartPanel({ currentStepKey, stepHistory, onExpand }) {
       }),
       // Part labels
       React.createElement('text', { x: 5, y: 46, fontSize: 8, fontWeight: 700, fill: C.cerulean }, 'P1'),
-      React.createElement('text', { x: 5, y: 196, fontSize: 8, fontWeight: 700, fill: '#DC298D' }, 'P2'),
+      React.createElement('text', { x: 5, y: 196, fontSize: 8, fontWeight: 700, fill: '#d31f7a' }, 'P2'),
       React.createElement('text', { x: 5, y: 336, fontSize: 8, fontWeight: 700, fill: C.emerald }, 'P3'),
     ),
 
@@ -476,7 +476,7 @@ function App({ externalHeader, onPathwayMetaChange, pathwayResetRef } = {}) {
       React.createElement('div', { className: 'flex flex-col gap-2' },
         React.createElement('button', {
           onClick: resumeProgress,
-          className: 'w-full py-2.5 bg-sinai-cerulean text-white font-semibold rounded-xl hover:bg-sinai-cerulean-dark transition-colors',
+          className: 'w-full py-2.5 bg-sinai-navy text-white font-semibold rounded-xl hover:bg-sinai-cerulean-dark transition-colors',
         }, 'Resume'),
         React.createElement('button', {
           onClick: startOver,

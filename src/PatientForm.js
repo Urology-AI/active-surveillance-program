@@ -331,7 +331,7 @@ export default function PatientForm({ onSubmit, initialValues = {} }) {
     e('div', { className: 'bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden' },
       e('div', { className: 'flex items-center justify-between px-4 pt-4 pb-3 border-b border-gray-50' },
         e('div', { className: 'flex items-center gap-2' },
-          e('div', { className: 'w-2 h-2 rounded-full flex-shrink-0', style: { background: '#06ABEB' } }),
+          e('div', { className: 'w-2 h-2 rounded-full flex-shrink-0', style: { background: '#0288d1' } }),
           e('span', { className: 'font-semibold text-gray-900 text-sm' }, 'Biopsy & Clinical Data')
         ),
         e('div', { className: 'flex items-center gap-2' },
@@ -661,7 +661,7 @@ export default function PatientForm({ onSubmit, initialValues = {} }) {
     e('button', {
       type: 'submit',
       className: 'btn-primary w-full py-3 rounded-xl font-semibold text-sm text-white shadow-md transition-all duration-150',
-      style: { background: '#06ABEB' },
+      style: { background: '#0288d1' },
     }, 'Calculate Assessment')
   )
 }

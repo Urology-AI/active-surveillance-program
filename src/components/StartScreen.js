@@ -2,8 +2,8 @@ import React from 'react'
 import { Activity, ChevronRight } from 'lucide-react'
 
 const PARTS = [
-  { num: '1', title: 'Initial Risk Stratification', color: '#06ABEB', steps: 'Steps 1 – 5' },
-  { num: '2', title: 'Pre-Enrollment Verification', color: '#DC298D', steps: 'Steps 6 – 9' },
+  { num: '1', title: 'Initial Risk Stratification', color: '#0288d1', steps: 'Steps 1 – 5' },
+  { num: '2', title: 'Pre-Enrollment Verification', color: '#d31f7a', steps: 'Steps 6 – 9' },
   { num: '3', title: 'Standard AS Protocol', color: '#10b981', steps: 'Steps 10 – 14' },
 ]
 
@@ -19,18 +19,18 @@ export default function StartScreen({ onStart }) {
       // Top gradient banner
       React.createElement('div', {
         className: 'px-4 sm:px-8 pt-6 sm:pt-8 pb-6 sm:pb-7 text-center',
-        style: { background: 'linear-gradient(135deg, #00002D 0%, #212070 55%, #06ABEB 140%)' },
+        style: { background: 'linear-gradient(140deg, #221f72 0%, #17134f 100%)' },
       },
         React.createElement('div', { className: 'flex justify-center mb-5' },
           React.createElement('div', {
             className: 'w-16 h-16 rounded-2xl flex items-center justify-center',
-            style: { background: 'rgba(6,171,235,0.25)', border: '1.5px solid rgba(6,171,235,0.4)' },
+            style: { background: 'rgba(2,136,209,0.25)', border: '1.5px solid rgba(2,136,209,0.4)' },
           },
             React.createElement(Activity, { className: 'w-8 h-8 text-white' })
           )
         ),
         React.createElement('p', {
-          style: { fontSize: '11px', fontWeight: 800, letterSpacing: '0.18em', color: '#06ABEB', textTransform: 'uppercase', marginBottom: '6px' },
+          style: { fontSize: '11px', fontWeight: 800, letterSpacing: '0.18em', color: '#0288d1', textTransform: 'uppercase', marginBottom: '6px' },
         }, 'Mount Sinai · Urology'),
         React.createElement('h1', {
           className: 'font-bold text-white mb-2',
@@ -47,15 +47,15 @@ export default function StartScreen({ onStart }) {
         // Trigger callout
         React.createElement('div', {
           className: 'flex items-center gap-3 p-4 rounded-xl mb-6',
-          style: { background: 'rgb(6 171 235 / 0.06)', border: '1px solid rgb(6 171 235 / 0.2)' },
+          style: { background: 'rgb(2 136 209 / 0.06)', border: '1px solid rgb(2 136 209 / 0.2)' },
         },
           React.createElement('div', {
             className: 'w-2.5 h-2.5 rounded-full shrink-0',
-            style: { background: '#06ABEB' },
+            style: { background: '#0288d1' },
           }),
           React.createElement('p', {
             className: 'text-sm font-semibold',
-            style: { color: '#212070' },
+            style: { color: '#221f72' },
           }, 'Trigger: 1st Positive Biopsy · 4-Week Clinic Follow-Up')
         ),
 
@@ -84,7 +84,7 @@ export default function StartScreen({ onStart }) {
         React.createElement('button', {
           onClick: onStart,
           className: 'btn-primary w-full flex items-center justify-center gap-2 py-4 rounded-xl font-bold text-white text-base',
-          style: { background: 'linear-gradient(135deg, #06ABEB 0%, #0596c7 100%)', boxShadow: '0 4px 18px rgba(6,171,235,0.35)' },
+          style: { background: '#221f72', boxShadow: '0 4px 18px rgba(34,31,114,0.2)' },
         },
           'Begin Assessment',
           React.createElement(ChevronRight, { className: 'w-5 h-5' })

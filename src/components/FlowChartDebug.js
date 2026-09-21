@@ -61,7 +61,7 @@ export default function FlowChartDebug({ currentStep, stepHistory, onStepClick }
   }
 
   const getStepColor = (step) => {
-    if (step === currentStep) return 'bg-sinai-cerulean text-white'
+    if (step === currentStep) return 'bg-sinai-navy text-white'
     if (stepHistory.includes(step)) return 'bg-emerald-100 text-emerald-800'
     return 'bg-slate-100 text-slate-600'
   }

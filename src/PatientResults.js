@@ -258,7 +258,7 @@ function ModelValidationCard() {
       e('div', { className: 'flex items-center gap-2.5' },
         e('div', {
           className: 'w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0',
-          style: { background: '#212070' },
+          style: { background: '#221f72' },
         },
           e('svg', { className: 'w-4 h-4 text-white', fill: 'none', viewBox: '0 0 24 24', stroke: 'currentColor', strokeWidth: 2 },
             e('path', { strokeLinecap: 'round', strokeLinejoin: 'round', d: 'M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z' })
@@ -473,7 +473,7 @@ function CohortContextSection({ cohortContext }) {
       e('div', { className: 'flex items-center gap-2.5' },
         e('div', {
           className: 'w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0',
-          style: { background: '#06ABEB' },
+          style: { background: '#0288d1' },
         },
           e('svg', { className: 'w-4 h-4 text-white', fill: 'none', viewBox: '0 0 24 24', stroke: 'currentColor', strokeWidth: 2 },
             e('path', { strokeLinecap: 'round', strokeLinejoin: 'round', d: 'M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z' })
@@ -514,7 +514,7 @@ function CohortContextSection({ cohortContext }) {
           e('div', { className: 'flex items-start gap-2' },
             e('div', {
               className: 'w-1.5 h-1.5 rounded-full flex-shrink-0 mt-1.5',
-              style: { background: '#06ABEB' },
+              style: { background: '#0288d1' },
             }),
             e('div', { className: 'flex-1 min-w-0' },
               e('p', { className: 'text-xs font-semibold text-sky-800 mb-0.5' }, item.label),
@@ -848,7 +848,7 @@ export default function PatientResults({ results, inputs, onBack, onDownloadData
       e('button', {
         onClick: () => window.print(),
         className: 'flex-1 min-w-[160px] py-3 rounded-xl text-sm font-semibold text-white shadow-sm hover:opacity-90 transition-opacity',
-        style: { background: '#06ABEB' },
+        style: { background: '#0288d1' },
       },
         e('span', { className: 'flex items-center justify-center gap-1.5' },
           e('svg', { className: 'w-4 h-4', fill: 'none', viewBox: '0 0 24 24', stroke: 'currentColor', strokeWidth: 2 },

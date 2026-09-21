@@ -5,33 +5,31 @@ import CareTeamModal from './components/CareTeamModal.js'
 const e = React.createElement
 
 const C = {
-  cetacean: '#00002D',
-  navy: '#212070',
-  cerulean: '#06ABEB',
-  ceruleanDark: '#0596c7',
+  navy: '#221f72',
+  navyDark: '#17134f',
+  navy10: '#e8e7f5',
+  cyan: '#0288d1',
+  magenta: '#d31f7a',
+  ink: '#1a1a24',
+  muted: '#5c5c70',
+  line: '#e2e2ea',
+  bg: '#f4f4f8',
+  shadow: '0 1px 2px rgba(26,26,36,0.04), 0 8px 24px rgba(26,26,36,0.06)',
 }
 
 function BrandMark() {
   return e('div', { style: { display: 'flex', alignItems: 'center', gap: 10 } },
     e('div', {
       style: {
-        width: 32, height: 32, borderRadius: 8, flexShrink: 0,
-        background: `linear-gradient(135deg, ${C.cerulean} 0%, ${C.ceruleanDark} 100%)`,
+        width: 34, height: 34, borderRadius: 8, flexShrink: 0, background: C.navy,
         display: 'flex', alignItems: 'center', justifyContent: 'center',
       },
     },
-      e(Activity, { style: { width: 16, height: 16, color: '#fff' } })
+      e(Activity, { style: { width: 17, height: 17, color: '#fff' } })
     ),
-    e('div', { style: { lineHeight: 1 } },
-      e('div', {
-        style: {
-          fontSize: 9, fontWeight: 800, letterSpacing: '0.14em',
-          color: C.cerulean, textTransform: 'uppercase',
-        },
-      }, 'Mount Sinai'),
-      e('div', {
-        style: { fontSize: 13, fontWeight: 700, color: '#fff', marginTop: 2 },
-      }, 'Tewari AS Program')
+    e('div', null,
+      e('div', { style: { fontSize: 17, fontWeight: 700, color: C.navy, lineHeight: 1.2 } }, 'Tewari AS Program'),
+      e('div', { style: { fontSize: 12, color: C.muted } }, 'Mount Sinai · Urology')
     )
   )
 }
@@ -40,7 +38,7 @@ function BrandMark() {
 function StethIcon() {
   return e('svg', {
     width: 18, height: 18, viewBox: '0 0 24 24', fill: 'none',
-    stroke: '#fff', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round',
+    stroke: C.navy, strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round',
   },
     e('path', { d: 'M4.8 2.3A.3.3 0 1 0 5 2H4a2 2 0 0 0-2 2v5a6 6 0 0 0 6 6v0a6 6 0 0 0 6-6V4a2 2 0 0 0-2-2h-1a.2.2 0 1 0 .3.3' }),
     e('path', { d: 'M8 15v1a6 6 0 0 0 6 6v0a6 6 0 0 0 6-6v-4' }),
@@ -51,7 +49,7 @@ function StethIcon() {
 function ChevronRightIcon() {
   return e('svg', {
     width: 16, height: 16, viewBox: '0 0 24 24', fill: 'none',
-    stroke: 'rgba(255,255,255,0.5)', strokeWidth: 2,
+    stroke: C.muted, strokeWidth: 2,
     strokeLinecap: 'round', strokeLinejoin: 'round',
   },
     e('polyline', { points: '9 18 15 12 9 6' })
@@ -74,21 +72,15 @@ const ROLES = [
     key: 'patient',
     title: 'I am a Patient',
     desc: 'Educational resources and guideline topics for your care.',
-    icon: () => e(User, { style: { width: 18, height: 18, color: C.cerulean } }),
-    tileStyle: {
-      background: `${C.cerulean}22`,
-      border: `1px solid ${C.cerulean}44`,
-    },
+    icon: () => e(User, { style: { width: 18, height: 18, color: C.navy } }),
+    tileStyle: { background: C.navy10 },
   },
   {
     key: 'clinician',
     title: 'I am a Clinician',
     desc: 'Clinical pathway and AS decision-support calculator.',
     icon: StethIcon,
-    tileStyle: {
-      background: 'rgba(255,255,255,0.08)',
-      border: '1px solid rgba(255,255,255,0.18)',
-    },
+    tileStyle: { background: C.navy10 },
   },
 ]
 
@@ -96,137 +88,93 @@ export default function RoleSelector({ onSelectRole }) {
   const [careOpen, setCareOpen] = useState(false)
 
   return e('div', {
-    style: {
-      minHeight: '100vh',
-      display: 'flex',
-      flexDirection: 'column',
-      background: `linear-gradient(165deg, ${C.cetacean} 0%, ${C.navy} 70%, ${C.cerulean} 150%)`,
-    },
+    style: { minHeight: '100vh', display: 'flex', flexDirection: 'column', background: C.bg, color: C.ink },
   },
     e(CareTeamModal, { open: careOpen, onClose: () => setCareOpen(false) }),
 
-    // Top strip
-    e('div', {
-      style: {
-        padding: '14px 18px',
-        borderBottom: '1px solid rgba(255,255,255,0.08)',
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        flexShrink: 0,
-      },
-    },
-      e(BrandMark),
-      e('button', {
-        type: 'button',
-        onClick: () => setCareOpen(true),
+    // Header — same shell as ePSA / e-Biopsy
+    e('header', { style: { background: '#fff', borderBottom: `1px solid ${C.line}`, flexShrink: 0 } },
+      e('div', {
         style: {
-          background: 'transparent',
-          border: '1px solid rgba(255,255,255,0.18)',
-          color: 'rgba(255,255,255,0.8)',
-          padding: '5px 10px', borderRadius: 999,
-          fontSize: 11, fontWeight: 600,
-          display: 'flex', alignItems: 'center', gap: 5,
-          cursor: 'pointer',
+          maxWidth: 760, margin: '0 auto', padding: '10px 16px',
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12,
         },
       },
-        e(InfoIcon),
-        'Care Team'
-      )
+        e(BrandMark),
+        e('button', {
+          type: 'button',
+          onClick: () => setCareOpen(true),
+          style: {
+            background: '#fff', border: `1px solid ${C.line}`, color: C.muted,
+            padding: '6px 12px', borderRadius: 999, fontSize: 13, fontWeight: 500,
+            display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer',
+          },
+        }, e(InfoIcon), 'Care Team')
+      ),
+      e('div', { style: { height: 3, background: `linear-gradient(90deg, ${C.navy} 0%, ${C.cyan} 55%, ${C.magenta} 100%)` } })
     ),
 
-    // Centered main content
-    e('div', {
-      style: {
-        flex: 1,
-        display: 'flex', flexDirection: 'column', justifyContent: 'center',
-        padding: '0 28px',
-      },
-    },
-
-      // Eyebrow + title + divider
-      e('div', { style: { textAlign: 'center', marginBottom: 32 } },
-        e('p', {
-          style: {
-            fontSize: 10, fontWeight: 800, letterSpacing: '0.22em',
-            color: C.cerulean, textTransform: 'uppercase',
-            margin: 0, marginBottom: 8,
-          },
-        }, 'Mount Sinai · Urology'),
-        e('h1', {
-          style: {
-            color: '#fff', fontSize: 26, fontWeight: 700,
-            margin: 0, lineHeight: 1.15, letterSpacing: '-0.01em',
-          },
-        }, 'Tewari Active', e('br'), 'Surveillance Program'),
-        e('div', {
-          style: {
-            width: 40, height: 2,
-            background: C.cerulean,
-            margin: '14px auto 0',
-          },
-        })
-      ),
-
-      // "Choose your role" label
-      e('p', {
+    e('main', { style: { flex: 1, width: '100%', maxWidth: 760, margin: '0 auto', padding: '24px 16px 40px' } },
+      // Hero card
+      e('div', {
         style: {
-          fontSize: 11, fontWeight: 700, letterSpacing: '0.18em',
-          color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase',
-          textAlign: 'center', margin: '0 0 14px',
+          background: '#fff', border: `1px solid ${C.line}`, borderRadius: 10,
+          boxShadow: C.shadow, overflow: 'hidden',
         },
-      }, 'Choose your role'),
-
-      // Role buttons
-      e('div', { style: { display: 'flex', flexDirection: 'column', gap: 10 } },
-        ROLES.map(r =>
-          e('button', {
-            key: r.key,
-            type: 'button',
-            onClick: () => onSelectRole(r.key),
+      },
+        e('div', { style: { background: `linear-gradient(140deg, ${C.navy} 0%, ${C.navyDark} 100%)`, color: '#fff', padding: '28px 24px' } },
+          e('p', {
             style: {
-              background: 'rgba(255,255,255,0.06)',
-              border: '1px solid rgba(255,255,255,0.14)',
-              borderRadius: 12, padding: '14px 16px',
-              display: 'flex', alignItems: 'center', gap: 14,
-              textAlign: 'left', cursor: 'pointer', width: '100%',
-              transition: 'background 0.15s, border-color 0.15s',
+              margin: '0 0 6px', fontSize: 12, fontWeight: 600, letterSpacing: '.06em',
+              textTransform: 'uppercase', color: '#9fd8f6',
             },
-            onMouseEnter: ev => {
-              ev.currentTarget.style.background = 'rgba(255,255,255,0.10)'
-              ev.currentTarget.style.borderColor = 'rgba(255,255,255,0.25)'
+          }, 'Mount Sinai · Urology'),
+          e('h1', { style: { margin: '0 0 8px', fontSize: 28, fontWeight: 700, lineHeight: 1.25, color: '#fff' } }, 'Tewari Active Surveillance Program'),
+          e('p', { style: { margin: 0, opacity: 0.92, lineHeight: 1.55 } },
+            'Guideline-based education for patients and a decision-support pathway for clinicians.')
+        ),
+        e('div', { style: { padding: '22px 24px 24px' } },
+          e('p', {
+            style: {
+              margin: '0 0 10px', fontSize: 12, fontWeight: 600, letterSpacing: '.06em',
+              textTransform: 'uppercase', color: C.cyan,
             },
-            onMouseLeave: ev => {
-              ev.currentTarget.style.background = 'rgba(255,255,255,0.06)'
-              ev.currentTarget.style.borderColor = 'rgba(255,255,255,0.14)'
-            },
-          },
-            // Icon tile
-            e('div', {
-              style: {
-                width: 38, height: 38, borderRadius: 10, flexShrink: 0,
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                ...r.tileStyle,
+          }, 'Choose your role'),
+          e('div', { style: { display: 'grid', gap: 8 } },
+            ROLES.map(r =>
+              e('button', {
+                key: r.key,
+                type: 'button',
+                onClick: () => onSelectRole(r.key),
+                style: {
+                  background: '#fff', border: `1px solid ${C.line}`, borderRadius: 8,
+                  padding: '12px 14px', display: 'flex', alignItems: 'center', gap: 14,
+                  textAlign: 'left', cursor: 'pointer', width: '100%', color: C.ink,
+                  transition: 'border-color 0.15s, background 0.15s',
+                },
+                onMouseEnter: ev => { ev.currentTarget.style.borderColor = C.navy; ev.currentTarget.style.background = '#fafaff' },
+                onMouseLeave: ev => { ev.currentTarget.style.borderColor = C.line; ev.currentTarget.style.background = '#fff' },
               },
-            },
-              e(r.icon)
-            ),
-            // Text
-            e('div', { style: { flex: 1, minWidth: 0 } },
-              e('div', { style: { color: '#fff', fontSize: 15, fontWeight: 700, marginBottom: 2 } }, r.title),
-              e('div', { style: { color: 'rgba(255,255,255,0.55)', fontSize: 12, lineHeight: 1.35 } }, r.desc)
-            ),
-            e(ChevronRightIcon)
+                e('div', {
+                  style: {
+                    width: 38, height: 38, borderRadius: 8, flexShrink: 0,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    ...r.tileStyle,
+                  },
+                }, e(r.icon)),
+                e('div', { style: { flex: 1, minWidth: 0 } },
+                  e('div', { style: { color: C.navy, fontSize: 16, fontWeight: 600, marginBottom: 2 } }, r.title),
+                  e('div', { style: { color: C.muted, fontSize: 14, lineHeight: 1.4 } }, r.desc)
+                ),
+                e(ChevronRightIcon)
+              )
+            )
           )
         )
-      )
-    ),
+      ),
 
-    // Footer disclaimer
-    e('p', {
-      style: {
-        textAlign: 'center', fontSize: 10,
-        color: 'rgba(255,255,255,0.4)',
-        padding: '18px 40px', lineHeight: 1.5, margin: 0, flexShrink: 0,
-      },
-    }, 'For educational and clinical decision-support purposes only. Not a substitute for professional medical advice.')
+      e('p', { style: { textAlign: 'center', fontSize: 13, color: C.muted, lineHeight: 1.5, margin: '20px 0 0' } },
+        'For educational and clinical decision-support purposes only. Not a substitute for professional medical advice.')
+    )
   )
 }

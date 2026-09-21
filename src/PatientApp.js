@@ -24,7 +24,7 @@ const SOURCE_BADGE = {
     dot: '#10b981', label: 'From your handout',
   },
   qa: {
-    dot: '#06ABEB', label: 'Guideline topics',
+    dot: '#0288d1', label: 'Guideline topics',
   },
   gemini: {
     dot: '#8b5cf6', label: 'AI answer (Gemini)',
@@ -198,7 +198,7 @@ function BrandMark() {
     e('div', {
       style: {
         width: 28, height: 28, borderRadius: 7, flexShrink: 0,
-        background: 'linear-gradient(135deg, #06ABEB 0%, #0596c7 100%)',
+        background: '#221f72',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
       },
     },
@@ -206,14 +206,9 @@ function BrandMark() {
     ),
     e('div', { style: { lineHeight: 1 } },
       e('div', {
-        style: {
-          fontSize: 8, fontWeight: 800, letterSpacing: '0.14em',
-          color: '#06ABEB', textTransform: 'uppercase',
-        },
-      }, 'Mount Sinai'),
-      e('div', {
-        style: { fontSize: 12, fontWeight: 700, color: '#fff', marginTop: 1 },
-      }, 'Tewari AS Program')
+        style: { fontSize: 14, fontWeight: 700, color: '#221f72', marginTop: 1 },
+      }, 'Tewari AS Program'),
+    e('div', { style: { fontSize: 12, color: '#5c5c70', lineHeight: 1.3 } }, 'Mount Sinai · Urology')
     )
   )
 }
@@ -288,10 +283,10 @@ function TopicIntroCard({ topic, onSelectQuestion, disabled }) {
     e('div', {
       style: { display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 },
     },
-      e(BookOpen, { style: { width: 13, height: 13, color: '#06ABEB' } }),
+      e(BookOpen, { style: { width: 13, height: 13, color: '#0288d1' } }),
       e('span', {
         style: {
-          fontSize: 10.5, fontWeight: 700, color: '#06ABEB',
+          fontSize: 10.5, fontWeight: 700, color: '#0288d1',
           letterSpacing: '0.06em', textTransform: 'uppercase',
         },
       }, topic.category)
@@ -472,14 +467,14 @@ export default function PatientApp({ onBack }) {
   }
 
   return e('div', {
-    style: { minHeight: '100vh', display: 'flex', flexDirection: 'column', background: '#f8fafc' },
+    style: { minHeight: '100vh', display: 'flex', flexDirection: 'column', background: '#f4f4f8' },
   },
     e(CareTeamModal, { open: careOpen, onClose: () => setCareOpen(false) }),
 
     // ── Header ─────────────────────────────────────────────────────────────────
     e('div', {
       className: 'no-print shrink-0',
-      style: { background: '#00002D', flexShrink: 0 },
+      style: { background: '#fff', borderBottom: '1px solid #e2e2ea', flexShrink: 0 },
     },
       e('div', {
         style: {
@@ -493,7 +488,7 @@ export default function PatientApp({ onBack }) {
           type: 'button', onClick: onBack,
           style: {
             background: 'transparent', border: 'none',
-            color: 'rgba(255,255,255,0.65)', fontSize: 12,
+            color: '#5c5c70', fontSize: 12,
             display: 'flex', alignItems: 'center', gap: 4, cursor: 'pointer',
           },
         },
@@ -510,8 +505,8 @@ export default function PatientApp({ onBack }) {
         e('button', {
           type: 'button', onClick: () => setCareOpen(true),
           style: {
-            background: 'transparent', border: '1px solid rgba(255,255,255,0.18)',
-            color: 'rgba(255,255,255,0.85)', padding: '4px 8px', borderRadius: 999,
+            background: '#fff', border: '1px solid #e2e2ea',
+            color: '#5c5c70', padding: '4px 8px', borderRadius: 999,
             fontSize: 11, fontWeight: 600, cursor: 'pointer',
             display: 'flex', alignItems: 'center', gap: 4,
           },
@@ -533,7 +528,7 @@ export default function PatientApp({ onBack }) {
           maxWidth: 640, margin: '0 auto',
           padding: '5px 14px 8px',
           display: 'flex', alignItems: 'center', gap: 6,
-          borderTop: '1px solid rgba(255,255,255,0.08)',
+          borderTop: '1px solid #e2e2ea',
         },
       },
         e('span', {
@@ -543,9 +538,10 @@ export default function PatientApp({ onBack }) {
           },
         }),
         e('span', {
-          style: { fontSize: 10, color: GEMINI_KEY_CONFIGURED ? 'rgba(52,211,153,0.95)' : 'rgba(255,255,255,0.45)' },
+          style: { fontSize: 10, color: GEMINI_KEY_CONFIGURED ? '#1b7f4b' : '#5c5c70' },
         }, GEMINI_KEY_CONFIGURED ? 'Gemini AI connected' : 'AI assistant offline — handout & topics only')
-      )
+      ),
+      e('div', { style: { height: 3, background: 'linear-gradient(90deg, #221f72 0%, #0288d1 55%, #d31f7a 100%)' } })
     ),
 
     // ── Topic rail ─────────────────────────────────────────────────────────────
@@ -567,9 +563,9 @@ export default function PatientApp({ onBack }) {
             fontSize: 11.5, fontWeight: 600, flexShrink: 0,
             cursor: chatLoading ? 'not-allowed' : 'pointer',
             opacity: chatLoading ? 0.5 : 1,
-            background: i === activeTopic ? '#06ABEB14' : '#f8fafc',
-            border: `1px solid ${i === activeTopic ? '#06ABEB44' : '#e2e8f0'}`,
-            color: i === activeTopic ? '#212070' : '#475569',
+            background: i === activeTopic ? '#0288d114' : '#f8fafc',
+            border: `1px solid ${i === activeTopic ? '#0288d144' : '#e2e8f0'}`,
+            color: i === activeTopic ? '#221f72' : '#475569',
             transition: 'all 0.15s',
           },
         }, t.railLabel)
@@ -636,7 +632,7 @@ export default function PatientApp({ onBack }) {
           disabled: chatLoading || !input.trim(),
           style: {
             padding: '0 16px', borderRadius: 10,
-            background: chatLoading || !input.trim() ? '#cbd5e1' : '#06ABEB',
+            background: chatLoading || !input.trim() ? '#cbd5e1' : '#0288d1',
             color: '#fff', border: 'none',
             fontSize: 13, fontWeight: 700, cursor: chatLoading || !input.trim() ? 'not-allowed' : 'pointer',
             transition: 'background 0.15s',
