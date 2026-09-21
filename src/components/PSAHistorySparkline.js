@@ -76,15 +76,15 @@ export default function PSAHistorySparkline({ patientId }) {
       // dashed doubling-threshold line
       yThresh >= padT && yThresh <= padT + cH && e('line', {
         x1: padL, y1: yThresh, x2: W - padR, y2: yThresh,
-        stroke: '#DC298D', strokeWidth: 1.2, strokeDasharray: '4,3',
+        stroke: '#d31f7a', strokeWidth: 1.2, strokeDasharray: '4,3',
       }),
       yThresh >= padT && yThresh <= padT + cH && e('text', {
-        x: W - padR, y: yThresh - 4, textAnchor: 'end', fontSize: 8, fill: '#DC298D', fontWeight: 700,
+        x: W - padR, y: yThresh - 4, textAnchor: 'end', fontSize: 8, fill: '#d31f7a', fontWeight: 700,
       }, `Doubling (${doublingThreshold.toFixed(1)})`),
 
       // PSA line + dots
-      e('path', { d: pathD, fill: 'none', stroke: '#06ABEB', strokeWidth: 2, strokeLinejoin: 'round', strokeLinecap: 'round' }),
-      pts.map((p, i) => e('circle', { key: i, cx: p.x, cy: p.y, r: 3.5, fill: '#06ABEB', stroke: '#fff', strokeWidth: 1.5 })),
+      e('path', { d: pathD, fill: 'none', stroke: '#0288d1', strokeWidth: 2, strokeLinejoin: 'round', strokeLinecap: 'round' }),
+      pts.map((p, i) => e('circle', { key: i, cx: p.x, cy: p.y, r: 3.5, fill: '#0288d1', stroke: '#fff', strokeWidth: 1.5 })),
 
       // x labels
       entries.map((en, i) => e('text', {
@@ -96,16 +96,16 @@ export default function PSAHistorySparkline({ patientId }) {
       // last value label
       e('text', {
         x: pts[pts.length - 1].x + 6, y: pts[pts.length - 1].y + 3.5,
-        fontSize: 9, fill: '#0596c7', fontWeight: 700,
+        fontSize: 9, fill: '#0277bd', fontWeight: 700,
       }, psaVals[psaVals.length - 1])
     ),
     psadSeries && e('div', { style: { marginTop: 6, fontSize: 11, color: '#64748b' } },
-      e('span', { style: { fontWeight: 700, color: '#212070' } }, 'PSAD trend: '),
+      e('span', { style: { fontWeight: 700, color: '#221f72' } }, 'PSAD trend: '),
       psadSeries.map(v => v.toFixed(3)).join(' → ')
     ),
     (velocity.value !== null || doublingTime.value !== null) &&
       e('div', { style: { marginTop: 4, fontSize: 11, color: '#64748b' } },
-        e('span', { style: { fontWeight: 700, color: '#212070' } }, 'Derived: '),
+        e('span', { style: { fontWeight: 700, color: '#221f72' } }, 'Derived: '),
         [
           velocity.value !== null ? `velocity ${formatVelocity(velocity)}` : null,
           doublingTime.value !== null ? `PSADT ${formatDoublingTime(doublingTime)}` : null,

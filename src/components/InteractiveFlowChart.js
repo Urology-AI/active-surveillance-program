@@ -74,7 +74,7 @@ const CONNECTIONS = [
 
 // ─── HELPERS ─────────────────────────────────────────────────────────────────
 function getColors(colorHint, isCurrent, isVisited) {
-  if (isCurrent)  return { fill: '#06ABEB', stroke: '#212070', text: '#ffffff', sw: 3 }
+  if (isCurrent)  return { fill: '#0288d1', stroke: '#221f72', text: '#ffffff', sw: 3 }
   if (isVisited)  return { fill: '#059669', stroke: '#047857', text: '#ffffff', sw: 2 }
   switch (colorHint) {
     case 'success': return { fill: '#d1fae5', stroke: '#6ee7b7', text: '#065f46', sw: 1.5 }
@@ -142,7 +142,7 @@ function DrawConnection({ conn, stepHistory, currentStep }) {
     active = path.includes('end_active_surveillance') && path.includes('step6')
   }
 
-  const color  = active ? '#06ABEB' : '#cbd5e1'
+  const color  = active ? '#0288d1' : '#cbd5e1'
   const sw     = active ? 2.5 : 1
   const marker = active ? 'url(#arr-active)' : 'url(#arr-default)'
   const label  = conn.label || ''
@@ -185,8 +185,8 @@ function DrawNode({ nodeId, node, isCurrent, isVisited, onStepClick }) {
     return React.createElement('g', { onClick: handleClick, style: { cursor: 'pointer' } },
       React.createElement('polygon', {
         points: pts,
-        fill: isCurrent ? '#DC298D' : '#f9a8d4',
-        stroke: isCurrent ? '#212070' : '#be185d',
+        fill: isCurrent ? '#d31f7a' : '#f9a8d4',
+        stroke: isCurrent ? '#221f72' : '#be185d',
         strokeWidth: isCurrent ? 3 : 1.5,
         className: 'transition-all duration-300 hover:opacity-80'
       }),
@@ -198,7 +198,7 @@ function DrawNode({ nodeId, node, isCurrent, isVisited, onStepClick }) {
       }, line)),
       isCurrent && React.createElement('circle', {
         cx: node.x + node.w - 8, cy: node.y + 8,
-        r: 5, fill: '#212070', className: 'animate-pulse pointer-events-none'
+        r: 5, fill: '#221f72', className: 'animate-pulse pointer-events-none'
       })
     )
   }
@@ -217,7 +217,7 @@ function DrawNode({ nodeId, node, isCurrent, isVisited, onStepClick }) {
     }, line)),
     isCurrent && React.createElement('circle', {
       cx: node.x + node.w - 8, cy: node.y + 8,
-      r: 5, fill: '#212070', className: 'animate-pulse pointer-events-none'
+      r: 5, fill: '#221f72', className: 'animate-pulse pointer-events-none'
     })
   )
 }
@@ -239,16 +239,16 @@ export default function InteractiveFlowChart({ currentStep, stepHistory, onStepC
       // Markers
       React.createElement('defs', null,
         React.createElement('marker', { id: 'arr-active',  markerWidth: '8', markerHeight: '8', refX: '7', refY: '3', orient: 'auto' },
-          React.createElement('polygon', { points: '0 0, 8 3, 0 6', fill: '#06ABEB' })),
+          React.createElement('polygon', { points: '0 0, 8 3, 0 6', fill: '#0288d1' })),
         React.createElement('marker', { id: 'arr-default', markerWidth: '8', markerHeight: '8', refX: '7', refY: '3', orient: 'auto' },
           React.createElement('polygon', { points: '0 0, 8 3, 0 6', fill: '#cbd5e1' }))
       ),
       // Part labels
-      React.createElement('text', { x: 270, y: 16, textAnchor: 'middle', fontSize: 9, fontWeight: 'bold', fill: '#212070', className: 'select-none' },
+      React.createElement('text', { x: 270, y: 16, textAnchor: 'middle', fontSize: 9, fontWeight: 'bold', fill: '#221f72', className: 'select-none' },
         'PART 1 — Initial Risk Stratification'
       ),
       React.createElement('line', { x1: 20, y1: 658, x2: 520, y2: 658, stroke: '#e2e8f0', strokeWidth: 1, strokeDasharray: '4 3' }),
-      React.createElement('text', { x: 270, y: 672, textAnchor: 'middle', fontSize: 9, fontWeight: 'bold', fill: '#DC298D', className: 'select-none' },
+      React.createElement('text', { x: 270, y: 672, textAnchor: 'middle', fontSize: 9, fontWeight: 'bold', fill: '#d31f7a', className: 'select-none' },
         'PART 2 — Pre-Enrollment Verification'
       ),
       React.createElement('line', { x1: 20, y1: 1290, x2: 520, y2: 1290, stroke: '#e2e8f0', strokeWidth: 1, strokeDasharray: '4 3' }),

@@ -26,9 +26,9 @@ import LongitudinalTimeline from './LongitudinalTimeline.js'
 
 const e = React.createElement
 
-const CERULEAN = '#06ABEB'
+const CERULEAN = '#0288d1'
 const CETACEAN = '#00002D'
-const NAVY = '#212070'
+const NAVY = '#221f72'
 
 const inputStyle = {
   width: '100%', padding: '7px 8px', border: '1px solid #e2e8f0',

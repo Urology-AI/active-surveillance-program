@@ -8,7 +8,7 @@ export default function Step2GleasonScore({ onGleason6, onGleason7_3_4, onGleaso
   const [showGleasonHelp, setShowGleasonHelp] = useState(false)
   return React.createElement('div', { className: 'bg-white rounded-xl shadow-sinai border border-slate-100 p-6 md:p-8' },
 
-    React.createElement('div', { className: 'inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-sinai-cerulean border border-sinai-cerulean/20 rounded-full px-3 py-1 mb-4', style: { background: 'rgb(6 171 235 / 0.08)' } },
+    React.createElement('div', { className: 'inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-sinai-cerulean border border-sinai-cerulean/20 rounded-full px-3 py-1 mb-4', style: { background: 'rgb(2 136 209 / 0.08)' } },
       'Part 1 · Initial Risk Stratification'
     ),
 

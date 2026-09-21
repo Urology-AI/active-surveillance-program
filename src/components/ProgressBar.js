@@ -30,7 +30,7 @@ export default function ProgressBar({ progress, stepLabel, onBack, onForward, ca
             style: {
               width: `${progress}%`,
               minWidth: progress > 0 ? '4px' : 0,
-              background: 'linear-gradient(90deg, #06ABEB 0%, #1e6ba8 55%, #212070 100%)',
+              background: 'linear-gradient(90deg, #0288d1 0%, #1e6ba8 55%, #221f72 100%)',
             },
           })
         )
@@ -39,7 +39,7 @@ export default function ProgressBar({ progress, stepLabel, onBack, onForward, ca
       // Percentage
       React.createElement('span', {
         className: 'text-xs font-bold min-w-[2.75rem] text-right shrink-0',
-        style: { color: '#212070' }
+        style: { color: '#221f72' }
       }, `${Math.round(progress)}%`),
 
       // Forward button

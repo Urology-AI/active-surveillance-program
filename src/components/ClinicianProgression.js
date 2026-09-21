@@ -23,8 +23,8 @@ import {
 const e = React.createElement
 
 const C = {
-  cerulean: '#06ABEB',
-  navy: '#212070',
+  cerulean: '#0288d1',
+  navy: '#221f72',
   cetacean: '#00002D',
   green: '#16a34a',
   amber: '#d97706',
@@ -234,13 +234,13 @@ function PatientForm({ initial, onSave, onCancel, isNew, prefill }) {
     prefillFields && prefillFields.length > 0 && e('div', {
       style: {
         padding: '8px 12px', borderRadius: 8,
-        background: 'rgb(6 171 235 / 0.07)', border: '1px solid rgb(6 171 235 / 0.25)',
+        background: 'rgb(2 136 209 / 0.07)', border: '1px solid rgb(2 136 209 / 0.25)',
         fontSize: 12, color: '#334155', display: 'flex', alignItems: 'center', gap: 8,
       },
     },
       e('svg', {
         width: 13, height: 13, viewBox: '0 0 24 24', fill: 'none',
-        stroke: '#06ABEB', strokeWidth: 2.5, strokeLinecap: 'round', strokeLinejoin: 'round', flexShrink: 0,
+        stroke: '#0288d1', strokeWidth: 2.5, strokeLinecap: 'round', strokeLinejoin: 'round', flexShrink: 0,
       },
         e('polyline', { points: '20 6 9 17 4 12' })
       ),
@@ -597,18 +597,18 @@ export default function ClinicianProgression({ onBack, onGoToFlow, patientData }
         patientData?.ggg != null && e('div', {
           style: {
             padding: '10px 16px', borderRadius: 10, maxWidth: 400,
-            background: 'rgb(6 171 235 / 0.07)', border: '1px solid rgb(6 171 235 / 0.25)',
+            background: 'rgb(2 136 209 / 0.07)', border: '1px solid rgb(2 136 209 / 0.25)',
             fontSize: 13, color: '#334155', textAlign: 'left',
           },
         },
           e('div', { style: { display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 } },
             e('svg', {
               width: 13, height: 13, viewBox: '0 0 24 24', fill: 'none',
-              stroke: '#06ABEB', strokeWidth: 2.5, strokeLinecap: 'round', strokeLinejoin: 'round',
+              stroke: '#0288d1', strokeWidth: 2.5, strokeLinecap: 'round', strokeLinejoin: 'round',
             },
               e('polyline', { points: '20 6 9 17 4 12' })
             ),
-            e('span', { style: { fontWeight: 700, color: '#06ABEB', fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.05em' } },
+            e('span', { style: { fontWeight: 700, color: '#0288d1', fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.05em' } },
               'AS Tool data ready'
             )
           ),
@@ -672,13 +672,13 @@ export default function ClinicianProgression({ onBack, onGoToFlow, patientData }
         patientData?.ggg != null && e('div', {
           style: {
             padding: '8px 14px', borderRadius: 10,
-            background: 'rgb(6 171 235 / 0.07)', border: '1px solid rgb(6 171 235 / 0.25)',
+            background: 'rgb(2 136 209 / 0.07)', border: '1px solid rgb(2 136 209 / 0.25)',
             fontSize: 12, color: '#334155', display: 'flex', alignItems: 'center', gap: 8,
           },
         },
           e('svg', {
             width: 12, height: 12, viewBox: '0 0 24 24', fill: 'none',
-            stroke: '#06ABEB', strokeWidth: 2.5, strokeLinecap: 'round', strokeLinejoin: 'round', flexShrink: 0,
+            stroke: '#0288d1', strokeWidth: 2.5, strokeLinecap: 'round', strokeLinejoin: 'round', flexShrink: 0,
           },
             e('polyline', { points: '20 6 9 17 4 12' })
           ),
@@ -688,7 +688,7 @@ export default function ClinicianProgression({ onBack, onGoToFlow, patientData }
           ),
           e('button', {
             type: 'button', onClick: handleNewPatient,
-            style: { marginLeft: 'auto', fontSize: 11, fontWeight: 700, color: '#06ABEB', background: 'transparent', border: 'none', cursor: 'pointer', whiteSpace: 'nowrap' },
+            style: { marginLeft: 'auto', fontSize: 11, fontWeight: 700, color: '#0288d1', background: 'transparent', border: 'none', cursor: 'pointer', whiteSpace: 'nowrap' },
           }, '+ Add as new patient →')
         ),
 

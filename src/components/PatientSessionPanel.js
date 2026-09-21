@@ -23,7 +23,7 @@ export default function PatientSessionPanel({ patientId, onPatientIdChange, onLo
       background: '#f8fafc', border: '1px solid #e2e8f0',
     },
   },
-    e('div', { style: { fontSize: 11, fontWeight: 700, color: '#212070', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 8 } },
+    e('div', { style: { fontSize: 11, fontWeight: 700, color: '#221f72', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 8 } },
       'Patient Session'
     ),
     e('label', { style: { fontSize: 12, fontWeight: 600, color: '#475569', display: 'block', marginBottom: 4 } },
@@ -44,8 +44,8 @@ export default function PatientSessionPanel({ patientId, onPatientIdChange, onLo
         type: 'button',
         onClick: handleLoad,
         style: {
-          padding: '8px 14px', borderRadius: 8, border: '1px solid #06ABEB',
-          background: loaded ? '#06ABEB' : '#fff', color: loaded ? '#fff' : '#06ABEB',
+          padding: '8px 14px', borderRadius: 8, border: '1px solid #0288d1',
+          background: loaded ? '#0288d1' : '#fff', color: loaded ? '#fff' : '#0288d1',
           fontSize: 13, fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap',
         },
       }, loaded ? 'Session loaded' : 'Load previous session')

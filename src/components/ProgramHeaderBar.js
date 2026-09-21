@@ -3,13 +3,18 @@ import { Activity, RotateCcw, Info, ChevronLeft, GitBranch, Calculator, Users, B
 import CareTeamModal from './CareTeamModal.js'
 
 export const PROGRAM_HEADER_SHELL_STYLE = {
-  background: 'linear-gradient(90deg, #00002D 0%, #212070 100%)',
-  boxShadow: '0 2px 16px 0 rgba(0,0,45,0.35)',
+  background: '#ffffff',
+  borderBottom: '1px solid #e2e2ea',
+}
+
+export const PROGRAM_ACCENT_STRIP_STYLE = {
+  height: '3px',
+  background: 'linear-gradient(90deg, #221f72 0%, #0288d1 55%, #d31f7a 100%)',
 }
 
 export const PART_META = {
-  1: { short: 'Part 1', full: 'Initial Risk Stratification', dot: '#06ABEB' },
-  2: { short: 'Part 2', full: 'Pre-Enrollment Verification', dot: '#DC298D' },
+  1: { short: 'Part 1', full: 'Initial Risk Stratification', dot: '#0288d1' },
+  2: { short: 'Part 2', full: 'Pre-Enrollment Verification', dot: '#d31f7a' },
   3: { short: 'Part 3', full: 'Standard Protocol', dot: '#10b981' },
 }
 
@@ -18,29 +23,20 @@ export function ProgramHeaderBrand({ compact = false }) {
   return React.createElement('div', { className: 'flex items-center gap-2.5 shrink-0' },
     React.createElement('div', {
       className: `${compact ? 'w-7 h-7' : 'w-8 h-8'} rounded-lg flex items-center justify-center shrink-0`,
-      style: { background: 'linear-gradient(135deg, #06ABEB 0%, #0596c7 100%)' },
+      style: { background: '#221f72' },
     },
       React.createElement(Activity, { className: compact ? 'w-3.5 h-3.5 text-white' : 'w-4 h-4 text-white' })
     ),
     React.createElement('div', { className: 'leading-none' },
       React.createElement('div', {
         style: {
-          fontSize: compact ? '8px' : '9px',
-          fontWeight: 800,
-          letterSpacing: '0.12em',
-          color: '#06ABEB',
-          textTransform: 'uppercase',
-          lineHeight: 1,
-        },
-      }, 'Mount Sinai'),
-      React.createElement('div', {
-        style: {
-          fontSize: compact ? '12px' : '13px',
+          fontSize: compact ? '13px' : '15px',
           fontWeight: 700,
-          color: '#fff',
+          color: '#221f72',
           lineHeight: 1.3,
         },
-      }, 'Tewari AS Program')
+      }, 'Tewari AS Program'),
+    React.createElement('div', { style: { fontSize: 12, color: '#5c5c70', lineHeight: 1.3 } }, 'Mount Sinai · Urology')
     )
   )
 }
@@ -51,17 +47,15 @@ export function MeetCareTeamHeaderButton({ onClick }) {
     type: 'button',
     onClick,
     className: 'flex items-center gap-1.5 shrink-0 rounded-full transition-all px-2.5 h-8',
-    style: { color: 'rgba(255,255,255,0.78)', background: 'transparent', border: '1px solid rgba(255,255,255,0.16)' },
+    style: { color: '#5c5c70', background: '#fff', border: '1px solid #e2e2ea' },
     title: 'Meet the Care Team',
     onMouseEnter: (e) => {
-      e.currentTarget.style.color = 'rgba(255,255,255,0.98)'
-      e.currentTarget.style.borderColor = 'rgba(255,255,255,0.35)'
-      e.currentTarget.style.background = 'rgba(255,255,255,0.08)'
+      e.currentTarget.style.color = '#221f72'
+      e.currentTarget.style.borderColor = '#221f72'
     },
     onMouseLeave: (e) => {
-      e.currentTarget.style.color = 'rgba(255,255,255,0.78)'
-      e.currentTarget.style.borderColor = 'rgba(255,255,255,0.16)'
-      e.currentTarget.style.background = 'transparent'
+      e.currentTarget.style.color = '#5c5c70'
+      e.currentTarget.style.borderColor = '#e2e2ea'
     },
   },
     React.createElement(Info, { style: { width: '13px', height: '13px' } }),
@@ -71,13 +65,13 @@ export function MeetCareTeamHeaderButton({ onClick }) {
 
 function ClinicianToolToggle({ mode, onChange }) {
   const pill = (active) => ({
-    color: active ? '#fff' : 'rgba(255,255,255,0.45)',
-    background: active ? '#06ABEB' : 'transparent',
-    border: `1px solid ${active ? 'rgba(6,171,235,0.7)' : 'rgba(255,255,255,0.12)'}`,
+    color: active ? '#221f72' : '#5c5c70',
+    background: active ? '#fff' : 'transparent',
+    boxShadow: active ? '0 1px 3px rgba(0,0,0,.08)' : 'none',
   })
   return React.createElement('div', {
     className: 'flex items-center rounded-full p-0.5 shrink-0',
-    style: { background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.1)' },
+    style: { background: '#f4f4f8' },
     role: 'group',
     'aria-label': 'Switch clinical tool',
   },
@@ -152,13 +146,13 @@ export default function ProgramHeaderBar({
       style: PROGRAM_HEADER_SHELL_STYLE,
     },
       React.createElement('div', {
-        className: 'max-w-4xl mx-auto px-3 sm:px-4 flex flex-wrap items-center gap-x-2 gap-y-2 min-h-[48px] py-2 sm:py-0 sm:h-[48px]',
+        className: 'max-w-6xl mx-auto px-3 sm:px-4 flex flex-wrap items-center gap-x-2 gap-y-2 min-h-[48px] py-2 lg:py-0 lg:h-[52px]',
       },
 
         changeRoleOnClick && React.createElement('button', {
           type: 'button',
           onClick: changeRoleOnClick,
-          className: 'flex shrink-0 items-center gap-0.5 sm:gap-1 rounded-lg text-white/70 hover:text-white text-[11px] sm:text-sm font-medium transition-colors -ml-1 px-1.5 py-1',
+          className: 'flex shrink-0 items-center gap-0.5 sm:gap-1 rounded-lg text-[#5c5c70] hover:text-[#221f72] text-[11px] sm:text-sm font-medium transition-colors -ml-1 px-1.5 py-1',
           title: 'Change role',
         },
           React.createElement(ChevronLeft, { className: 'w-4 h-4 shrink-0' }),
@@ -168,27 +162,27 @@ export default function ProgramHeaderBar({
 
         React.createElement(ProgramHeaderBrand, { compact: brandCompact }),
 
-        React.createElement('div', { style: { width: '1px', height: '24px', background: 'rgba(255,255,255,0.15)', flexShrink: 0, margin: '0 2px' } }),
+        React.createElement('div', { style: { width: '1px', height: '24px', background: '#e2e2ea', flexShrink: 0, margin: '0 2px' } }),
 
         React.createElement('div', { className: 'flex-1 min-w-[120px] min-h-[24px] flex items-center gap-1.5 sm:gap-2 overflow-x-auto no-scrollbar' },
           meta && React.createElement('span', {
-            className: 'shrink-0 inline-flex items-center gap-1 text-white font-bold rounded-full px-2 sm:px-2.5 py-0.5 text-[10px] sm:text-[11px]',
-            style: { background: 'rgba(255,255,255,0.12)', letterSpacing: '0.03em' },
+            className: 'shrink-0 inline-flex items-center gap-1 text-[#221f72] font-bold rounded-full px-2 sm:px-2.5 py-0.5 text-[10px] sm:text-[11px]',
+            style: { background: '#e8e7f5', letterSpacing: '0.03em' },
           },
             React.createElement('span', { style: { width: '6px', height: '6px', borderRadius: '50%', background: meta.dot, flexShrink: 0 } }),
             meta.short
           ),
           meta && React.createElement('span', {
             className: 'hidden md:block shrink-0',
-            style: { fontSize: '11px', color: 'rgba(255,255,255,0.4)', fontWeight: 600 },
+            style: { fontSize: '11px', color: '#5c5c70', fontWeight: 600 },
           }, meta.full),
           meta && stepLabel && React.createElement('span', {
             className: 'shrink-0',
-            style: { fontSize: '11px', color: 'rgba(255,255,255,0.25)', margin: '0 2px' },
+            style: { fontSize: '11px', color: '#bbb', margin: '0 2px' },
           }, '·'),
           stepLabel && React.createElement('span', {
             className: 'truncate max-w-[42vw] sm:max-w-none text-[11px] sm:text-xs',
-            style: { color: 'rgba(255,255,255,0.55)', fontWeight: 500 },
+            style: { color: '#5c5c70', fontWeight: 500 },
           }, stepLabel)
         ),
 
@@ -200,23 +194,22 @@ export default function ProgramHeaderBar({
           showReset && onReset && React.createElement('button', {
             onClick: onReset,
             className: 'flex items-center gap-1 sm:gap-1.5 shrink-0 rounded-lg transition-all',
-            style: { fontSize: '12px', color: 'rgba(255,255,255,0.4)', padding: '7px 10px', background: 'transparent', border: '1px solid rgba(255,255,255,0.1)' },
+            style: { fontSize: '12px', color: '#5c5c70', padding: '7px 10px', background: '#fff', border: '1px solid #e2e2ea' },
             onMouseEnter: (e) => {
-              e.currentTarget.style.color = 'rgba(255,255,255,0.8)'
-              e.currentTarget.style.borderColor = 'rgba(255,255,255,0.3)'
-              e.currentTarget.style.background = 'rgba(255,255,255,0.08)'
+              e.currentTarget.style.color = '#221f72'
+              e.currentTarget.style.borderColor = '#221f72'
             },
             onMouseLeave: (e) => {
-              e.currentTarget.style.color = 'rgba(255,255,255,0.4)'
-              e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)'
-              e.currentTarget.style.background = 'transparent'
+              e.currentTarget.style.color = '#5c5c70'
+              e.currentTarget.style.borderColor = '#e2e2ea'
             },
           },
             React.createElement(RotateCcw, { style: { width: '11px', height: '11px' } }),
             React.createElement('span', { className: 'hidden sm:inline' }, 'Reset')
           )
         )
-      )
+      ),
+      React.createElement('div', { style: PROGRAM_ACCENT_STRIP_STYLE })
     )
   )
 }

@@ -308,8 +308,8 @@ export default function ClinicalCalculator({ onBack, epsaPrefill, onAssessmentRu
   }
 
   // ── Render ───────────────────────────────────────────────────────────────────
-  const MAGENTA  = '#DC298D'
-  const CERULEAN = '#06ABEB'
+  const MAGENTA  = '#d31f7a'
+  const CERULEAN = '#0288d1'
   const CETACEAN = '#00002D'
   const isEpsaNotice = uploadNotice.startsWith('ePSA data loaded')
 
@@ -333,7 +333,7 @@ export default function ClinicalCalculator({ onBack, epsaPrefill, onAssessmentRu
             style: {
               padding: '7px 13px', borderRadius: 9,
               background: '#fff', border: '1px solid #e2e8f0',
-              fontSize: 12, fontWeight: 700, color: '#212070',
+              fontSize: 12, fontWeight: 700, color: '#221f72',
               display: 'flex', alignItems: 'center', gap: 5, cursor: 'pointer',
               boxShadow: '0 1px 3px rgba(0,0,45,0.06)',
             },
@@ -347,7 +347,7 @@ export default function ClinicalCalculator({ onBack, epsaPrefill, onAssessmentRu
             style: {
               padding: '7px 13px', borderRadius: 9,
               background: '#fff', border: '1px solid #e2e8f0',
-              fontSize: 12, fontWeight: 700, color: '#212070',
+              fontSize: 12, fontWeight: 700, color: '#221f72',
               display: 'flex', alignItems: 'center', gap: 5, cursor: 'pointer',
               boxShadow: '0 1px 3px rgba(0,0,45,0.06)',
             },

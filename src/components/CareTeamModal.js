@@ -60,7 +60,7 @@ function PersonCard({ person, avatarColor }) {
           React.createElement('a', {
             href: `tel:${String(person.phone).replace(/\D/g, '')}`,
             className:
-              'flex items-center gap-2 text-xs font-medium tabular-nums text-[#0596c7] transition-colors hover:text-[#212070]',
+              'flex items-center gap-2 text-xs font-medium tabular-nums text-[#0277bd] transition-colors hover:text-[#221f72]',
           },
             React.createElement(Phone, { className: 'h-3.5 w-3.5 shrink-0 opacity-70' }),
             person.phone
@@ -146,7 +146,7 @@ export default function CareTeamModal({ open, onClose }) {
       // Header
       React.createElement('header', {
         className: 'relative shrink-0 border-b border-white/10 px-4 py-4 sm:px-7 sm:py-5',
-        style: { background: 'linear-gradient(118deg, #00002D 0%, #1a195c 42%, #212070 72%, #0d4f6e 100%)' },
+        style: { background: 'linear-gradient(140deg, #221f72 0%, #17134f 100%)' },
       },
         React.createElement('div', {
           className: 'pointer-events-none absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-white/25 to-transparent',
@@ -198,7 +198,7 @@ export default function CareTeamModal({ open, onClose }) {
               'mb-7 rounded-lg border border-slate-200 bg-white px-4 py-3.5 shadow-sm sm:flex sm:items-center sm:gap-4 sm:px-5 sm:py-4',
           },
             React.createElement('div', {
-              className: 'hidden h-12 w-1 shrink-0 rounded-full bg-gradient-to-b from-[#06ABEB] to-[#212070] sm:block',
+              className: 'hidden h-12 w-1 shrink-0 rounded-full bg-gradient-to-b from-[#0288d1] to-[#221f72] sm:block',
             }),
             React.createElement('p', {
               className: 'text-sm leading-relaxed text-slate-600',
@@ -213,19 +213,19 @@ export default function CareTeamModal({ open, onClose }) {
               title: 'Physician team',
               subtitle: 'Urology faculty · clinical leadership',
               members: PHYSICIAN_TEAM,
-              accentColor: '#212070',
+              accentColor: '#221f72',
             }),
             React.createElement(TeamSection, {
               title: "Fellows, physician assistants & nursing",
               subtitle: 'Clinical support and patient navigation',
               members: FELLOWS_PAS_NURSES,
-              accentColor: '#06ABEB',
+              accentColor: '#0288d1',
             }),
             React.createElement(TeamSection, {
               title: 'Administrative team',
               subtitle: 'Program coordination',
               members: ADMIN_TEAM,
-              accentColor: '#DC298D',
+              accentColor: '#d31f7a',
             })
           ),
 
@@ -247,7 +247,7 @@ export default function CareTeamModal({ open, onClose }) {
                 React.createElement('p', { className: 'text-[11px] font-semibold uppercase tracking-wide text-slate-400' }, 'Main office'),
                 React.createElement('a', {
                   href: 'tel:2122419955',
-                  className: 'inline-flex items-center gap-2 text-sm font-semibold tabular-nums text-[#0596c7] hover:text-[#212070]',
+                  className: 'inline-flex items-center gap-2 text-sm font-semibold tabular-nums text-[#0277bd] hover:text-[#221f72]',
                 },
                   React.createElement(Phone, { className: 'h-4 w-4 opacity-70' }),
                   '212-241-9955'
@@ -257,7 +257,7 @@ export default function CareTeamModal({ open, onClose }) {
                 React.createElement('p', { className: 'text-[11px] font-semibold uppercase tracking-wide text-slate-400' }, 'Active surveillance line'),
                 React.createElement('a', {
                   href: 'tel:9296973643',
-                  className: 'inline-flex items-center gap-2 text-sm font-semibold tabular-nums text-[#0596c7] hover:text-[#212070]',
+                  className: 'inline-flex items-center gap-2 text-sm font-semibold tabular-nums text-[#0277bd] hover:text-[#221f72]',
                 },
                   React.createElement(Phone, { className: 'h-4 w-4 opacity-70' }),
                   '929-697-3643'

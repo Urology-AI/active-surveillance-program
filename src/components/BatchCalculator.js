@@ -13,8 +13,8 @@ import { runAssessment } from '../asEngine.js'
 
 const e = React.createElement
 
-const MAGENTA  = '#DC298D'
-const CERULEAN = '#06ABEB'
+const MAGENTA  = '#d31f7a'
+const CERULEAN = '#0288d1'
 const CETACEAN = '#00002D'
 
 const STORAGE_KEY = 'as-batch-patients-v1'
@@ -226,7 +226,7 @@ function PatientEntryModal({ row, onSave, onClose }) {
           style: {
             padding: '9px 18px', borderRadius: 9, background: CERULEAN,
             border: 'none', fontSize: 13, fontWeight: 700, color: '#fff',
-            cursor: 'pointer', boxShadow: '0 1px 3px rgba(6,171,235,0.3)',
+            cursor: 'pointer', boxShadow: '0 1px 3px rgba(2,136,209,0.3)',
           },
         }, 'Save Patient')
       )
@@ -534,7 +534,7 @@ export default function BatchCalculator() {
         style: {
           padding: '8px 16px', borderRadius: 9, background: CERULEAN,
           border: 'none', fontSize: 12.5, fontWeight: 700, color: '#fff',
-          cursor: 'pointer', boxShadow: '0 1px 3px rgba(6,171,235,0.3)',
+          cursor: 'pointer', boxShadow: '0 1px 3px rgba(2,136,209,0.3)',
         },
       }, 'Calculate All'),
       hasAnyResult && e('button', {

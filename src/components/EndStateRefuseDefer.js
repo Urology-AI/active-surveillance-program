@@ -15,7 +15,7 @@ export default function EndStateRefuseDefer({ onReset, pathSummary, onBack, canG
     }
   }
 
-  return React.createElement('div', { className: 'bg-white rounded-xl border border-slate-100 overflow-hidden', style: { boxShadow: '0 8px 40px -8px rgba(6,171,235,0.12)' } },
+  return React.createElement('div', { className: 'bg-white rounded-xl border border-slate-100 overflow-hidden', style: { boxShadow: '0 8px 40px -8px rgba(2,136,209,0.12)' } },
 
     // Header band
     React.createElement('div', {
@@ -37,7 +37,7 @@ export default function EndStateRefuseDefer({ onReset, pathSummary, onBack, canG
 
       React.createElement('div', {
         className: 'rounded-xl p-5 mb-6',
-        style: { background: 'rgb(6 171 235 / 0.05)', border: '1px solid rgb(6 171 235 / 0.2)' }
+        style: { background: 'rgb(2 136 209 / 0.05)', border: '1px solid rgb(2 136 209 / 0.2)' }
       },
         React.createElement('p', { className: 'text-sm font-bold text-sinai-navy mb-3' }, 'Required actions:'),
         React.createElement('div', { className: 'space-y-2 text-sm text-slate-700' },
@@ -96,7 +96,7 @@ export default function EndStateRefuseDefer({ onReset, pathSummary, onBack, canG
         React.createElement('p', { className: 'text-sm text-slate-500 mb-4' }, 'This will clear all progress and return to the start screen.'),
         React.createElement('div', { className: 'flex gap-3 justify-end' },
           React.createElement('button', { onClick: () => setShowResetConfirm(false), className: 'px-4 py-2 border border-slate-200 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50' }, 'Cancel'),
-          React.createElement('button', { onClick: () => { setShowResetConfirm(false); onReset() }, className: 'px-4 py-2 bg-sinai-cerulean text-white rounded-lg text-sm font-semibold hover:bg-sinai-cerulean-dark' }, 'Start Over')
+          React.createElement('button', { onClick: () => { setShowResetConfirm(false); onReset() }, className: 'px-4 py-2 bg-sinai-navy text-white rounded-lg text-sm font-semibold hover:bg-sinai-cerulean-dark' }, 'Start Over')
         )
       )
     )
