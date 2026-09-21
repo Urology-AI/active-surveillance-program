@@ -15,12 +15,12 @@ export default function EndStateContinueAS({ onReset, pathSummary, onBack, canGo
     }
   }
 
-  return React.createElement('div', { className: 'bg-white rounded-xl border border-slate-100 overflow-hidden', style: { boxShadow: '0 8px 40px -8px rgba(6,171,235,0.15)' } },
+  return React.createElement('div', { className: 'bg-white rounded-xl border border-slate-100 overflow-hidden', style: { boxShadow: '0 8px 40px -8px rgba(2,136,209,0.15)' } },
 
     // Header band
     React.createElement('div', {
       className: 'px-4 sm:px-8 py-6 sm:py-7 text-center',
-      style: { background: 'linear-gradient(135deg, #00002D 0%, #212070 60%, #06ABEB 140%)' }
+      style: { background: 'linear-gradient(140deg, #221f72 0%, #17134f 100%)' }
     },
       React.createElement('div', { className: 'flex justify-center mb-4' },
         React.createElement('div', { className: 'w-14 h-14 rounded-full bg-white/15 border-2 border-white/30 flex items-center justify-center' },
@@ -28,7 +28,7 @@ export default function EndStateContinueAS({ onReset, pathSummary, onBack, canGo
         )
       ),
       React.createElement('h2', { className: 'text-xl sm:text-2xl font-bold text-white mb-1' }, 'Continue on Active Surveillance'),
-      React.createElement('p', { style: { color: '#06ABEB', fontSize: '14px', fontWeight: 600 } },
+      React.createElement('p', { style: { color: '#0288d1', fontSize: '14px', fontWeight: 600 } },
         'Patient remains on the AS monitoring protocol'
       )
     ),
@@ -38,12 +38,12 @@ export default function EndStateContinueAS({ onReset, pathSummary, onBack, canGo
       // Monitoring schedule
       React.createElement('div', {
         className: 'rounded-xl p-5 mb-5',
-        style: { background: 'rgb(6 171 235 / 0.05)', border: '1px solid rgb(6 171 235 / 0.2)' }
+        style: { background: 'rgb(2 136 209 / 0.05)', border: '1px solid rgb(2 136 209 / 0.2)' }
       },
         React.createElement('p', { className: 'text-sm font-bold text-sinai-navy mb-3' }, 'Ongoing Monitoring Schedule'),
         React.createElement('div', { className: 'space-y-2 text-sm text-slate-700' },
           React.createElement('div', { className: 'flex items-center gap-3' },
-            React.createElement('span', { className: 'w-6 h-6 rounded-full bg-sinai-cerulean text-white text-xs flex items-center justify-center font-bold shrink-0' }, 'Q'),
+            React.createElement('span', { className: 'w-6 h-6 rounded-full bg-sinai-navy text-white text-xs flex items-center justify-center font-bold shrink-0' }, 'Q'),
             'Quarterly PSA + office visit with AS team'
           ),
           React.createElement('div', { className: 'flex items-center gap-3' },
@@ -108,7 +108,7 @@ export default function EndStateContinueAS({ onReset, pathSummary, onBack, canGo
         React.createElement('p', { className: 'text-sm text-slate-500 mb-4' }, 'This will clear all progress and return to the start screen.'),
         React.createElement('div', { className: 'flex gap-3 justify-end' },
           React.createElement('button', { onClick: () => setShowResetConfirm(false), className: 'px-4 py-2 border border-slate-200 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50' }, 'Cancel'),
-          React.createElement('button', { onClick: () => { setShowResetConfirm(false); onReset() }, className: 'px-4 py-2 bg-sinai-cerulean text-white rounded-lg text-sm font-semibold hover:bg-sinai-cerulean-dark' }, 'Start Over')
+          React.createElement('button', { onClick: () => { setShowResetConfirm(false); onReset() }, className: 'px-4 py-2 bg-sinai-navy text-white rounded-lg text-sm font-semibold hover:bg-sinai-cerulean-dark' }, 'Start Over')
         )
       )
     )

@@ -15,8 +15,8 @@ import {
 const e = React.createElement
 
 const C = {
-  cerulean: '#06ABEB',
-  navy: '#212070',
+  cerulean: '#0288d1',
+  navy: '#221f72',
   green: '#16a34a',
   amber: '#d97706',
   red: '#dc2626',

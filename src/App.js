@@ -117,8 +117,8 @@ const STEPS_14 = [
 ]
 
 const PART_META = {
-  1: { label: 'Part 1', range: 'Steps 1–5',   color: '#06ABEB' },
-  2: { label: 'Part 2', range: 'Steps 6–9',   color: '#DC298D' },
+  1: { label: 'Part 1', range: 'Steps 1–5',   color: '#0288d1' },
+  2: { label: 'Part 2', range: 'Steps 6–9',   color: '#d31f7a' },
   3: { label: 'Part 3', range: 'Steps 10–14', color: '#10b981' },
 }
 
@@ -241,7 +241,7 @@ function FlowchartPanel({ currentStepKey, stepHistory, onExpand }) {
   const visitedKeys = new Set(stepHistory)
   const currentNum  = stepKeyToNum(currentStepKey)
 
-  const C = { cerulean: '#06ABEB', emerald: '#10b981', navy: '#212070', magenta: '#DC298D' }
+  const C = { cerulean: '#0288d1', emerald: '#10b981', navy: '#221f72', magenta: '#d31f7a' }
 
   return React.createElement('div', {
     style: { padding: 14, display: 'flex', flexDirection: 'column', height: '100%' },
@@ -320,7 +320,7 @@ function FlowchartPanel({ currentStepKey, stepHistory, onExpand }) {
       }),
       // Part labels
       React.createElement('text', { x: 5, y: 46, fontSize: 8, fontWeight: 700, fill: C.cerulean }, 'P1'),
-      React.createElement('text', { x: 5, y: 196, fontSize: 8, fontWeight: 700, fill: '#DC298D' }, 'P2'),
+      React.createElement('text', { x: 5, y: 196, fontSize: 8, fontWeight: 700, fill: '#d31f7a' }, 'P2'),
       React.createElement('text', { x: 5, y: 336, fontSize: 8, fontWeight: 700, fill: C.emerald }, 'P3'),
     ),
 
@@ -535,7 +535,7 @@ function App({ externalHeader, onPathwayMetaChange, pathwayResetRef, patientData
       React.createElement('div', { className: 'flex flex-col gap-2' },
         React.createElement('button', {
           onClick: resumeProgress,
-          className: 'w-full py-2.5 bg-sinai-cerulean text-white font-semibold rounded-xl hover:bg-sinai-cerulean-dark transition-colors',
+          className: 'w-full py-2.5 bg-sinai-navy text-white font-semibold rounded-xl hover:bg-sinai-cerulean-dark transition-colors',
         }, 'Resume'),
         React.createElement('button', {
           onClick: startOver,
@@ -569,8 +569,8 @@ function App({ externalHeader, onPathwayMetaChange, pathwayResetRef, patientData
     React.createElement('div', {
       style: {
         marginBottom: 14, padding: '10px 14px',
-        background: 'rgb(6 171 235 / 0.07)',
-        border: '1px solid rgb(6 171 235 / 0.25)',
+        background: 'rgb(2 136 209 / 0.07)',
+        border: '1px solid rgb(2 136 209 / 0.25)',
         borderRadius: 12,
       },
     },
@@ -579,13 +579,13 @@ function App({ externalHeader, onPathwayMetaChange, pathwayResetRef, patientData
       },
         React.createElement('svg', {
           width: 14, height: 14, viewBox: '0 0 24 24', fill: 'none',
-          stroke: '#06ABEB', strokeWidth: 2.5, strokeLinecap: 'round', strokeLinejoin: 'round',
+          stroke: '#0288d1', strokeWidth: 2.5, strokeLinecap: 'round', strokeLinejoin: 'round',
           style: { flexShrink: 0 },
         },
           React.createElement('polyline', { points: '20 6 9 17 4 12' })
         ),
         React.createElement('span', {
-          style: { fontSize: 11.5, fontWeight: 700, color: '#06ABEB', textTransform: 'uppercase', letterSpacing: '0.05em' },
+          style: { fontSize: 11.5, fontWeight: 700, color: '#0288d1', textTransform: 'uppercase', letterSpacing: '0.05em' },
         }, 'Auto-populated from AS Tool')
       ),
       autoAdvanceSummary.map((item, i) =>

@@ -20,7 +20,7 @@ export default function EndStateHighIntensityAS({ onReset, pathSummary, onBack, 
     // Header band
     React.createElement('div', {
       className: 'px-4 sm:px-8 py-6 sm:py-7 text-center',
-      style: { background: 'linear-gradient(135deg, #00002D 0%, #212070 60%, #4338ca 100%)' }
+      style: { background: 'linear-gradient(140deg, #221f72 0%, #17134f 100%)' }
     },
       React.createElement('div', { className: 'flex justify-center mb-4' },
         React.createElement('div', { className: 'w-14 h-14 rounded-full bg-white/15 border-2 border-white/30 flex items-center justify-center' },
@@ -113,7 +113,7 @@ export default function EndStateHighIntensityAS({ onReset, pathSummary, onBack, 
         React.createElement('p', { className: 'text-sm text-slate-500 mb-4' }, 'This will clear all progress and return to the start screen.'),
         React.createElement('div', { className: 'flex gap-3 justify-end' },
           React.createElement('button', { onClick: () => setShowResetConfirm(false), className: 'px-4 py-2 border border-slate-200 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50' }, 'Cancel'),
-          React.createElement('button', { onClick: () => { setShowResetConfirm(false); onReset() }, className: 'px-4 py-2 bg-sinai-cerulean text-white rounded-lg text-sm font-semibold hover:bg-sinai-cerulean-dark' }, 'Start Over')
+          React.createElement('button', { onClick: () => { setShowResetConfirm(false); onReset() }, className: 'px-4 py-2 bg-sinai-navy text-white rounded-lg text-sm font-semibold hover:bg-sinai-cerulean-dark' }, 'Start Over')
         )
       )
     )

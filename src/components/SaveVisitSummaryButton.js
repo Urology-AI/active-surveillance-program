@@ -62,7 +62,7 @@ export default function SaveVisitSummaryButton({ patientId, endState, recommenda
         }),
         e('div', { className: 'flex gap-3 justify-end' },
           e('button', { onClick: () => setShowNotes(false), className: 'px-4 py-2 border border-slate-200 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50' }, 'Cancel'),
-          e('button', { onClick: handleSave, className: 'px-4 py-2 bg-sinai-cerulean text-white rounded-lg text-sm font-semibold hover:bg-sinai-cerulean-dark' }, 'Save')
+          e('button', { onClick: handleSave, className: 'px-4 py-2 bg-sinai-navy text-white rounded-lg text-sm font-semibold hover:bg-sinai-cerulean-dark' }, 'Save')
         )
       )
     )

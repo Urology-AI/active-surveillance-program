@@ -146,7 +146,7 @@ function SectionToggle({ title, badge, open, onToggle, mutedText, num, numColor,
           }, badge)
         ),
         e('div', { style: { display: 'flex', alignItems: 'center', gap: 6 } },
-          e('span', { style: { fontSize: 11, fontWeight: 700, color: '#06ABEB' } }, open ? 'Collapse' : 'Expand'),
+          e('span', { style: { fontSize: 11, fontWeight: 700, color: '#0288d1' } }, open ? 'Collapse' : 'Expand'),
           e('svg', {
             style: {
               width: 16, height: 16, color: '#94a3b8', flexShrink: 0,
@@ -168,7 +168,7 @@ function SectionToggle({ title, badge, open, onToggle, mutedText, num, numColor,
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           color: '#94a3b8', transition: 'color 0.15s, background 0.15s',
         },
-        onMouseEnter: ev => { ev.currentTarget.style.color = '#06ABEB'; ev.currentTarget.style.background = '#eff6ff' },
+        onMouseEnter: ev => { ev.currentTarget.style.color = '#0288d1'; ev.currentTarget.style.background = '#eff6ff' },
         onMouseLeave: ev => { ev.currentTarget.style.color = '#94a3b8'; ev.currentTarget.style.background = 'transparent' },
         title: 'About this section',
         'aria-label': 'About this section',
@@ -398,7 +398,7 @@ function InfoModal({ section, onClose }) {
       // Header
       e('div', {
         style: {
-          background: '#212070',
+          background: '#221f72',
           padding: '16px 20px',
           display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12,
           flexShrink: 0,
@@ -449,7 +449,7 @@ function InfoModal({ section, onClose }) {
               e('span', { style: { fontSize: 14, fontWeight: 700, color: '#00002D' } }, v.name)
             ),
             // Stat
-            e('div', { style: { fontSize: 13, fontWeight: 600, color: '#06ABEB', marginBottom: 6, lineHeight: 1.4 } }, v.stat),
+            e('div', { style: { fontSize: 13, fontWeight: 600, color: '#0288d1', marginBottom: 6, lineHeight: 1.4 } }, v.stat),
             // Detail
             e('div', { style: { fontSize: 12, color: '#475569', lineHeight: 1.6, marginBottom: v.reference ? 8 : 0 } }, v.detail),
             // Note
@@ -472,7 +472,7 @@ function InfoModal({ section, onClose }) {
           onClick: onClose,
           style: {
             width: '100%', height: 40, borderRadius: 10, border: 'none',
-            background: '#212070', color: '#fff',
+            background: '#221f72', color: '#fff',
             fontFamily: 'inherit', fontWeight: 700, fontSize: 13,
             cursor: 'pointer', transition: 'opacity 0.15s',
           },
@@ -646,7 +646,7 @@ export default function PatientForm({ onSubmit, initialValues = {} }) {
     ),
 
     // ── Section 1: Required ────────────────────────────────────────────────
-    e('div', { style: { background: '#fff', borderRadius: 18, border: '1px solid #f1f5f9', boxShadow: '0 1px 0 rgba(0,0,45,0.02), 0 4px 14px rgba(6,171,235,0.04)', overflow: 'hidden' } },
+    e('div', { style: { background: '#fff', borderRadius: 18, border: '1px solid #f1f5f9', boxShadow: '0 1px 0 rgba(0,0,45,0.02), 0 4px 14px rgba(2,136,209,0.04)', overflow: 'hidden' } },
       e('div', {
         style: {
           display: 'flex', alignItems: 'center', gap: 12,
@@ -657,9 +657,9 @@ export default function PatientForm({ onSubmit, initialValues = {} }) {
         e('div', {
           style: {
             width: 36, height: 36, borderRadius: 10, flexShrink: 0,
-            background: 'rgba(6,171,235,0.12)',
+            background: 'rgba(2,136,209,0.12)',
             display: 'grid', placeItems: 'center',
-            fontSize: 16, fontWeight: 800, color: '#06ABEB',
+            fontSize: 16, fontWeight: 800, color: '#0288d1',
           },
         }, '1'),
         e('div', { style: { flex: 1 } },
@@ -675,7 +675,7 @@ export default function PatientForm({ onSubmit, initialValues = {} }) {
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             color: '#94a3b8', transition: 'color 0.15s, background 0.15s',
           },
-          onMouseEnter: ev => { ev.currentTarget.style.color = '#06ABEB'; ev.currentTarget.style.background = '#eff6ff' },
+          onMouseEnter: ev => { ev.currentTarget.style.color = '#0288d1'; ev.currentTarget.style.background = '#eff6ff' },
           onMouseLeave: ev => { ev.currentTarget.style.color = '#94a3b8'; ev.currentTarget.style.background = 'transparent' },
           title: 'About this section',
           'aria-label': 'About this section',
@@ -843,13 +843,13 @@ export default function PatientForm({ onSubmit, initialValues = {} }) {
     ),
 
     // ── Section 2: Genomic ────────────────────────────────────────────────
-    e('div', { style: { background: '#fff', borderRadius: 18, border: '1px solid #f1f5f9', boxShadow: '0 1px 0 rgba(0,0,45,0.02), 0 4px 14px rgba(6,171,235,0.04)', overflow: 'hidden' } },
+    e('div', { style: { background: '#fff', borderRadius: 18, border: '1px solid #f1f5f9', boxShadow: '0 1px 0 rgba(0,0,45,0.02), 0 4px 14px rgba(2,136,209,0.04)', overflow: 'hidden' } },
       e(SectionToggle, {
         title: 'Genomic',
         badge: 'Optional',
         open: showGenomic, onToggle: () => setShowGenomic(v => !v),
         mutedText: 'Literature thresholds · <10% of AS patients',
-        num: '2', numColor: '#DC298D',
+        num: '2', numColor: '#d31f7a',
         onInfo: () => setActiveModal(2),
       }),
       showGenomic && e('div', { style: { padding: '16px 16px 20px', borderTop: '1px solid #f1f5f9' } },
@@ -869,7 +869,7 @@ export default function PatientForm({ onSubmit, initialValues = {} }) {
     ),
 
     // ── Section 3: PSMA ───────────────────────────────────────────────────
-    e('div', { style: { background: '#fff', borderRadius: 18, border: '1px solid #f1f5f9', boxShadow: '0 1px 0 rgba(0,0,45,0.02), 0 4px 14px rgba(6,171,235,0.04)', overflow: 'hidden' } },
+    e('div', { style: { background: '#fff', borderRadius: 18, border: '1px solid #f1f5f9', boxShadow: '0 1px 0 rgba(0,0,45,0.02), 0 4px 14px rgba(2,136,209,0.04)', overflow: 'hidden' } },
       e(SectionToggle, {
         title: 'PSMA',
         badge: 'Optional',
@@ -913,13 +913,13 @@ export default function PatientForm({ onSubmit, initialValues = {} }) {
     ),
 
     // ── Section 4: MRI Features ───────────────────────────────────────────
-    e('div', { style: { background: '#fff', borderRadius: 18, border: '1px solid #f1f5f9', boxShadow: '0 1px 0 rgba(0,0,45,0.02), 0 4px 14px rgba(6,171,235,0.04)', overflow: 'hidden' } },
+    e('div', { style: { background: '#fff', borderRadius: 18, border: '1px solid #f1f5f9', boxShadow: '0 1px 0 rgba(0,0,45,0.02), 0 4px 14px rgba(2,136,209,0.04)', overflow: 'hidden' } },
       e(SectionToggle, {
         title: 'MRI Features',
         badge: 'Optional',
         open: showMRI, onToggle: () => setShowMRI(v => !v),
         mutedText: 'ECE, abutment, broad contact',
-        num: '4', numColor: '#06ABEB',
+        num: '4', numColor: '#0288d1',
         onInfo: () => setActiveModal(4),
       }),
       showMRI && e('div', { style: { padding: '16px 16px 20px', borderTop: '1px solid #f1f5f9' } },
@@ -941,7 +941,7 @@ export default function PatientForm({ onSubmit, initialValues = {} }) {
     ),
 
     // ── Section 5: Risk Factors ───────────────────────────────────────────
-    e('div', { style: { background: '#fff', borderRadius: 18, border: '1px solid #f1f5f9', boxShadow: '0 1px 0 rgba(0,0,45,0.02), 0 4px 14px rgba(6,171,235,0.04)', overflow: 'hidden' } },
+    e('div', { style: { background: '#fff', borderRadius: 18, border: '1px solid #f1f5f9', boxShadow: '0 1px 0 rgba(0,0,45,0.02), 0 4px 14px rgba(2,136,209,0.04)', overflow: 'hidden' } },
       e(SectionToggle, {
         title: 'Risk Factors',
         badge: 'Optional',
@@ -988,7 +988,7 @@ export default function PatientForm({ onSubmit, initialValues = {} }) {
       type: 'submit',
       style: {
         width: '100%', height: 54, borderRadius: 14, border: 'none',
-        background: 'linear-gradient(135deg, #00002D 0%, #212070 100%)',
+        background: 'linear-gradient(140deg, #221f72 0%, #17134f 100%)',
         color: '#fff', fontFamily: 'inherit', fontWeight: 800, fontSize: 15,
         letterSpacing: '-0.005em', cursor: 'pointer',
         display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,

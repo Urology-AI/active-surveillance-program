@@ -170,7 +170,7 @@ export function MonitoringContextEditor({ onSaved }) {
 
     React.createElement('button', {
       type: 'submit',
-      className: 'w-full py-2.5 rounded-xl text-sm font-bold bg-sinai-cerulean text-white hover:bg-sinai-cerulean/90 transition-colors',
+      className: 'w-full py-2.5 rounded-xl text-sm font-bold bg-sinai-navy text-white hover:bg-sinai-cerulean/90 transition-colors',
     }, saved ? 'Saved' : 'Save Visit Context')
   )
 }

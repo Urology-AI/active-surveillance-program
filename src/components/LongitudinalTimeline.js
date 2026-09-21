@@ -17,10 +17,10 @@ import {
 
 const e = React.createElement
 
-const CERULEAN = '#06ABEB'
-const NAVY = '#212070'
+const CERULEAN = '#0288d1'
+const NAVY = '#221f72'
 const CETACEAN = '#00002D'
-const MAGENTA = '#DC298D'
+const MAGENTA = '#d31f7a'
 
 const MARKER = {
   [EVENT_TYPES.MRI]:      { color: MAGENTA, glyph: 'M', label: 'MRI' },

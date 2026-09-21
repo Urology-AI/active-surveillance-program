@@ -34,11 +34,11 @@ export default function Step11ASProtocol({ onMRIPossible, onNoMRI, onBack, onFor
       React.createElement('p', { className: 'text-sm font-semibold text-sinai-navy mb-3' }, 'Active Surveillance Standard Protocol'),
       React.createElement('div', { className: 'space-y-2 text-sm text-slate-700' },
         React.createElement('div', { className: 'flex items-center gap-2' },
-          React.createElement('span', { className: 'w-5 h-5 rounded-full bg-sinai-cerulean text-white text-xs flex items-center justify-center font-bold shrink-0' }, 'Q'),
+          React.createElement('span', { className: 'w-5 h-5 rounded-full bg-sinai-navy text-white text-xs flex items-center justify-center font-bold shrink-0' }, 'Q'),
           React.createElement('span', null, React.createElement('span', { className: 'font-semibold' }, 'PSA every 3–6 months'))
         ),
         React.createElement('div', { className: 'flex items-center gap-2' },
-          React.createElement('span', { className: 'w-5 h-5 rounded-full bg-sinai-cerulean text-white text-xs flex items-center justify-center font-bold shrink-0' }, 'Q'),
+          React.createElement('span', { className: 'w-5 h-5 rounded-full bg-sinai-navy text-white text-xs flex items-center justify-center font-bold shrink-0' }, 'Q'),
           React.createElement('span', null, React.createElement('span', { className: 'font-semibold' }, 'Quarterly office visit'), ' with AS team')
         ),
         React.createElement('div', { className: 'flex items-center gap-2' },

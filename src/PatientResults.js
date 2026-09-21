@@ -151,7 +151,7 @@ function KeyDrivers({ asFactors, genomicFactors, genomicAssessed, psmaFactors, p
     tier === 'low' ? 'Low risk' : tier === 'high' ? 'High risk' : tier === 'intermediate' ? 'Monitor' : tier === 'override' ? 'OVERRIDE' : null
 
   return e('div', {
-    style: { background: '#fff', borderRadius: 18, border: '1px solid #f1f5f9', boxShadow: '0 1px 0 rgba(0,0,45,0.02), 0 4px 14px rgba(6,171,235,0.04)', overflow: 'hidden' },
+    style: { background: '#fff', borderRadius: 18, border: '1px solid #f1f5f9', boxShadow: '0 1px 0 rgba(0,0,45,0.02), 0 4px 14px rgba(2,136,209,0.04)', overflow: 'hidden' },
   },
     e('div', {
       style: { display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 12, padding: '16px 18px 12px', borderBottom: '1px solid #f1f5f9' },
@@ -160,7 +160,7 @@ function KeyDrivers({ asFactors, genomicFactors, genomicAssessed, psmaFactors, p
         e('div', { style: { fontSize: 16, fontWeight: 800, color: '#00002D', letterSpacing: '-0.005em' } }, 'Key Drivers'),
         e('div', { style: { fontSize: 12, color: '#64748b', marginTop: 2 } }, 'Clinical factors that most influenced your score — tap any to learn why it matters')
       ),
-      e('span', { style: { fontSize: 11, fontWeight: 700, color: '#DC298D' } }, 'Tap to explain')
+      e('span', { style: { fontSize: 11, fontWeight: 700, color: '#d31f7a' } }, 'Tap to explain')
     ),
     e('div', { style: { display: 'flex', flexDirection: 'column', gap: 4, padding: '8px 12px 12px' } },
       visible.length === 0
@@ -206,7 +206,7 @@ function KeyDrivers({ asFactors, genomicFactors, genomicAssessed, psmaFactors, p
       e('button', {
         type: 'button',
         onClick: () => setExpanded(true),
-        style: { fontSize: 12, color: '#06ABEB', fontWeight: 600, background: 'transparent', border: 'none', cursor: 'pointer', padding: 0 },
+        style: { fontSize: 12, color: '#0288d1', fontWeight: 600, background: 'transparent', border: 'none', cursor: 'pointer', padding: 0 },
       }, `+${hiddenCount} more factors`)
     )
   )
@@ -217,7 +217,7 @@ function MonitoringSchedule({ monitoringSchedule, monitoringLabel, monitoringTie
   const monStyle = MONITORING_STYLES[monitoringTier] || MONITORING_STYLES.standard
 
   return e('div', {
-    style: { background: '#fff', borderRadius: 18, border: '1px solid #f1f5f9', boxShadow: '0 1px 0 rgba(0,0,45,0.02), 0 4px 14px rgba(6,171,235,0.04)', overflow: 'hidden' },
+    style: { background: '#fff', borderRadius: 18, border: '1px solid #f1f5f9', boxShadow: '0 1px 0 rgba(0,0,45,0.02), 0 4px 14px rgba(2,136,209,0.04)', overflow: 'hidden' },
   },
     e('div', {
       style: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, padding: '16px 18px 12px', borderBottom: '1px solid #f1f5f9', flexWrap: 'wrap' },
@@ -549,7 +549,7 @@ function ModelValidationModal({ onClose, isEpsa, epsaContext }) {
       e('header', {
         style: {
           flexShrink: 0,
-          background: 'linear-gradient(118deg, #00002D 0%, #212070 60%, #06ABEB 160%)',
+          background: 'linear-gradient(140deg, #221f72 0%, #17134f 100%)',
           padding: '20px 22px 18px',
           position: 'relative',
           borderBottom: '1px solid rgba(255,255,255,0.1)',
@@ -567,7 +567,7 @@ function ModelValidationModal({ onClose, isEpsa, epsaContext }) {
         e('div', { style: { position: 'relative', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 } },
           e('div', {},
             e('p', {
-              style: { fontSize: 10, fontWeight: 800, letterSpacing: '0.2em', color: '#06ABEB', textTransform: 'uppercase', margin: 0 },
+              style: { fontSize: 10, fontWeight: 800, letterSpacing: '0.2em', color: '#0288d1', textTransform: 'uppercase', margin: 0 },
             }, 'Mount Sinai · Tewari AS Program'),
             e('h2', {
               id: 'mv-modal-title',
@@ -625,7 +625,7 @@ function ModelValidationModal({ onClose, isEpsa, epsaContext }) {
             borderRadius: 12, padding: '14px 16px',
             background: 'rgba(220,41,141,0.05)',
             border: '1px solid rgba(220,41,141,0.22)',
-            borderLeft: '4px solid #DC298D',
+            borderLeft: '4px solid #d31f7a',
           },
         },
           e('p', { style: { fontSize: 12, fontWeight: 700, color: '#00002D', margin: '0 0 6px' } }, 'ePSA Pre-Biopsy Integration'),
@@ -637,7 +637,7 @@ function ModelValidationModal({ onClose, isEpsa, epsaContext }) {
               style: { display: 'inline-flex', alignItems: 'center', gap: 6, background: 'rgba(220,41,141,0.08)', borderRadius: 8, padding: '4px 10px' },
             },
               e('span', { style: { fontSize: 11, color: '#94a3b8' } }, 'Pre-biopsy tier:'),
-              e('span', { style: { fontSize: 12, fontWeight: 700, color: '#DC298D' } }, epsaContext.epsaTierLabel)
+              e('span', { style: { fontSize: 12, fontWeight: 700, color: '#d31f7a' } }, epsaContext.epsaTierLabel)
             ),
             epsaContext?.pathwayMode && e('div', {
               style: { display: 'inline-flex', alignItems: 'center', gap: 6, background: '#f1f5f9', borderRadius: 8, padding: '4px 10px' },
@@ -735,14 +735,14 @@ function EvidenceDetailModal({
       e('header', {
         style: {
           flexShrink: 0,
-          background: 'linear-gradient(118deg, #00002D 0%, #0d4f6e 60%, #06ABEB 160%)',
+          background: 'linear-gradient(140deg, #221f72 0%, #17134f 100%)',
           padding: '20px 22px 18px', position: 'relative',
           borderBottom: '1px solid rgba(255,255,255,0.1)',
         },
       },
         e('div', { style: { position: 'relative', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 } },
           e('div', {},
-            e('p', { style: { fontSize: 10, fontWeight: 800, letterSpacing: '0.2em', color: '#06ABEB', textTransform: 'uppercase', margin: 0 } }, 'Mount Sinai · Tewari AS Program'),
+            e('p', { style: { fontSize: 10, fontWeight: 800, letterSpacing: '0.2em', color: '#0288d1', textTransform: 'uppercase', margin: 0 } }, 'Mount Sinai · Tewari AS Program'),
             e('h2', {
               id: 'ev-modal-title',
               style: { fontSize: 20, fontWeight: 800, color: '#fff', margin: '6px 0 4px', letterSpacing: '-0.01em', lineHeight: 1.15 },
@@ -883,7 +883,7 @@ function EvidenceDetailModal({
             ...cohortContext.cohortItems.map((item, idx) =>
               e('div', { key: idx, style: { padding: '10px 0', borderBottom: idx < cohortContext.cohortItems.length - 1 ? '1px solid #e0f2fe' : 'none' } },
                 e('div', { style: { display: 'flex', alignItems: 'flex-start', gap: 8 } },
-                  e('div', { style: { width: 6, height: 6, borderRadius: '50%', background: '#06ABEB', flexShrink: 0, marginTop: 6 } }),
+                  e('div', { style: { width: 6, height: 6, borderRadius: '50%', background: '#0288d1', flexShrink: 0, marginTop: 6 } }),
                   e('div', { style: { flex: 1 } },
                     e('p', { style: { fontSize: 11, fontWeight: 700, color: '#075985', margin: '0 0 2px' } }, item.label),
                     e('p', { style: { fontSize: 13, color: '#0c4a6e', lineHeight: 1.5, margin: 0 } }, item.finding),
@@ -1087,7 +1087,7 @@ function DetailAccordion({
           ...cohortContext.cohortItems.map((item, idx) =>
             e('div', { key: idx, className: 'px-4 py-3' },
               e('div', { className: 'flex items-start gap-2' },
-                e('div', { className: 'w-1.5 h-1.5 rounded-full flex-shrink-0 mt-1.5', style: { background: '#06ABEB' } }),
+                e('div', { className: 'w-1.5 h-1.5 rounded-full flex-shrink-0 mt-1.5', style: { background: '#0288d1' } }),
                 e('div', { className: 'flex-1 min-w-0' },
                   e('p', { className: 'text-xs font-semibold text-sky-800 mb-0.5' }, item.label),
                   e('p', { className: 'text-sm text-sky-950 leading-snug' }, item.finding),
@@ -1178,7 +1178,7 @@ function ClinicalSummaryPanel({ inputs, asTierKey, genomicAssessed, genomicRiskT
   }
 
   return e('div', {
-    style: { background: '#fff', borderRadius: 18, border: '1px solid #f1f5f9', boxShadow: '0 1px 0 rgba(0,0,45,0.02), 0 4px 14px rgba(6,171,235,0.04)', overflow: 'hidden' },
+    style: { background: '#fff', borderRadius: 18, border: '1px solid #f1f5f9', boxShadow: '0 1px 0 rgba(0,0,45,0.02), 0 4px 14px rgba(2,136,209,0.04)', overflow: 'hidden' },
   },
     e('button', {
       type: 'button',
@@ -1190,7 +1190,7 @@ function ClinicalSummaryPanel({ inputs, asTierKey, genomicAssessed, genomicRiskT
         e('div', { style: { fontSize: 12, color: '#64748b', marginTop: 2 } }, 'Patient inputs · Sub-model scores')
       ),
       e('div', { style: { display: 'flex', alignItems: 'center', gap: 6 } },
-        e('span', { style: { fontSize: 11, fontWeight: 700, color: '#06ABEB' } }, open ? 'Collapse' : 'Expand'),
+        e('span', { style: { fontSize: 11, fontWeight: 700, color: '#0288d1' } }, open ? 'Collapse' : 'Expand'),
         e('svg', { width: 16, height: 16, fill: 'none', viewBox: '0 0 24 24', stroke: 'currentColor', strokeWidth: 2, style: { color: '#94a3b8', transition: 'transform 0.2s', transform: open ? 'rotate(180deg)' : 'none' } },
           e('path', { strokeLinecap: 'round', strokeLinejoin: 'round', d: 'M19 9l-7 7-7-7' })
         )
@@ -1422,7 +1422,7 @@ function UpgradeRiskPanel({ upgradeRisk, inputs }) {
           e('input', {
             type: 'range', min: 10, max: 35, step: 5, value: threshold,
             onChange: ev => setThreshold(Number(ev.target.value)),
-            style: { width: 80, accentColor: '#06ABEB' },
+            style: { width: 80, accentColor: '#0288d1' },
           }),
           e('span', { style: { fontSize: 10, color: '#94a3b8' } }, '35%')
         )
@@ -1556,7 +1556,7 @@ function UpgradeRiskPanel({ upgradeRisk, inputs }) {
         onClick: () => window.print(),
         style: {
           height: 44, borderRadius: 10, border: 'none',
-          background: 'linear-gradient(135deg, #00002D 0%, #212070 100%)',
+          background: 'linear-gradient(140deg, #221f72 0%, #17134f 100%)',
           fontSize: 13, fontWeight: 700, color: '#fff',
           display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
           cursor: 'pointer', width: '100%', fontFamily: 'inherit',
@@ -1573,7 +1573,7 @@ function UpgradeRiskPanel({ upgradeRisk, inputs }) {
   return e('div', {
     style: {
       background: '#fff', borderRadius: 18, border: '1px solid #f1f5f9',
-      boxShadow: '0 1px 0 rgba(0,0,45,0.02), 0 4px 14px rgba(6,171,235,0.04)',
+      boxShadow: '0 1px 0 rgba(0,0,45,0.02), 0 4px 14px rgba(2,136,209,0.04)',
       overflow: 'hidden',
     },
   },
@@ -1610,8 +1610,8 @@ function UpgradeRiskPanel({ upgradeRisk, inputs }) {
           style: {
             flex: 1, height: 38, border: 'none', background: 'transparent',
             fontSize: 12, fontWeight: activeTab === i ? 700 : 500,
-            color: activeTab === i ? '#06ABEB' : '#94a3b8',
-            borderBottom: `2px solid ${activeTab === i ? '#06ABEB' : 'transparent'}`,
+            color: activeTab === i ? '#0288d1' : '#94a3b8',
+            borderBottom: `2px solid ${activeTab === i ? '#0288d1' : 'transparent'}`,
             cursor: 'pointer', fontFamily: 'inherit', transition: 'all 0.15s',
             padding: '0 4px',
           },
@@ -1664,7 +1664,7 @@ export default function PatientResults({ results, inputs, onBack, onDownloadData
     // ── 1. Dark Hero Banner ──────────────────────────────────────────────
     e('div', {
       style: {
-        background: 'linear-gradient(165deg, #00002D 0%, #212070 55%, #06ABEB 145%)',
+        background: 'linear-gradient(140deg, #221f72 0%, #17134f 100%)',
         color: '#fff',
         borderRadius: 22,
         padding: '24px 22px 26px',
@@ -1685,7 +1685,7 @@ export default function PatientResults({ results, inputs, onBack, onDownloadData
       e('div', { style: { position: 'relative' } },
         // Eyebrow row
         e('div', { style: { display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12, flexWrap: 'wrap' } },
-          e('div', { style: { fontSize: 10, fontWeight: 800, letterSpacing: '0.18em', color: '#06ABEB', textTransform: 'uppercase' } }, 'AI Surveillance Tool'),
+          e('div', { style: { fontSize: 10, fontWeight: 800, letterSpacing: '0.18em', color: '#0288d1', textTransform: 'uppercase' } }, 'AI Surveillance Tool'),
           e('span', { style: { color: 'rgba(255,255,255,0.3)' } }, '·'),
           e('span', {
             style: {
@@ -1783,7 +1783,7 @@ export default function PatientResults({ results, inputs, onBack, onDownloadData
 
     // ── 5. Cohort Context Chips ──────────────────────────────────────────
     e('div', {
-      style: { background: '#fff', borderRadius: 18, border: '1px solid #f1f5f9', boxShadow: '0 1px 0 rgba(0,0,45,0.02), 0 4px 14px rgba(6,171,235,0.04)', padding: '16px 18px' },
+      style: { background: '#fff', borderRadius: 18, border: '1px solid #f1f5f9', boxShadow: '0 1px 0 rgba(0,0,45,0.02), 0 4px 14px rgba(2,136,209,0.04)', padding: '16px 18px' },
     },
       e('p', { style: { fontSize: 11, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em', color: '#94a3b8', marginBottom: 12, margin: '0 0 12px' } }, 'Cohort Context'),
       e(CohortChips, { cohortContext, inputs, psad: psadNum })
@@ -1810,7 +1810,7 @@ export default function PatientResults({ results, inputs, onBack, onDownloadData
         onClick: () => window.print(),
         style: {
           flex: '2 1 200px', height: 48, borderRadius: 12, border: 'none',
-          background: 'linear-gradient(135deg, #00002D 0%, #212070 100%)',
+          background: 'linear-gradient(140deg, #221f72 0%, #17134f 100%)',
           fontSize: 13, fontWeight: 700, color: '#fff',
           display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
           cursor: 'pointer', boxShadow: '0 6px 18px rgba(0,0,45,0.25)',
@@ -1839,7 +1839,7 @@ export default function PatientResults({ results, inputs, onBack, onDownloadData
           boxShadow: '0 1px 4px rgba(0,0,45,0.06)',
         },
       },
-        e('svg', { width: 14, height: 14, fill: 'none', viewBox: '0 0 24 24', stroke: '#06ABEB', strokeWidth: 2 },
+        e('svg', { width: 14, height: 14, fill: 'none', viewBox: '0 0 24 24', stroke: '#0288d1', strokeWidth: 2 },
           e('path', { strokeLinecap: 'round', strokeLinejoin: 'round', d: 'M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z' })
         ),
         'Evidence & Full Detail'
@@ -1857,7 +1857,7 @@ export default function PatientResults({ results, inputs, onBack, onDownloadData
           boxShadow: '0 1px 4px rgba(0,0,45,0.06)',
         },
       },
-        e('svg', { width: 14, height: 14, fill: 'none', viewBox: '0 0 24 24', stroke: '#DC298D', strokeWidth: 2 },
+        e('svg', { width: 14, height: 14, fill: 'none', viewBox: '0 0 24 24', stroke: '#d31f7a', strokeWidth: 2 },
           e('path', { strokeLinecap: 'round', strokeLinejoin: 'round', d: 'M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z' })
         ),
         'Model Validation & Transparency'
