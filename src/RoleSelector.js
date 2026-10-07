@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { Activity, User } from 'lucide-react'
+import { Activity } from 'lucide-react'
 import CareTeamModal from './components/CareTeamModal.js'
 
 const e = React.createElement
@@ -69,15 +69,8 @@ function InfoIcon() {
 
 const ROLES = [
   {
-    key: 'patient',
-    title: 'I am a Patient',
-    desc: 'Educational resources and guideline topics for your care.',
-    icon: () => e(User, { style: { width: 18, height: 18, color: C.navy } }),
-    tileStyle: { background: C.navy10 },
-  },
-  {
     key: 'clinician',
-    title: 'I am a Clinician',
+    title: 'Clinician tool',
     desc: 'Clinical pathway and AS decision-support calculator.',
     icon: StethIcon,
     tileStyle: { background: C.navy10 },
@@ -131,7 +124,7 @@ export default function RoleSelector({ onSelectRole }) {
           }, 'Mount Sinai · Urology'),
           e('h1', { style: { margin: '0 0 8px', fontSize: 28, fontWeight: 700, lineHeight: 1.25, color: '#fff' } }, 'Tewari Active Surveillance Program'),
           e('p', { style: { margin: 0, opacity: 0.92, lineHeight: 1.55 } },
-            'Guideline-based education for patients and a decision-support pathway for clinicians.')
+            'Decision-support pathway and AS calculator for the Mount Sinai care team.')
         ),
         e('div', { style: { padding: '22px 24px 24px' } },
           e('p', {
@@ -139,7 +132,7 @@ export default function RoleSelector({ onSelectRole }) {
               margin: '0 0 10px', fontSize: 12, fontWeight: 600, letterSpacing: '.06em',
               textTransform: 'uppercase', color: C.cyan,
             },
-          }, 'Choose your role'),
+          }, 'Clinician access'),
           e('div', { style: { display: 'grid', gap: 8 } },
             ROLES.map(r =>
               e('button', {
@@ -171,6 +164,19 @@ export default function RoleSelector({ onSelectRole }) {
             )
           )
         )
+      ),
+
+      // Patients: minimal path. Their schedule and reminders live in the iPhone app.
+      e('p', { style: { textAlign: 'center', fontSize: 14, color: C.muted, lineHeight: 1.5, margin: '20px 0 0' } },
+        'Patient? Your schedule and reminders are in the Mount Sinai AS Companion iPhone app. ',
+        e('button', {
+          type: 'button',
+          onClick: () => onSelectRole('patient'),
+          style: {
+            background: 'none', border: 'none', padding: 0, cursor: 'pointer',
+            color: C.navy, fontWeight: 600, fontSize: 14, textDecoration: 'underline',
+          },
+        }, 'General questions')
       ),
 
       e('p', { style: { textAlign: 'center', fontSize: 13, color: C.muted, lineHeight: 1.5, margin: '20px 0 0' } },

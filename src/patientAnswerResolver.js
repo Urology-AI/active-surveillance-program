@@ -1,5 +1,5 @@
 /**
- * Local answer resolution: patient handout text first, then curated QA, then (caller) Gemini.
+ * Local answer resolution: patient handout text first, then curated QA.
  */
 import AS_OVERVIEW_KNOWLEDGE from './data/active_surveillance_overview_knowledge.txt?raw'
 
