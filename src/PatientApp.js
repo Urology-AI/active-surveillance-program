@@ -1,7 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react'
 import CareTeamModal from './components/CareTeamModal.js'
+import IosAppBanner from './components/IosAppBanner.js'
 import { Activity, BookOpen } from 'lucide-react'
-import { answerPatientEducationQuestion, checkPatientMessageForPii } from './patientGeminiService.js'
+import { checkIfOffTopic, checkPatientMessageForPii } from './patientMessageGuards.js'
 import {
   findStructuredQaAnswer,
   GENERIC_FALLBACK_MESSAGE,
@@ -11,13 +12,8 @@ import {
 const e = React.createElement
 const PATIENT_CONSENT_KEY = 'as_patient_consent_accepted'
 
-const GEMINI_KEY_CONFIGURED =
-  typeof __VITE_GEMINI_API_KEY_INJECTED__ === 'string' &&
-  __VITE_GEMINI_API_KEY_INJECTED__.trim().length > 0
-
 const LOAD_CHECK   = 'Checking your message…'
 const LOAD_HANDOUT = 'Searching patient handout & guideline topics…'
-const LOAD_AI      = 'Asking Gemini AI (using your handout as context)…'
 
 const SOURCE_BADGE = {
   doc: {
@@ -26,11 +22,8 @@ const SOURCE_BADGE = {
   qa: {
     dot: '#0288d1', label: 'Guideline topics',
   },
-  gemini: {
-    dot: '#8b5cf6', label: 'AI answer (Gemini)',
-  },
   fallback: {
-    dot: '#f59e0b', label: 'Offline',
+    dot: '#f59e0b', label: 'General answer',
   },
   privacy: {
     dot: '#94a3b8', label: 'Privacy notice',
@@ -438,24 +431,13 @@ export default function PatientApp({ onBack }) {
         return
       }
 
-      replacePendingBot(last => ({ ...last, loadingLabel: LOAD_AI }))
-
-      try {
-        const { text, source } = await answerPatientEducationQuestion(trimmed, {
-          getFallbackAnswer: getAnswer,
-          conversationHistory: messages,
-          structuredQa: ALL_QA,
-          skipPii: true,
-          skipLocal: true,
-        })
-        replacePendingBot({ role: 'bot', text, source: source || 'gemini' })
-      } catch (_) {
-        replacePendingBot({
-          role: 'bot',
-          text: `${getAnswer(trimmed)}\n\n_(Something went wrong; showing an offline answer.)_`,
-          source: 'fallback',
-        })
+      const topic = checkIfOffTopic(trimmed)
+      if (topic.offTopic) {
+        replacePendingBot({ role: 'bot', text: topic.message, source: 'off-topic' })
+        return
       }
+
+      replacePendingBot({ role: 'bot', text: getAnswer(trimmed), source: 'fallback' })
     } finally {
       setChatLoading(false)
     }
@@ -522,27 +504,10 @@ export default function PatientApp({ onBack }) {
           'Care'
         )
       ),
-      // AI status bar
-      e('div', {
-        style: {
-          maxWidth: 640, margin: '0 auto',
-          padding: '5px 14px 8px',
-          display: 'flex', alignItems: 'center', gap: 6,
-          borderTop: '1px solid #e2e2ea',
-        },
-      },
-        e('span', {
-          style: {
-            width: 6, height: 6, borderRadius: '50%', flexShrink: 0,
-            background: GEMINI_KEY_CONFIGURED ? '#34d399' : '#f59e0b',
-          },
-        }),
-        e('span', {
-          style: { fontSize: 10, color: GEMINI_KEY_CONFIGURED ? '#1b7f4b' : '#5c5c70' },
-        }, GEMINI_KEY_CONFIGURED ? 'Gemini AI connected' : 'AI assistant offline — handout & topics only')
-      ),
       e('div', { style: { height: 3, background: 'linear-gradient(90deg, #221f72 0%, #0288d1 55%, #d31f7a 100%)' } })
     ),
+
+    e(IosAppBanner),
 
     // ── Topic rail ─────────────────────────────────────────────────────────────
     e('div', {

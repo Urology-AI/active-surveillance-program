@@ -28,3 +28,11 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Data exports (never commit)
+*.csv
+*.pptx
+*.docx
+vite.config.js.timestamp-*
+commits_detailed.txt
+ziDmGwTV

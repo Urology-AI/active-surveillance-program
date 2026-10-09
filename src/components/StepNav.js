@@ -2,7 +2,7 @@ import React from 'react'
 import { ArrowLeft } from 'lucide-react'
 
 // Subtle in-card back link — only shows "← Back" when user has history.
-// Forward navigation is handled by the top ProgressBar.
+// Forward navigation happens from each step's own choices.
 export default function StepNav({ onBack, canGoBack }) {
   if (!canGoBack) return null
   return React.createElement('div', { className: 'flex mt-5 pt-4 border-t border-slate-100' },
